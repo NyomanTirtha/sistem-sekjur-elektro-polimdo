@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  nama     String
+  password String
+  role     UserRole
+
+  @@map("users")
+}
+
+model ProgramStudi {
+  id         Int         @id @default(autoincrement())
+  nama       String
+  ketuaProdi String
+  dosen      Dosen[]
+  mahasiswa  Mahasiswa[]
+
+  @@map("program_studi")
+}
+
+model Mahasiswa {
+  nim            String        @id
+  nama           String
+  programStudiId Int
+  angkatan       String
+  semester       Int
+  noTelp         String
+  alamat         String
+  programStudi   ProgramStudi  @relation(fields: [programStudiId], references: [id])
+  pengajuanSA    PengajuanSA[]
+
+  @@index([programStudiId], map: "mahasiswa_programStudiId_fkey")
+  @@map("mahasiswa")
+}
+
+model Dosen {
+  nip                String              @id
+  nama               String
+  prodiId            Int
+  noTelp             String?
+  alamat             String?
+  isKaprodi          Boolean             @default(false)
+  prodi              ProgramStudi        @relation(fields: [prodiId], references: [id])
+  pengajuanSADetails PengajuanSADetail[]
+
+  @@index([prodiId], map: "dosen_prodiId_fkey")
+  @@map("dosen")
+}
+
+model MataKuliah {
+  id               Int                 @id @default(autoincrement())
+  nama             String
+  sks              Int
+  pengajuanDetails PengajuanSADetail[]
+
+  @@map("mata_kuliah")
+}
+
+model PengajuanSA {
+  id               Int                 @id @default(autoincrement())
+  mahasiswaId      String
+  buktiPembayaran  String
+  tanggalPengajuan DateTime            @default(now())
+  status           StatusSA            @default(PROSES_PENGAJUAN)
+  keterangan       String?
+  keteranganReject String?
+  nominal          Decimal             @db.Decimal(10, 2)
+  mahasiswa        Mahasiswa           @relation(fields: [mahasiswaId], references: [nim])
+  details          PengajuanSADetail[]
+
+  @@index([mahasiswaId], map: "pengajuan_sa_mahasiswaId_fkey")
+  @@map("pengajuan_sa")
+}
+
+model PengajuanSADetail {
+  id            Int         @id @default(autoincrement())
+  pengajuanSAId Int
+  mataKuliahId  Int
+  dosenId       String?
+  nilaiAkhir    Float?
+  dosen         Dosen?      @relation(fields: [dosenId], references: [nip])
+  mataKuliah    MataKuliah  @relation(fields: [mataKuliahId], references: [id])
+  pengajuanSA   PengajuanSA @relation(fields: [pengajuanSAId], references: [id], onDelete: Cascade)
+
+  @@index([pengajuanSAId], map: "pengajuan_sa_detail_pengajuanSAId_fkey")
+  @@index([mataKuliahId], map: "pengajuan_sa_detail_mataKuliahId_fkey")
+  @@index([dosenId], map: "pengajuan_sa_detail_dosenId_fkey")
+  @@map("pengajuan_sa_detail")
+}
+
+enum UserRole {
+  ADMIN
+  MAHASISWA
+  DOSEN
+  KAPRODI
+}
+
+enum StatusSA {
+  PROSES_PENGAJUAN
+  MENUNGGU_VERIFIKASI_KAPRODI
+  DALAM_PROSES_SA
+  SELESAI
+  DITOLAK
+}
