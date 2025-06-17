@@ -24,12 +24,6 @@ Aplikasi web untuk mendukung proses pengelolaan administrasi dan pengajuan surat
 - Prisma ORM
 - MySQL (database)
 
-## 📁 Struktur Proyek
-sistem-sekjur-elektro-polimdo/
-├── client/ # Frontend (React)
-├── server/ # Backend (Node.js, Express, Prisma)
-├── README.md
-
 ## 🚀 Cara Menjalankan Proyek
 
 ### 1. Jalankan Backend
