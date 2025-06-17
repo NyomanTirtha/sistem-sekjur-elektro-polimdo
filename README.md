@@ -49,7 +49,7 @@ npm start
 
 Pastikan backend dan frontend berjalan pada port yang sesuai (localhost:5000 dan localhost:3000 misalnya), dan koneksi database MySQL sudah dikonfigurasi pada .env.
 
-📧 Kontak
+## 📧 Kontak
 Pengembang: - I Nyoman Tirtha Yuda 
             - Edi 
             - Ariel Arya Putra
