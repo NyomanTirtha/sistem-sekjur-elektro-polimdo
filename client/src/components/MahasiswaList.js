@@ -124,11 +124,11 @@ export default function MahasiswaList({ authToken, currentUser }) {
 
   // Check if user has permission to perform certain actions
   const canAddEdit = () => {
-    return ['admin', 'dosen', 'kaprodi'].includes(userRole);
+    return ['sekjur', 'dosen', 'kaprodi'].includes(userRole);
   };
 
   const canDelete = () => {
-    return ['admin'].includes(userRole);
+    return ['sekjur'].includes(userRole);
   };
 
   // Reset to first page when search or filter changes

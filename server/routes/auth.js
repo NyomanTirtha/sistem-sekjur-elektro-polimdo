@@ -1,4 +1,4 @@
-// routes/auth.js - COMPLETE FIXED VERSION with debug logging
+// routes/auth.js - COMPLETE VERSION dengan filtering jurusan
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -10,8 +10,8 @@ const prisma = new PrismaClient();
 // JWT Secret (sebaiknya disimpan di environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
+// ✅ ENHANCED Authentication middleware dengan context filtering
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -24,7 +24,26 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    
+    // Ambil data user lengkap dengan relasi jurusan
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        jurusan: true
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+
+    // Tambahkan user info ke request
+    req.user = user;
+    req.userContext = getUserContext(user);
+    
     next();
   } catch (error) {
     console.error('Token verification error:', error);
@@ -35,7 +54,93 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Login endpoint - COMPLETE FIXED with debug logging
+// ✅ NEW: Fungsi untuk mendapatkan context filter berdasarkan role user
+const getUserContext = (user) => {
+  const context = {
+    userId: user.id,
+    role: user.role,
+    canAccessAll: false,
+    jurusanId: null,
+    programStudiIds: []
+  };
+
+  switch (user.role) {
+    case 'SEKJUR':
+      // Sekretaris Jurusan hanya bisa akses data jurusannya
+      if (user.jurusanId) {
+        context.jurusanId = user.jurusanId;
+        context.canAccessAll = false;
+      }
+      break;
+      
+    case 'KAPRODI':
+      // Kaprodi hanya bisa akses data program studinya
+      context.canAccessAll = false;
+      break;
+      
+    case 'DOSEN':
+      // Dosen hanya bisa akses data program studinya
+      context.canAccessAll = false;
+      break;
+      
+    case 'MAHASISWA':
+      // Mahasiswa hanya bisa akses data dirinya sendiri
+      context.canAccessAll = false;
+      break;
+      
+    default:
+      context.canAccessAll = false;
+  }
+
+  return context;
+};
+
+// ✅ NEW: Helper functions untuk filtering
+const createJurusanFilter = (userContext) => {
+  if (userContext.jurusanId) {
+    return { id: userContext.jurusanId };
+  }
+  return null;
+};
+
+const createProdiFilter = (userContext) => {
+  if (userContext.jurusanId) {
+    return { jurusanId: userContext.jurusanId };
+  }
+  if (userContext.programStudiIds.length > 0) {
+    return { id: { in: userContext.programStudiIds } };
+  }
+  return null;
+};
+
+const createMahasiswaFilter = (userContext) => {
+  if (userContext.jurusanId) {
+    return {
+      programStudi: { jurusanId: userContext.jurusanId }
+    };
+  }
+  return null;
+};
+
+const createDosenFilter = (userContext) => {
+  if (userContext.jurusanId) {
+    return {
+      prodi: { jurusanId: userContext.jurusanId }
+    };
+  }
+  return null;
+};
+
+const createMataKuliahFilter = (userContext) => {
+  if (userContext.jurusanId) {
+    return {
+      programStudi: { jurusanId: userContext.jurusanId }
+    };
+  }
+  return null;
+};
+
+// Login endpoint - UPDATED untuk mendukung relasi jurusan
 router.post('/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
@@ -55,17 +160,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Cari user berdasarkan username
+    // Cari user berdasarkan username dengan include jurusan
     const user = await prisma.user.findFirst({
-      where: { 
-        username: username
-      }
+      where: { username: username },
+      include: { jurusan: true }
     });
 
     console.log('👤 User found:', user ? {
       id: user.id,
       username: user.username,
       role: user.role,
+      jurusanId: user.jurusanId,
+      jurusanNama: user.jurusan?.nama,
       hasPassword: !!user.password,
       passwordLength: user.password?.length,
       passwordStartsWithHash: user.password?.startsWith('$2'),
@@ -127,15 +233,17 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // ✅ FIXED: Prepare response data with proper include relations
+    // ✅ UPDATED: Prepare response data with jurusan info
     let userData = {
       id: user.id,
       username: user.username,
       nama: user.nama,
-      role: user.role
+      role: user.role,
+      jurusanId: user.jurusanId,
+      jurusan: user.jurusan
     };
 
-    // ✅ FIXED: Fetch additional data with include relations and debug logging
+    // ✅ UPDATED: Fetch additional data with proper include relations and debug logging
     if (user.role === 'MAHASISWA') {
       console.log('🎓 Searching for mahasiswa data:', {
         searchNim: user.username,
@@ -145,7 +253,11 @@ router.post('/login', async (req, res) => {
       const mahasiswa = await prisma.mahasiswa.findUnique({
         where: { nim: user.username },
         include: {
-          programStudi: true
+          programStudi: {
+            include: {
+              jurusan: true
+            }
+          }
         }
       });
       
@@ -166,13 +278,13 @@ router.post('/login', async (req, res) => {
         userData = {
           ...userData,
           nim: mahasiswa.nim,
-          nama: mahasiswa.nama, // Override dengan nama dari mahasiswa
+          nama: mahasiswa.nama,
           programStudiId: mahasiswa.programStudiId,
           programStudi: mahasiswa.programStudi,
           angkatan: mahasiswa.angkatan,
           semester: mahasiswa.semester,
           noTelp: mahasiswa.noTelp,
-          alamat: mahasiswa.alamat // ✅ FIXED: Tambahkan alamat
+          alamat: mahasiswa.alamat
         };
         
         console.log('📊 Final userData for mahasiswa:', {
@@ -196,7 +308,11 @@ router.post('/login', async (req, res) => {
       const dosen = await prisma.dosen.findUnique({
         where: { nip: user.username },
         include: {
-          prodi: true
+          prodi: {
+            include: {
+              jurusan: true
+            }
+          }
         }
       });
       
@@ -216,12 +332,12 @@ router.post('/login', async (req, res) => {
         userData = {
           ...userData,
           nip: dosen.nip,
-          nama: dosen.nama, // Override dengan nama dari dosen
+          nama: dosen.nama,
           prodiId: dosen.prodiId,
-          prodi: dosen.prodi, // ✅ FIXED: This should have data now
+          prodi: dosen.prodi,
           isKaprodi: dosen.isKaprodi,
           noTelp: dosen.noTelp,
-          alamat: dosen.alamat // ✅ FIXED: Tambahkan alamat
+          alamat: dosen.alamat
         };
         
         console.log('📊 Final userData for dosen:', {
@@ -248,7 +364,7 @@ router.post('/login', async (req, res) => {
         const similarDosen = await prisma.dosen.findMany({
           where: {
             nip: {
-              contains: user.username.substring(0, 5) // Cek 5 digit pertama
+              contains: user.username.substring(0, 5)
             }
           },
           select: { nip: true, nama: true }
@@ -256,11 +372,12 @@ router.post('/login', async (req, res) => {
         console.log('🔍 Similar NIP found:', similarDosen);
       }
     }
-    // ✅ ADMIN tidak perlu data tambahan
+    // ✅ SEKJUR sudah memiliki data jurusan dari user table
 
     console.log('✅ Login successful:', {
       username: user.username,
       role: user.role,
+      jurusan: user.jurusan?.nama,
       tokenLength: token.length,
       hasRelationData: !!(userData.programStudi || userData.prodi),
       finalUserDataKeys: Object.keys(userData)
@@ -288,11 +405,14 @@ router.post('/login', async (req, res) => {
 router.get('/test-users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
+      include: { jurusan: true },
       select: {
         id: true,
         username: true,
         nama: true,
         role: true,
+        jurusanId: true,
+        jurusan: true,
         password: true // Hanya untuk debugging - HAPUS di production
       }
     });
@@ -302,6 +422,8 @@ router.get('/test-users', async (req, res) => {
       username: user.username,
       nama: user.nama,
       role: user.role,
+      jurusanId: user.jurusanId,
+      jurusanNama: user.jurusan?.nama,
       passwordHash: user.password.substring(0, 10) + '...', 
       isHashed: user.password.startsWith('$2a$') || user.password.startsWith('$2b$')
     }));
@@ -324,18 +446,39 @@ router.get('/debug-data', async (req, res) => {
   try {
     const mahasiswaCount = await prisma.mahasiswa.count();
     const dosenCount = await prisma.dosen.count();
+    const jurusanCount = await prisma.jurusan.count();
+    const prodiCount = await prisma.programStudi.count();
     
     const sampleMahasiswa = await prisma.mahasiswa.findMany({
       take: 3,
       include: {
-        programStudi: true
+        programStudi: {
+          include: {
+            jurusan: true
+          }
+        }
       }
     });
     
     const sampleDosen = await prisma.dosen.findMany({
       take: 3,
       include: {
-        prodi: true
+        prodi: {
+          include: {
+            jurusan: true
+          }
+        }
+      }
+    });
+
+    const sampleJurusan = await prisma.jurusan.findMany({
+      include: {
+        _count: {
+          select: {
+            programStudi: true,
+            users: true
+          }
+        }
       }
     });
 
@@ -343,9 +486,12 @@ router.get('/debug-data', async (req, res) => {
       success: true,
       data: {
         counts: {
+          jurusan: jurusanCount,
+          programStudi: prodiCount,
           mahasiswa: mahasiswaCount,
           dosen: dosenCount
         },
+        sampleJurusan,
         sampleMahasiswa,
         sampleDosen
       }
@@ -358,15 +504,72 @@ router.get('/debug-data', async (req, res) => {
   }
 });
 
+// ✅ NEW: Endpoint untuk test filtering
+router.get('/test-filter', authenticateToken, async (req, res) => {
+  try {
+    const prodiFilter = createProdiFilter(req.userContext);
+    const mahasiswaFilter = createMahasiswaFilter(req.userContext);
+    
+    if (!prodiFilter || !mahasiswaFilter) {
+      return res.json({
+        success: true,
+        message: 'User tidak memiliki akses filter',
+        userContext: req.userContext,
+        user: {
+          username: req.user.username,
+          role: req.user.role,
+          jurusan: req.user.jurusan?.nama
+        }
+      });
+    }
+
+    const [programStudi, mahasiswa] = await Promise.all([
+      prisma.programStudi.findMany({
+        where: prodiFilter,
+        include: { jurusan: true }
+      }),
+      prisma.mahasiswa.findMany({
+        where: mahasiswaFilter,
+        take: 5, // Limit untuk testing
+        include: { programStudi: { include: { jurusan: true } } }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        userInfo: {
+          username: req.user.username,
+          role: req.user.role,
+          jurusan: req.user.jurusan?.nama
+        },
+        userContext: req.userContext,
+        filters: { prodiFilter, mahasiswaFilter },
+        results: {
+          programStudiCount: programStudi.length,
+          mahasiswaCount: mahasiswa.length,
+          sampleProgramStudi: programStudi,
+          sampleMahasiswa: mahasiswa
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error testing filter: ' + error.message
+    });
+  }
+});
+
 // Register endpoint - SIMPLIFIED
 router.post('/register', async (req, res) => {
   try {
-    const { username, nama, password, role } = req.body;
+    const { username, nama, password, role, jurusanId } = req.body;
 
     if (!username || !nama || !password || !role) {
       return res.status(400).json({
         success: false,
-        message: 'Semua field harus diisi'
+        message: 'Username, nama, password, dan role harus diisi'
       });
     }
 
@@ -391,7 +594,11 @@ router.post('/register', async (req, res) => {
         username,
         nama,
         password: hashedPassword,
-        role: role.toUpperCase()
+        role: role.toUpperCase(),
+        jurusanId: jurusanId || null
+      },
+      include: {
+        jurusan: true
       }
     });
 
@@ -402,7 +609,9 @@ router.post('/register', async (req, res) => {
         id: newUser.id,
         username: newUser.username,
         nama: newUser.nama,
-        role: newUser.role
+        role: newUser.role,
+        jurusanId: newUser.jurusanId,
+        jurusan: newUser.jurusan
       }
     });
 
@@ -415,11 +624,12 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ COMPLETE FIXED: Get current user info with proper structure and debug logging
+// ✅ UPDATED: Get current user info with proper structure and jurusan support
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId }
+      where: { id: req.user.id },
+      include: { jurusan: true }
     });
 
     if (!user) {
@@ -432,18 +642,25 @@ router.get('/me', authenticateToken, async (req, res) => {
     console.log('🔍 /me endpoint called for user:', {
       id: user.id,
       username: user.username,
-      role: user.role
+      role: user.role,
+      jurusan: user.jurusan?.nama
     });
 
-    // ✅ FIXED: Prepare response with same structure as login
+    // ✅ UPDATED: Prepare response with jurusan and context info
     let userData = {
       id: user.id,
       username: user.username,
       nama: user.nama,
-      role: user.role
+      role: user.role,
+      jurusanId: user.jurusanId,
+      jurusan: user.jurusan,
+      permissions: {
+        canAccessAll: req.userContext.canAccessAll,
+        jurusanId: req.userContext.jurusanId
+      }
     };
 
-    // ✅ FIXED: Fetch related data with proper include and structure
+    // ✅ UPDATED: Fetch related data with proper include and structure
     try {
       if (user.role === 'MAHASISWA') {
         console.log('🎓 /me endpoint - Searching for mahasiswa data:', {
@@ -454,7 +671,11 @@ router.get('/me', authenticateToken, async (req, res) => {
         const mahasiswaData = await prisma.mahasiswa.findUnique({
           where: { nim: user.username },
           include: {
-            programStudi: true
+            programStudi: {
+              include: {
+                jurusan: true
+              }
+            }
           }
         });
 
@@ -475,13 +696,13 @@ router.get('/me', authenticateToken, async (req, res) => {
           userData = {
             ...userData,
             nim: mahasiswaData.nim,
-            nama: mahasiswaData.nama, // Override dengan nama dari mahasiswa
+            nama: mahasiswaData.nama,
             programStudiId: mahasiswaData.programStudiId,
-            programStudi: mahasiswaData.programStudi, // ✅ This matches frontend expectation
+            programStudi: mahasiswaData.programStudi,
             angkatan: mahasiswaData.angkatan,
             semester: mahasiswaData.semester,
             noTelp: mahasiswaData.noTelp,
-            alamat: mahasiswaData.alamat // ✅ FIXED: Tambahkan alamat
+            alamat: mahasiswaData.alamat
           };
           
           console.log('📊 /me endpoint - Final userData for mahasiswa:', {
@@ -505,7 +726,11 @@ router.get('/me', authenticateToken, async (req, res) => {
         const dosenData = await prisma.dosen.findUnique({
           where: { nip: user.username },
           include: {
-            prodi: true
+            prodi: {
+              include: {
+                jurusan: true
+              }
+            }
           }
         });
 
@@ -525,12 +750,12 @@ router.get('/me', authenticateToken, async (req, res) => {
           userData = {
             ...userData,
             nip: dosenData.nip,
-            nama: dosenData.nama, // Override dengan nama dari dosen
+            nama: dosenData.nama,
             prodiId: dosenData.prodiId,
-            prodi: dosenData.prodi, // ✅ This matches frontend expectation
+            prodi: dosenData.prodi,
             isKaprodi: dosenData.isKaprodi,
             noTelp: dosenData.noTelp,
-            alamat: dosenData.alamat // ✅ FIXED: Tambahkan alamat
+            alamat: dosenData.alamat
           };
           
           console.log('📊 /me endpoint - Final userData for dosen:', {
@@ -554,7 +779,7 @@ router.get('/me', authenticateToken, async (req, res) => {
           console.log('📋 /me Sample dosen in database:', allDosen);
         }
       }
-      // ✅ ADMIN tidak perlu data tambahan
+      // ✅ SEKJUR sudah memiliki data jurusan dari user table
     } catch (relationError) {
       console.log('❌ /me endpoint - Could not fetch related data:', relationError.message);
       console.error('Full relation error:', relationError);
@@ -563,6 +788,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     console.log('✅ /me endpoint response:', {
       username: userData.username,
       role: userData.role,
+      jurusan: userData.jurusan?.nama,
       hasRelationData: !!(userData.programStudi || userData.prodi),
       programStudi: userData.programStudi?.nama,
       prodi: userData.prodi?.nama,
@@ -619,15 +845,6 @@ router.post('/hash-passwords', async (req, res) => {
       message: 'Error hashing passwords: ' + error.message
     });
   }
-});
-
-// Simple test endpoint
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Auth routes working',
-    timestamp: new Date().toISOString()
-  });
 });
 
 // Change password endpoint
@@ -796,4 +1013,332 @@ router.put('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = { router, authenticateToken };
+// Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth routes working with jurusan filtering support',
+    timestamp: new Date().toISOString(),
+    features: [
+      'Login with jurusan context',
+      'Role-based filtering',
+      'SEKJUR access control',
+      'Enhanced debugging'
+    ]
+  });
+});
+
+// ✅ NEW: Endpoint untuk get statistik dashboard berdasarkan akses user
+router.get('/dashboard-stats', authenticateToken, async (req, res) => {
+  try {
+    const { userContext } = req;
+    
+    let stats = {};
+
+    if (userContext.jurusanId) {
+      // Sekretaris Jurusan - statistik jurusan saja
+      const [programStudi, mahasiswa, dosen, mataKuliah, pengajuanSA] = await prisma.$transaction([
+        prisma.programStudi.count({
+          where: { jurusanId: userContext.jurusanId }
+        }),
+        prisma.mahasiswa.count({
+          where: {
+            programStudi: { jurusanId: userContext.jurusanId }
+          }
+        }),
+        prisma.dosen.count({
+          where: {
+            prodi: { jurusanId: userContext.jurusanId }
+          }
+        }),
+        prisma.mataKuliah.count({
+          where: {
+            programStudi: { jurusanId: userContext.jurusanId }
+          }
+        }),
+        prisma.pengajuanSA.count({
+          where: {
+            mahasiswa: {
+              programStudi: { jurusanId: userContext.jurusanId }
+            }
+          }
+        })
+      ]);
+
+      stats = {
+        totalProgramStudi: programStudi,
+        totalMahasiswa: mahasiswa,
+        totalDosen: dosen,
+        totalMataKuliah: mataKuliah,
+        totalPengajuanSA: pengajuanSA
+      };
+    } else {
+      // Jika tidak ada akses jurusan, return stats kosong
+      stats = {
+        totalProgramStudi: 0,
+        totalMahasiswa: 0,
+        totalDosen: 0,
+        totalMataKuliah: 0,
+        totalPengajuanSA: 0
+      };
+    }
+
+    res.json({
+      success: true,
+      data: stats,
+      userInfo: {
+        role: req.user.role,
+        jurusan: req.user.jurusan?.nama || null
+      }
+    });
+  } catch (error) {
+    console.error('Error getting dashboard stats:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil statistik dashboard' 
+    });
+  }
+});
+
+// ✅ NEW: Endpoint untuk get data yang difilter berdasarkan jurusan
+router.get('/program-studi', authenticateToken, async (req, res) => {
+  try {
+    const filter = createProdiFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Tidak memiliki akses untuk melihat data program studi' 
+      });
+    }
+
+    const programStudi = await prisma.programStudi.findMany({
+      where: filter,
+      include: {
+        jurusan: true,
+        _count: {
+          select: {
+            mahasiswa: true,
+            dosen: true,
+            mataKuliah: true
+          }
+        }
+      },
+      orderBy: {
+        nama: 'asc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: programStudi,
+      userInfo: {
+        role: req.user.role,
+        jurusan: req.user.jurusan?.nama || null
+      }
+    });
+  } catch (error) {
+    console.error('Error getting program studi:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data program studi' 
+    });
+  }
+});
+
+// ✅ NEW: Endpoint untuk get mahasiswa berdasarkan akses user
+router.get('/mahasiswa', authenticateToken, async (req, res) => {
+  try {
+    const filter = createMahasiswaFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Tidak memiliki akses untuk melihat data mahasiswa' 
+      });
+    }
+
+    const mahasiswa = await prisma.mahasiswa.findMany({
+      where: filter,
+      include: {
+        programStudi: {
+          include: {
+            jurusan: true
+          }
+        }
+      },
+      orderBy: [
+        { programStudi: { nama: 'asc' } },
+        { nama: 'asc' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: mahasiswa,
+      userInfo: {
+        role: req.user.role,
+        jurusan: req.user.jurusan?.nama || null,
+        totalMahasiswa: mahasiswa.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting mahasiswa:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data mahasiswa' 
+    });
+  }
+});
+
+// ✅ NEW: Endpoint untuk get dosen berdasarkan akses user
+router.get('/dosen', authenticateToken, async (req, res) => {
+  try {
+    const filter = createDosenFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Tidak memiliki akses untuk melihat data dosen' 
+      });
+    }
+
+    const dosen = await prisma.dosen.findMany({
+      where: filter,
+      include: {
+        prodi: {
+          include: {
+            jurusan: true
+          }
+        }
+      },
+      orderBy: [
+        { prodi: { nama: 'asc' } },
+        { nama: 'asc' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: dosen,
+      userInfo: {
+        role: req.user.role,
+        jurusan: req.user.jurusan?.nama || null,
+        totalDosen: dosen.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting dosen:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data dosen' 
+    });
+  }
+});
+
+// ✅ NEW: Endpoint untuk get mata kuliah berdasarkan akses user
+router.get('/mata-kuliah', authenticateToken, async (req, res) => {
+  try {
+    const filter = createMataKuliahFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Tidak memiliki akses untuk melihat data mata kuliah' 
+      });
+    }
+
+    const mataKuliah = await prisma.mataKuliah.findMany({
+      where: filter,
+      include: {
+        programStudi: {
+          include: {
+            jurusan: true
+          }
+        }
+      },
+      orderBy: [
+        { programStudi: { nama: 'asc' } },
+        { semester: 'asc' },
+        { nama: 'asc' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: mataKuliah,
+      userInfo: {
+        role: req.user.role,
+        jurusan: req.user.jurusan?.nama || null,
+        totalMataKuliah: mataKuliah.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting mata kuliah:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data mata kuliah' 
+    });
+  }
+});
+
+// ✅ NEW: Endpoint untuk get jurusan (hanya untuk sekjur)
+router.get('/jurusan', authenticateToken, async (req, res) => {
+  try {
+    let filter = {};
+    
+    // Jika bukan sekjur atau tidak punya akses jurusan, filter berdasarkan jurusan user
+    if (!req.userContext.canAccessAll) {
+      if (req.userContext.jurusanId) {
+        filter = { id: req.userContext.jurusanId };
+      } else {
+        return res.status(403).json({ 
+          success: false,
+          message: 'Tidak memiliki akses untuk melihat data jurusan' 
+        });
+      }
+    }
+
+    const jurusan = await prisma.jurusan.findMany({
+      where: filter,
+      include: {
+        _count: {
+          select: {
+            programStudi: true,
+            users: true
+          }
+        }
+      },
+      orderBy: {
+        nama: 'asc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: jurusan,
+      userInfo: {
+        role: req.user.role,
+        canViewAll: req.userContext.canAccessAll
+      }
+    });
+  } catch (error) {
+    console.error('Error getting jurusan:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data jurusan' 
+    });
+  }
+});
+
+module.exports = { 
+  router, 
+  authenticateToken,
+  // Export helper functions untuk digunakan di controller lain
+  createJurusanFilter,
+  createProdiFilter,
+  createMahasiswaFilter,
+  createDosenFilter,
+  createMataKuliahFilter,
+  getUserContext
+};

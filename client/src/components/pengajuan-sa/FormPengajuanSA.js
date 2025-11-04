@@ -21,6 +21,13 @@ import {
 import { calculateMaxSKS, calculateTotalSKS, canAddMataKuliah } from '../../utils/pengajuanSAUtils';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../utils/alertUtils';
 
+function formatRupiah(value) {
+  const numberString = value.replace(/[^\d]/g, '');
+  if (!numberString) return '';
+  const number = parseInt(numberString, 10);
+  return 'Rp' + number.toLocaleString('id-ID');
+}
+
 const FormPengajuanSA = ({ 
   showForm, 
   setShowForm, 
@@ -119,11 +126,12 @@ const FormPengajuanSA = ({
   };
 
   const handleNominalChange = (e) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, nominal: value }));
+    // Ambil hanya angka dari input
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    setFormData(prev => ({ ...prev, nominal: rawValue }));
     
     // Recalculate max SKS when nominal changes
-    const nominal = parseFloat(value) || 0;
+    const nominal = parseFloat(rawValue) || 0;
     const maxSKS = Math.floor(nominal / 300000); // 300k per SKS
     setMaxSKS(maxSKS);
     
@@ -131,11 +139,9 @@ const FormPengajuanSA = ({
     const currentTotalSKS = formData.selectedMataKuliah.reduce((total, mk) => total + mk.sks, 0);
     if (currentTotalSKS > maxSKS && maxSKS > 0) {
       showWarningAlert(`Nominal terlalu kecil untuk mata kuliah yang sudah dipilih!\n\nNominal baru: Rp ${nominal.toLocaleString()}\nMaksimal SKS: ${maxSKS}\nTotal SKS yang sudah dipilih: ${currentTotalSKS}\n\nMata kuliah yang melebihi batas akan dihapus otomatis.`);
-      
       // Remove mata kuliah that exceed the new limit
       const newSelectedMataKuliah = [];
       let currentSKS = 0;
-      
       for (const mk of formData.selectedMataKuliah) {
         if (currentSKS + mk.sks <= maxSKS) {
           newSelectedMataKuliah.push(mk);
@@ -144,7 +150,6 @@ const FormPengajuanSA = ({
           break;
         }
       }
-      
       setFormData(prev => ({
         ...prev,
         selectedMataKuliah: newSelectedMataKuliah
@@ -240,7 +245,7 @@ const FormPengajuanSA = ({
           });
 
           if (response.ok) {
-            showSuccessAlert('Pengajuan SA berhasil disubmit!\nPengajuan Anda akan diproses oleh admin.');
+            showSuccessAlert('Pengajuan SA berhasil disubmit!\nPengajuan Anda akan diproses oleh sekretaris jurusan.');
             resetForm();
             onSubmitSuccess();
           } else {
@@ -428,10 +433,11 @@ const FormPengajuanSA = ({
               </div>
               <div className="relative">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min="300000"
                   step="1000"
-                  value={formData.nominal}
+                  value={formData.nominal ? formatRupiah(formData.nominal) : ''}
                   onChange={handleNominalChange}
                   placeholder="Contoh: 900000"
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg"

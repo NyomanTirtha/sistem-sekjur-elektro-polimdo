@@ -4,8 +4,9 @@ import { XCircle, User, CreditCard, GraduationCap, FileText, Eye, CheckCircle, X
 import { formatCurrency, getSemesterFromDate } from '../../utils/pengajuanSAUtils';
 import { getProgramStudiName } from '../../utils/programStudiUtils';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../utils/alertUtils';
+import ReactDOM from 'react-dom';
 
-const ModalDetailAdmin = ({ 
+const ModalDetailSekjur = ({ 
   showModal, 
   setShowModal, 
   selectedDetail,
@@ -83,12 +84,12 @@ const ModalDetailAdmin = ({
     return nominal - estimatedCost;
   };
 
-  return (
+  return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Detail Pengajuan SA - Admin</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Detail Pengajuan SA - Sekretaris Jurusan</h2>
           <button
             onClick={() => setShowModal(false)}
             className="text-gray-500 hover:text-gray-700"
@@ -325,8 +326,9 @@ const ModalDetailAdmin = ({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 
-export default ModalDetailAdmin;
+export default ModalDetailSekjur;

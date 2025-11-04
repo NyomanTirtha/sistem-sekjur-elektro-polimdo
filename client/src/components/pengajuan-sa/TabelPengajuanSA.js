@@ -167,64 +167,26 @@ const TabelPengajuanSA = ({
     );
   };
 
-  // ✅ IMPROVED: Check if dosen can input nilai untuk mata kuliah spesifik
-  const canDosenInputNilai = (item) => {
-    if (userType !== 'dosen') return false;
+  // ✅ NEW: Check if sekjur can input nilai untuk mata kuliah spesifik
+  const canSekjurInputNilai = (item) => {
+    if (userType !== 'sekjur') return false;
     const currentStatus = statusPerRow[item.id] || item.status;
-    if (currentStatus !== 'DALAM_PROSES_SA') return false;
-    
-    // ✅ FIXED: Cek apakah mata kuliah ini sudah dinilai
+    // Sekjur bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika belum ada nilai)
+    if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
     if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
       return false; // Sudah ada nilai untuk mata kuliah ini
     }
-    
-    // Check if current dosen is assigned to this specific mata kuliah
-    const isAssigned = item.dosenId === currentUser.username ||
-                      item.dosenId === currentUser.nip ||
-                      item.dosenId === currentUser.email ||
-                      item.dosenId === currentUser.id;
-    
-    console.log('🔍 Can dosen input nilai check:', {
-      userType,
-      status: currentStatus,
-      nilaiAkhir: item.nilaiAkhir,
-      mataKuliah: item.mataKuliah?.nama,
-      itemDosenId: item.dosenId,
-      currentUserIdentifiers: {
-        username: currentUser.username,
-        nip: currentUser.nip,
-        email: currentUser.email,
-        id: currentUser.id
-      },
-      isAssigned,
-      result: isAssigned
-    });
-    
-    return isAssigned;
+    return true; // Sekjur bisa input nilai untuk semua mata kuliah yang belum dinilai
   };
 
-  // ✅ NEW: Check if admin can input nilai untuk mata kuliah spesifik
-  const canAdminInputNilai = (item) => {
-    if (userType !== 'admin') return false;
-    const currentStatus = statusPerRow[item.id] || item.status;
-    
-    // Admin bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika belum ada nilai)
-    if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
-    
-    // ✅ FIXED: Cek apakah mata kuliah ini sudah dinilai
-    if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
-      return false; // Sudah ada nilai untuk mata kuliah ini
-    }
-    
-    console.log('🔍 Can admin input nilai check:', {
-      userType,
-      status: currentStatus,
-      nilaiAkhir: item.nilaiAkhir,
-      mataKuliah: item.mataKuliah?.nama,
-      result: true
-    });
-    
-    return true; // Admin bisa input nilai untuk semua mata kuliah yang belum dinilai
+  // Tambahkan fungsi untuk konversi nilai ke indeks huruf
+  const getIndeksHuruf = (nilai) => {
+    if (nilai == null || isNaN(nilai)) return '-';
+    if (nilai >= 85) return 'A';
+    if (nilai >= 70) return 'B';
+    if (nilai >= 55) return 'C';
+    if (nilai >= 40) return 'D';
+    return 'E';
   };
 
   if (pengajuanList.length === 0) {
@@ -262,9 +224,9 @@ const TabelPengajuanSA = ({
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          {/* ✅ CONDITIONAL HEADER - ADMIN vs OTHERS */}
-          {userType === 'admin' ? (
-            // 🎯 HEADER ADMIN - WITH MATA KULIAH
+          {/* ✅ CONDITIONAL HEADER - SEKJUR vs OTHERS */}
+          {userType === 'sekjur' ? (
+            // 🎯 HEADER SEKJUR - WITH MATA KULIAH
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">No</th>
@@ -276,6 +238,7 @@ const TabelPengajuanSA = ({
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Dosen</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nilai</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Indeks</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Aksi</th>
               </tr>
             </thead>
@@ -292,16 +255,20 @@ const TabelPengajuanSA = ({
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Tanggal</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Semester</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Dosen</th>
+                {/* Sembunyikan kolom Dosen jika userType === 'dosen' */}
+                {userType !== 'dosen' && (
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Dosen</th>
+                )}
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nilai</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Indeks</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Aksi</th>
               </tr>
             </thead>
           )}
 
-          {/* ✅ CONDITIONAL BODY - ADMIN vs OTHERS */}
-          {userType === 'admin' ? (
-            // 🎯 BODY ADMIN - SIMPLIFIED
+          {/* ✅ CONDITIONAL BODY - SEKJUR vs OTHERS */}
+          {userType === 'sekjur' ? (
+            // 🎯 BODY SEKJUR - SIMPLIFIED
             <tbody className="divide-y divide-gray-200">
               {currentRows.map((item, index) => (
                 <tr key={item.id || index} className="hover:bg-gray-50">
@@ -319,23 +286,30 @@ const TabelPengajuanSA = ({
                     </div>
                   </td>
 
-                  {/* Mata Kuliah - Admin View */}
+                  {/* Mata Kuliah - SEKJUR View */}
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {item.isGrouped ? (
-                      // GROUPED: Tampilkan gabungan mata kuliah
                       <div>
                         <div className="font-medium">
-                          {item.mataKuliah || 'Mata kuliah tidak tersedia'}
+                          {item.mataKuliahList && item.mataKuliahList.length > 0
+                            ? item.mataKuliahList.map((mk, idx) => (
+                                <span key={mk.id}>
+                                  {mk.nama} (Sem {mk.semester}){idx < item.mataKuliahList.length - 1 ? ', ' : ''}
+                                </span>
+                              ))
+                            : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
                         </div>
                         <div className="text-xs text-gray-500">
                           {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
-                      // NOT GROUPED: Tampilkan satu mata kuliah per baris  
                       <div>
                         <div className="font-medium">
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
+                          {item.mataKuliah?.semester && (
+                            <span> (Sem {item.mataKuliah.semester})</span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500">
                           {item.mataKuliah?.sks || 0} SKS
@@ -363,9 +337,15 @@ const TabelPengajuanSA = ({
 
                   {/* Semester */}
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                      {getSemesterFromDate(item.tanggalPengajuan)}
-                    </span>
+                    {typeof item.semesterPengajuan === 'number' ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        {`(Sem ${item.semesterPengajuan}) ${getSemesterFromDate(item.tanggalPengajuan)}`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                        Tidak diketahui
+                      </span>
+                    )}
                   </td>
 
                   {/* Status */}
@@ -403,7 +383,16 @@ const TabelPengajuanSA = ({
                     )}
                   </td>
 
-                  {/* Aksi Admin */}
+                  {/* Indeks */}
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {item.nilaiAkhir ? (
+                      <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                    ) : (
+                      <span className="text-gray-400 italic">Belum dinilai</span>
+                    )}
+                  </td>
+
+                  {/* Aksi SEKJUR */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button
@@ -456,22 +445,28 @@ const TabelPengajuanSA = ({
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {/* ✅ LOGIC TAMPILAN MATA KULIAH BERDASARKAN isGrouped */}
                     {item.isGrouped ? (
-                      // GROUPED: Tampilkan gabungan mata kuliah
                       <div>
                         <div className="font-medium">
-                          {item.mataKuliah || 'Mata kuliah tidak tersedia'}
+                          {item.mataKuliahList && item.mataKuliahList.length > 0
+                            ? item.mataKuliahList.map((mk, idx) => (
+                                <span key={mk.id}>
+                                  {mk.nama} (Sem {mk.semester}){idx < item.mataKuliahList.length - 1 ? ', ' : ''}
+                                </span>
+                              ))
+                            : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
                         </div>
                         <div className="text-xs text-gray-500">
                           {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
-                      // NOT GROUPED: Tampilkan satu mata kuliah per baris  
                       <div>
                         <div className="font-medium">
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
+                          {item.mataKuliah?.semester && (
+                            <span> (Sem {item.mataKuliah.semester})</span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500">
                           {item.mataKuliah?.sks || 0} SKS
@@ -493,9 +488,15 @@ const TabelPengajuanSA = ({
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                      {getSemesterFromDate(item.tanggalPengajuan)}
-                    </span>
+                    {typeof item.semesterPengajuan === 'number' ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        {`(Sem ${item.semesterPengajuan}) ${getSemesterFromDate(item.tanggalPengajuan)}`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                        Tidak diketahui
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {userType === 'dosen' && item.nilaiAkhir ? (
@@ -509,19 +510,22 @@ const TabelPengajuanSA = ({
                       <StatusBadge status={statusPerRow[item.id] || item.status} />
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {item.dosen ? (
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium">{item.dosen.nama}</div>
-                          <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
+                  {/* Kolom Dosen: hanya tampil jika userType bukan dosen */}
+                  {userType !== 'dosen' && (
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {item.dosen ? (
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-gray-400" />
+                          <div>
+                            <div className="font-medium">{item.dosen.nama}</div>
+                            <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic">Belum ditentukan</span>
-                    )}
-                  </td>
+                      ) : (
+                        <span className="text-gray-400 italic">Belum ditentukan</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
                       <div className="flex items-center gap-2">
@@ -532,10 +536,17 @@ const TabelPengajuanSA = ({
                       <span className="text-gray-400 italic">Belum dinilai</span>
                     )}
                   </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {item.nilaiAkhir ? (
+                      <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                    ) : (
+                      <span className="text-gray-400 italic">Belum dinilai</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* ✅ ENHANCED: Aksi Kaprodi - Assign Dosen */}
-                      {userType === 'kaprodi' && (statusPerRow[item.id] || item.status) === 'MENUNGGU_VERIFIKASI_KAPRODI' && !item.dosenId && !assignedRows[item.id] && (
+                      {/* ✅ ENHANCED: Aksi SEKJUR - Assign Dosen */}
+                      {userType === 'kaprodi' && (statusPerRow[item.id] || item.status) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
                         <div className="flex items-center gap-2">
                           <select
                             value={selectedDosenPerRow[item.id] || ''}
@@ -568,8 +579,8 @@ const TabelPengajuanSA = ({
                         </div>
                       )}
 
-                      {/* ✅ ENHANCED: Aksi Dosen - Input Nilai */}
-                      {canDosenInputNilai(item) && (
+                      {/* ✅ ENHANCED: Aksi SEKJUR - Input Nilai */}
+                      {canSekjurInputNilai(item) && (
                         <div className="flex items-center gap-2 bg-green-50 p-2 rounded border border-green-200">
                           <Edit3 className="w-4 h-4 text-green-600" />
                           <input
@@ -603,52 +614,6 @@ const TabelPengajuanSA = ({
                           </button>
                         </div>
                       )}
-
-                      {/* ✅ NEW: Aksi Admin - Input Nilai */}
-                      {canAdminInputNilai(item) && (
-                        <div className="flex items-center gap-2 bg-blue-50 p-2 rounded border border-blue-200">
-                          <Edit3 className="w-4 h-4 text-blue-600" />
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            placeholder="0-100"
-                            value={nilaiInputs[item.id] || ''}
-                            onChange={(e) => handleNilaiInputChange(item.id, e.target.value)}
-                            className="border border-gray-300 rounded px-2 py-1 text-xs w-20 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            disabled={isUpdating[item.id]}
-                          />
-                          <button
-                            onClick={() => handleUpdateNilai(item)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={`Input nilai untuk mata kuliah ${item.mataKuliah?.nama || 'SA'}`}
-                            disabled={!nilaiInputs[item.id] || isUpdating[item.id]}
-                          >
-                            {isUpdating[item.id] ? (
-                              <>
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="w-3 h-3" />
-                                Input
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* ✅ Button Lihat Bukti Pembayaran */}
-                      <button
-                        onClick={() => window.open(`http://localhost:5000/uploads/${item.buktiPembayaran}`, '_blank')}
-                        className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 flex items-center gap-1"
-                        title="Lihat bukti pembayaran"
-                      >
-                        <Eye className="w-3 h-3" />
-                        Lihat
-                      </button>
 
                       {/* ✅ Button Detail untuk semua user type */}
                       {(userType !== 'kaprodi' || (statusPerRow[item.id] || item.status) !== 'MENUNGGU_VERIFIKASI_KAPRODI' || item.dosenId || assignedRows[item.id]) && (

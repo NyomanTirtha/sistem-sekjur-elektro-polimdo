@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { XCircle, Send } from 'lucide-react';
 import { MATA_KULIAH_OPTIONS } from '../../constants/pengajuanSAConstants';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../utils/alertUtils';
+import ReactDOM from 'react-dom';
 
 const ModalMataKuliah = ({ 
   showModal, 
@@ -72,7 +73,7 @@ const ModalMataKuliah = ({
 
   if (!showModal) return null;
 
-  return (
+  return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
@@ -89,7 +90,7 @@ const ModalMataKuliah = ({
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <div className="text-sm text-green-700">
-                <strong>Pembayaran Anda telah diverifikasi Admin!</strong>
+                <strong>Pembayaran Anda telah diverifikasi Sekretaris Jurusan!</strong>
                 <p className="mt-1">Silakan isi form berikut untuk melanjutkan pengajuan SA Anda. Data ini akan dilihat oleh Kaprodi untuk verifikasi dan penentuan dosen pembimbing yang sesuai.</p>
               </div>
             </div>
@@ -160,7 +161,8 @@ const ModalMataKuliah = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

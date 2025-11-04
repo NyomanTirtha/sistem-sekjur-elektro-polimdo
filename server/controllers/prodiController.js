@@ -1,119 +1,439 @@
 const { PrismaClient } = require('@prisma/client');
+// Import helper functions dari auth.js
+const { createProdiFilter } = require('../routes/auth');
+
 const prisma = new PrismaClient();
 
-// Mengambil semua program studi
+// ✅ UPDATED: Mengambil semua program studi dengan filtering berdasarkan akses user
 const getAllProdi = async (req, res) => {
   try {
+    // Gunakan filter berdasarkan context user
+    const filter = createProdiFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk melihat data program studi' 
+      });
+    }
+
     const prodi = await prisma.programStudi.findMany({
+      where: filter,
       include: {
+        jurusan: true, // ✅ ADDED: Include relasi jurusan
         dosen: true,
-        mahasiswa: true
+        mahasiswa: true,
+        _count: {
+          select: {
+            dosen: true,
+            mahasiswa: true,
+            mataKuliah: true
+          }
+        }
+      },
+      orderBy: {
+        nama: 'asc'
       }
     });
-    res.json(prodi);
+
+    res.json({
+      success: true,
+      data: prodi,
+      userInfo: {
+        role: req.user?.role,
+        jurusan: req.user?.jurusan?.nama,
+        canAccessAll: req.userContext?.canAccessAll,
+        totalData: prodi.length
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error getting all prodi:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
-// Mengambil program studi berdasarkan ID
+// ✅ UPDATED: Mengambil program studi berdasarkan ID dengan access control
 const getProdiById = async (req, res) => {
   try {
-    const prodi = await prisma.programStudi.findUnique({
-      where: { id: parseInt(req.params.id) },
+    const prodiId = parseInt(req.params.id);
+    
+    // Cek akses user terlebih dahulu
+    const filter = createProdiFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk melihat data program studi' 
+      });
+    }
+
+    // Gabungkan filter dengan ID yang diminta
+    const prodi = await prisma.programStudi.findFirst({
+      where: {
+        id: prodiId,
+        ...filter // ✅ ADDED: Tambahkan filter akses
+      },
       include: {
-        dosen: true,
-        mahasiswa: true
+        jurusan: true, // ✅ ADDED: Include relasi jurusan
+        dosen: {
+          orderBy: { nama: 'asc' }
+        },
+        mahasiswa: {
+          orderBy: { nama: 'asc' }
+        },
+        mataKuliah: {
+          orderBy: [
+            { semester: 'asc' },
+            { nama: 'asc' }
+          ]
+        },
+        _count: {
+          select: {
+            dosen: true,
+            mahasiswa: true,
+            mataKuliah: true
+          }
+        }
       }
     });
+
     if (!prodi) {
-      return res.status(404).json({ error: 'Program Studi not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Program Studi tidak ditemukan atau tidak memiliki akses' 
+      });
     }
-    res.json(prodi);
+
+    res.json({
+      success: true,
+      data: prodi,
+      userInfo: {
+        role: req.user?.role,
+        jurusan: req.user?.jurusan?.nama
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error getting prodi by ID:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
-// Menambahkan program studi baru
+// ✅ UPDATED: Menambahkan program studi baru dengan validasi akses
 const createProdi = async (req, res) => {
   try {
-    const { nama, ketuaProdi } = req.body;
+    const { nama, ketuaProdi, jurusanId } = req.body;
     
     // Validasi input yang diperlukan
     if (!nama || !ketuaProdi) {
       return res.status(400).json({ 
+        success: false,
         error: 'Nama dan Ketua Program Studi wajib diisi' 
+      });
+    }
+
+    // ✅ ADDED: Validasi jurusanId diperlukan dengan schema baru
+    if (!jurusanId) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Jurusan ID wajib diisi' 
+      });
+    }
+
+    // ✅ ADDED: Cek akses user - sekjur hanya bisa buat prodi di jurusannya
+    if (req.userContext.jurusanId && req.userContext.jurusanId !== jurusanId) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk membuat program studi di jurusan ini' 
+      });
+    }
+
+    // ✅ ADDED: Validasi jurusan exists
+    const jurusan = await prisma.jurusan.findUnique({
+      where: { id: jurusanId }
+    });
+
+    if (!jurusan) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Jurusan tidak ditemukan' 
       });
     }
 
     const prodi = await prisma.programStudi.create({
       data: {
         nama,
-        ketuaProdi
+        ketuaProdi,
+        jurusanId // ✅ ADDED: Tambahkan jurusanId
+      },
+      include: {
+        jurusan: true
       }
     });
-    res.status(201).json(prodi);
+
+    res.status(201).json({
+      success: true,
+      message: 'Program Studi berhasil dibuat',
+      data: prodi
+    });
   } catch (error) {
+    console.error('Error creating prodi:', error);
     if (error.code === 'P2002') {
       return res.status(400).json({ 
+        success: false,
         error: 'Nama Program Studi sudah ada, gunakan nama yang berbeda' 
       });
     }
-    res.status(500).json({ error: error.message });
+    if (error.code === 'P2003') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Jurusan ID tidak valid' 
+      });
+    }
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
-// Memperbarui program studi berdasarkan ID
+// ✅ UPDATED: Memperbarui program studi dengan validasi akses
 const updateProdi = async (req, res) => {
   try {
-    const { nama, ketuaProdi } = req.body;
+    const prodiId = parseInt(req.params.id);
+    const { nama, ketuaProdi, jurusanId } = req.body;
     
     // Validasi input yang diperlukan
     if (!nama || !ketuaProdi) {
       return res.status(400).json({ 
+        success: false,
         error: 'Nama dan Ketua Program Studi wajib diisi' 
       });
     }
 
-    const prodi = await prisma.programStudi.update({
-      where: { id: parseInt(req.params.id) },
-      data: {
-        nama,
-        ketuaProdi
+    // ✅ ADDED: Cek akses user terlebih dahulu
+    const filter = createProdiFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk mengubah data program studi' 
+      });
+    }
+
+    // ✅ ADDED: Cek apakah prodi yang akan diupdate dapat diakses user
+    const existingProdi = await prisma.programStudi.findFirst({
+      where: {
+        id: prodiId,
+        ...filter
       }
     });
-    res.json(prodi);
+
+    if (!existingProdi) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Program Studi tidak ditemukan atau tidak memiliki akses' 
+      });
+    }
+
+    // ✅ ADDED: Jika jurusanId diubah, validasi akses
+    if (jurusanId && jurusanId !== existingProdi.jurusanId) {
+      if (req.userContext.jurusanId && req.userContext.jurusanId !== jurusanId) {
+        return res.status(403).json({ 
+          success: false,
+          error: 'Tidak memiliki akses untuk memindahkan program studi ke jurusan lain' 
+        });
+      }
+
+      // Validasi jurusan exists
+      const jurusan = await prisma.jurusan.findUnique({
+        where: { id: jurusanId }
+      });
+
+      if (!jurusan) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Jurusan tidak ditemukan' 
+        });
+      }
+    }
+
+    const updateData = {
+      nama,
+      ketuaProdi
+    };
+
+    // ✅ ADDED: Hanya tambahkan jurusanId jika disediakan
+    if (jurusanId) {
+      updateData.jurusanId = jurusanId;
+    }
+
+    const prodi = await prisma.programStudi.update({
+      where: { id: prodiId },
+      data: updateData,
+      include: {
+        jurusan: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Program Studi berhasil diperbarui',
+      data: prodi
+    });
   } catch (error) {
+    console.error('Error updating prodi:', error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Program Studi tidak ditemukan' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Program Studi tidak ditemukan' 
+      });
     }
     if (error.code === 'P2002') {
       return res.status(400).json({ 
+        success: false,
         error: 'Nama Program Studi sudah ada, gunakan nama yang berbeda' 
       });
     }
-    res.status(500).json({ error: error.message });
+    if (error.code === 'P2003') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Jurusan ID tidak valid' 
+      });
+    }
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
-// Menghapus program studi berdasarkan ID
+// ✅ UPDATED: Menghapus program studi dengan validasi akses
 const deleteProdi = async (req, res) => {
   try {
-    await prisma.programStudi.delete({
-      where: { id: parseInt(req.params.id) }
+    const prodiId = parseInt(req.params.id);
+    
+    // ✅ ADDED: Cek akses user terlebih dahulu
+    const filter = createProdiFilter(req.userContext);
+    
+    if (filter === null) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk menghapus data program studi' 
+      });
+    }
+
+    // ✅ ADDED: Cek apakah prodi yang akan dihapus dapat diakses user
+    const existingProdi = await prisma.programStudi.findFirst({
+      where: {
+        id: prodiId,
+        ...filter
+      },
+      include: {
+        _count: {
+          select: {
+            dosen: true,
+            mahasiswa: true,
+            mataKuliah: true
+          }
+        }
+      }
     });
-    res.json({ message: 'Program Studi deleted successfully' });
+
+    if (!existingProdi) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Program Studi tidak ditemukan atau tidak memiliki akses' 
+      });
+    }
+
+    // ✅ ADDED: Cek apakah masih ada data terkait
+    const { _count } = existingProdi;
+    if (_count.dosen > 0 || _count.mahasiswa > 0 || _count.mataKuliah > 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: `Tidak dapat menghapus Program Studi karena masih memiliki ${_count.dosen} dosen, ${_count.mahasiswa} mahasiswa, dan ${_count.mataKuliah} mata kuliah`
+      });
+    }
+
+    await prisma.programStudi.delete({
+      where: { id: prodiId }
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Program Studi berhasil dihapus' 
+    });
   } catch (error) {
+    console.error('Error deleting prodi:', error);
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Program Studi tidak ditemukan' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Program Studi tidak ditemukan' 
+      });
     }
     if (error.code === 'P2003') {
       return res.status(400).json({ 
-        error: 'Tidak dapat menghapus Program Studi karena masih memiliki data terkait (dosen/mahasiswa)' 
+        success: false,
+        error: 'Tidak dapat menghapus Program Studi karena masih memiliki data terkait' 
       });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+};
+
+// ✅ NEW: Get program studi berdasarkan jurusan (helper function)
+const getProdiByJurusan = async (req, res) => {
+  try {
+    const jurusanId = parseInt(req.params.jurusanId);
+    
+    // Validasi akses ke jurusan
+    if (req.userContext.jurusanId && req.userContext.jurusanId !== jurusanId) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Tidak memiliki akses untuk melihat program studi jurusan ini' 
+      });
+    }
+
+    const prodi = await prisma.programStudi.findMany({
+      where: { jurusanId: jurusanId },
+      include: {
+        jurusan: true,
+        _count: {
+          select: {
+            dosen: true,
+            mahasiswa: true,
+            mataKuliah: true
+          }
+        }
+      },
+      orderBy: {
+        nama: 'asc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: prodi,
+      userInfo: {
+        role: req.user?.role,
+        jurusan: req.user?.jurusan?.nama
+      }
+    });
+  } catch (error) {
+    console.error('Error getting prodi by jurusan:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
@@ -122,5 +442,6 @@ module.exports = {
   getProdiById,
   createProdi,
   updateProdi,
-  deleteProdi
+  deleteProdi,
+  getProdiByJurusan // ✅ NEW: Export function baru
 };

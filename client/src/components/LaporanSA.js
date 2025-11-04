@@ -8,6 +8,7 @@ import {
   FileText,
   Filter
 } from 'lucide-react';
+import { getSemesterFromDate } from '../utils/pengajuanSAUtils';
 
 const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList, onBack }) => {
   // State untuk filter laporan
@@ -20,6 +21,19 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
 
   // State untuk data yang difilter
   const [filteredData, setFilteredData] = useState([]);
+
+  // Generate daftar tahun ajaran ganjil/genap dari data pengajuanList
+  const getTahunAjaranOptions = () => {
+    const set = new Set();
+    pengajuanList.forEach(item => {
+      const periode = getSemesterFromDate(item.tanggalPengajuan);
+      if (periode) set.add(periode);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  };
+  const tahunAjaranOptions = getTahunAjaranOptions();
+  const [periodeDari, setPeriodeDari] = useState('');
+  const [periodeSampai, setPeriodeSampai] = useState('');
 
   // Animation variants
   const containerVariants = {
@@ -94,22 +108,15 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
   useEffect(() => {
     // Filter hanya data yang sudah selesai
     let filtered = pengajuanList.filter(item => {
-      // Handle both grouped and detailed data
       if (item.isGrouped) {
-        // For grouped data, check if all details are completed
         return item.status === 'SELESAI';
       } else {
-        // For detailed data, check individual status
         return item.status === 'SELESAI' && item.nilaiAkhir;
       }
     });
-
-    // Transform data untuk laporan
     let transformedData = [];
-    
     filtered.forEach(item => {
       if (item.isGrouped) {
-        // Handle grouped data - create entries for each detail
         if (item.details && item.details.length > 0) {
           item.details.forEach(detail => {
             if (detail.nilaiAkhir) {
@@ -123,13 +130,13 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
                 nilai: detail.nilaiAkhir,
                 status: item.status,
                 tanggal_pengajuan: item.tanggalPengajuan,
-                created_at: item.tanggalPengajuan
+                created_at: item.tanggalPengajuan,
+                tahun_ajaran: getSemesterFromDate(item.tanggalPengajuan)
               });
             }
           });
         }
       } else {
-        // Handle detailed data
         transformedData.push({
           id: item.id,
           nama_mahasiswa: item.mahasiswa?.nama || 'N/A',
@@ -140,54 +147,27 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
           nilai: item.nilaiAkhir,
           status: item.status,
           tanggal_pengajuan: item.tanggalPengajuan,
-          created_at: item.tanggalPengajuan
+          created_at: item.tanggalPengajuan,
+          tahun_ajaran: getSemesterFromDate(item.tanggalPengajuan)
         });
       }
     });
-
-    // Filter berdasarkan periode
-    if (selectedPeriod !== 'all') {
-      const now = new Date();
-      let startDate, endDate;
-
-      switch (selectedPeriod) {
-        case 'thisMonth':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          break;
-        case 'lastMonth':
-          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-          break;
-        case 'thisYear':
-          startDate = new Date(now.getFullYear(), 0, 1);
-          endDate = new Date(now.getFullYear(), 11, 31);
-          break;
-        case 'custom':
-          if (dateRange.startDate && dateRange.endDate) {
-            startDate = new Date(dateRange.startDate);
-            endDate = new Date(dateRange.endDate);
-          }
-          break;
-        default:
-          break;
-      }
-
-      if (startDate && endDate) {
-        transformedData = transformedData.filter(item => {
-          const itemDate = new Date(item.tanggal_pengajuan || item.created_at);
-          return itemDate >= startDate && itemDate <= endDate;
-        });
+    // Filter berdasarkan tahun ajaran (periode dari & sampai)
+    if (periodeDari && periodeSampai) {
+      const idxDari = tahunAjaranOptions.indexOf(periodeDari);
+      const idxSampai = tahunAjaranOptions.indexOf(periodeSampai);
+      if (idxDari !== -1 && idxSampai !== -1) {
+        const [start, end] = idxDari <= idxSampai ? [idxDari, idxSampai] : [idxSampai, idxDari];
+        const allowed = tahunAjaranOptions.slice(start, end + 1);
+        transformedData = transformedData.filter(item => allowed.includes(item.tahun_ajaran));
       }
     }
-
     // Filter berdasarkan dosen (jika dipilih)
     if (selectedDosen !== 'all') {
       transformedData = transformedData.filter(item => item.dosen_nip === selectedDosen);
     }
-
     setFilteredData(transformedData);
-  }, [pengajuanList, selectedPeriod, dateRange, selectedDosen, dosenList]);
+  }, [pengajuanList, periodeDari, periodeSampai, selectedDosen, dosenList]);
 
   // Kalkulasi statistik per dosen - hanya yang selesai
   const getDosenStatistics = () => {
@@ -373,12 +353,7 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
       <body>
         <div class="header">
           <h1>LAPORAN STUDI AKADEMIK (SA) SELESAI</h1>
-          <p>Periode: ${selectedPeriod === 'all' ? 'Semua Periode' : 
-                      selectedPeriod === 'thisMonth' ? 'Bulan Ini' :
-                      selectedPeriod === 'lastMonth' ? 'Bulan Lalu' :
-                      selectedPeriod === 'thisYear' ? 'Tahun Ini' :
-                      selectedPeriod === 'custom' && dateRange.startDate && dateRange.endDate ? 
-                      `${dateRange.startDate} s/d ${dateRange.endDate}` : 'Custom'}</p>
+          <p>Periode: ${periodeDari && periodeSampai ? `${periodeDari} s/d ${periodeSampai}` : 'Semua Periode'}</p>
           <p>Dosen: ${selectedDosen === 'all' ? 'Semua Dosen' : 
                      dosenList.find(d => (d.nip === selectedDosen || d.id === selectedDosen))?.nama ||
                      dosenList.find(d => (d.nip === selectedDosen || d.id === selectedDosen))?.name ||
@@ -387,32 +362,6 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
           })}</p>
         </div>
-
-        ${monthlyTrend.length > 0 ? `
-        <div class="section-title">TREN BULANAN</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Bulan</th>
-              <th>Total Studi Akademik</th>
-              <th>Rata-rata Nilai</th>
-              <th>Mahasiswa Lulus</th>
-              <th>Tingkat Kelulusan</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${monthlyTrend.map(trend => `
-              <tr>
-                <td>${trend.month}</td>
-                <td class="text-center">${trend.total}</td>
-                <td class="text-center">${trend.rata_rata_nilai}</td>
-                <td class="text-center">${trend.mahasiswa_lulus}</td>
-                <td class="text-center">${trend.tingkat_kelulusan}%</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        ` : ''}
 
         <div class="section-title">DATA DETAIL MAHASISWA STUDI AKADEMIK</div>
         <table>
@@ -452,7 +401,6 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
       </body>
       </html>
     `;
-    
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.focus();
@@ -490,7 +438,7 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Laporan Studi Akademik (SA)</h1>
             <p className="text-gray-600">
-              {userType === 'admin' ? 'Laporan Verifikasi Pembayaran' : 'Laporan Verifikasi & Penugasan'}
+              {userType === 'admin' ? 'Laporan Verifikasi Pembayaran Sekjur' : 'Laporan Verifikasi & Penugasan'}
             </p>
           </div>
         </div>
@@ -530,65 +478,38 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Periode Filter */}
+          {/* Periode Tahun Ajaran Dari */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Periode
+              Periode Dari
             </label>
             <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
+              value={periodeDari}
+              onChange={e => setPeriodeDari(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {periodOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+              <option value="">Pilih Periode</option>
+              {tahunAjaranOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           </motion.div>
-
-          {/* Custom Date Range */}
-          <AnimatePresence>
-            {selectedPeriod === 'custom' && (
-              <>
-                <motion.div
-                  variants={itemVariants}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Mulai
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.startDate}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </motion.div>
-                <motion.div
-                  variants={itemVariants}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Selesai
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.endDate}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          {/* Periode Tahun Ajaran Sampai */}
+          <motion.div variants={itemVariants}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Periode Sampai
+            </label>
+            <select
+              value={periodeSampai}
+              onChange={e => setPeriodeSampai(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Pilih Periode</option>
+              {tahunAjaranOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </motion.div>
 
           {/* Dosen Filter */}
           <motion.div variants={itemVariants}>

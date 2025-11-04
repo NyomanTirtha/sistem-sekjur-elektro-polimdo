@@ -32,17 +32,21 @@ const getAllPengajuanSA = async (req, res) => {
         mataKuliahList: pengajuan.details.map(d => ({
           id: d.mataKuliah.id,
           nama: d.mataKuliah.nama,
-          sks: d.mataKuliah.sks
+          sks: d.mataKuliah.sks,
+          semester: d.mataKuliah.semester
         })),
         totalSKS: pengajuan.details.reduce((sum, d) => sum + d.mataKuliah.sks, 0),
         jumlahMataKuliah: pengajuan.details.length,
         buktiPembayaran: pengajuan.buktiPembayaran,
         tanggalPengajuan: pengajuan.tanggalPengajuan,
+        semesterPengajuan: pengajuan.semesterPengajuan,
         status: pengajuan.status,
         keterangan: pengajuan.keterangan, // Dari master table
         nominal: pengajuan.nominal,
         keteranganReject: pengajuan.keteranganReject,
-        isGrouped: true
+        isGrouped: true,
+        dosen: pengajuan.details[0]?.dosen || null,
+        dosenId: pengajuan.details[0]?.dosenId || null
       }));
 
       res.json(transformedData);
@@ -72,11 +76,15 @@ const getAllPengajuanSA = async (req, res) => {
         id: detail.id,
         pengajuanSAId: detail.pengajuanSAId,
         mahasiswa: detail.pengajuanSA.mahasiswa,
-        mataKuliah: detail.mataKuliah,
+        mataKuliah: {
+          ...detail.mataKuliah,
+          semester: detail.mataKuliah.semester
+        },
         dosen: detail.dosen,
         nilaiAkhir: detail.nilaiAkhir,
         buktiPembayaran: detail.pengajuanSA.buktiPembayaran,
         tanggalPengajuan: detail.pengajuanSA.tanggalPengajuan,
+        semesterPengajuan: detail.pengajuanSA.semesterPengajuan,
         status: detail.pengajuanSA.status,
         keterangan: detail.pengajuanSA.keterangan,
         nominal: detail.pengajuanSA.nominal,
@@ -124,13 +132,17 @@ const getPengajuanSAByMahasiswa = async (req, res) => {
       mahasiswa: pengajuan.mahasiswa,
       details: pengajuan.details.map(detail => ({
         id: detail.id,
-        mataKuliah: detail.mataKuliah,
+        mataKuliah: {
+          ...detail.mataKuliah,
+          semester: detail.mataKuliah.semester
+        },
         dosen: detail.dosen,
         nilaiAkhir: detail.nilaiAkhir
         // TIDAK include keterangan karena tidak ada di detail
       })),
       buktiPembayaran: pengajuan.buktiPembayaran,
       tanggalPengajuan: pengajuan.tanggalPengajuan,
+      semesterPengajuan: pengajuan.semesterPengajuan,
       status: pengajuan.status,
       keterangan: pengajuan.keterangan, // Dari master table
       nominal: pengajuan.nominal,
@@ -180,11 +192,15 @@ const getPengajuanSAByDosen = async (req, res) => {
       id: detail.id,
       pengajuanSAId: detail.pengajuanSAId,
       mahasiswa: detail.pengajuanSA.mahasiswa,
-      mataKuliah: detail.mataKuliah,
+      mataKuliah: {
+        ...detail.mataKuliah,
+        semester: detail.mataKuliah.semester
+      },
       dosen: detail.dosen,
       nilaiAkhir: detail.nilaiAkhir,
       buktiPembayaran: detail.pengajuanSA.buktiPembayaran,
       tanggalPengajuan: detail.pengajuanSA.tanggalPengajuan,
+      semesterPengajuan: detail.pengajuanSA.semesterPengajuan,
       status: detail.pengajuanSA.status,
       keterangan: detail.pengajuanSA.keterangan,
       nominal: detail.pengajuanSA.nominal,
@@ -329,7 +345,8 @@ const createPengajuanSA = async (req, res) => {
           buktiPembayaran: req.file.filename,
           keterangan: keterangan || 'Pengajuan SA', // Keterangan hanya di master
           nominal: parseFloat(nominal),
-          status: 'PROSES_PENGAJUAN'
+          status: 'PROSES_PENGAJUAN',
+          semesterPengajuan: mahasiswaExists.semester
         }
       });
 

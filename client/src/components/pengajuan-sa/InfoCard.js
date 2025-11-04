@@ -9,8 +9,8 @@ const InfoCard = ({ userType }) => {
           <div>
             <strong>Alur Pengajuan SA:</strong>
             <ol className="list-decimal list-inside mt-2 space-y-1">
-              <li><strong>Upload bukti pembayaran & pilih mata kuliah</strong> - Status: "Menunggu Verifikasi Admin"</li>
-              <li><strong>Admin verifikasi pembayaran</strong> - Status berubah: "Menunggu Verifikasi Kaprodi"</li>
+              <li><strong>Upload bukti pembayaran & pilih mata kuliah</strong> - Status: "Menunggu Verifikasi Sekretaris Jurusan"</li>
+              <li><strong>Sekretaris Jurusan verifikasi pembayaran</strong> - Status berubah: "Menunggu Verifikasi Kaprodi"</li>
               <li><strong>Kaprodi verifikasi dan tentukan dosen pembimbing</strong> - Status: "Dalam Proses SA"</li>
               <li><strong>Dosen memberikan bimbingan dan nilai akhir</strong> - Status: "Selesai"</li>
             </ol>
@@ -19,10 +19,10 @@ const InfoCard = ({ userType }) => {
             </div>
           </div>
         );
-      case 'admin':
+      case 'sekjur':
         return (
           <div>
-            <strong>Tugas Admin:</strong> Verifikasi bukti pembayaran mahasiswa. Periksa nominal, tanggal, dan validitas pembayaran sebelum menyetujui atau menolak pengajuan.
+            <strong>Tugas Sekretaris Jurusan:</strong> Verifikasi bukti pembayaran mahasiswa. Periksa nominal, tanggal, dan validitas pembayaran sebelum menyetujui atau menolak pengajuan.
             <br /><em>💡 Tip: Gunakan tombol "Verifikasi" untuk menyetujui atau "Tolak" untuk menolak dengan alasan.</em>
           </div>
         );

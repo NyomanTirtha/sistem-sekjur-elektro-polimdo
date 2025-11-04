@@ -53,12 +53,12 @@ export default function DosenList({ authToken, currentUser }) {
 
   // Check if user has permission to add/edit
   const canAddEdit = () => {
-    return ['admin', 'kaprodi'].includes(userRole);
+    return ['sekjur', 'kaprodi'].includes(userRole);
   };
 
   // Check if user has permission to delete
   const canDelete = () => {
-    return ['admin'].includes(userRole);
+    return ['sekjur'].includes(userRole);
   };
 
   // Reset to first page when search or filter changes

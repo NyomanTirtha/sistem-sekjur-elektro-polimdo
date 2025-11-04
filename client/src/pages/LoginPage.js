@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle, Shield } from 'lucide-react';
 import logoLogin from '../assets/images/xyz-logo.png';
 
+const useDocumentTitle = (title) => {
+  useEffect(() => {
+    // ✅ UPDATED: Title sekarang dinamis berdasarkan jurusan
+    document.title = title ? `${title} - Sistem Sekretaris Jurusan` : 'Sistem Sekretaris Jurusan';
+    
+    // Cleanup function untuk reset title saat component unmount
+    return () => {
+      document.title = 'Sistem Sekretaris Jurusan';
+    };
+  }, [title]);
+};
+
 const LoginPage = ({ onLoginSuccess }) => {
+  useDocumentTitle('Login');
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: 'ADMIN'
+    role: 'SEKJUR' // ✅ CHANGED: Default role dari ADMIN ke SEKJUR
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,18 +62,25 @@ const LoginPage = ({ onLoginSuccess }) => {
         const token = result.data.token;
         window.authToken = token;
         
+        // ✅ UPDATED: Enhanced userData dengan info jurusan
         const userData = {
           id: result.data.user.id,
           username: result.data.user.username,
           nama: result.data.user.nama,
           role: result.data.user.role,
+          // ✅ ADDED: Jurusan info untuk SEKJUR
+          ...(result.data.user.jurusanId && { jurusanId: result.data.user.jurusanId }),
+          ...(result.data.user.jurusan && { jurusan: result.data.user.jurusan }),
+          // Existing fields
           ...(result.data.user.nip && { nip: result.data.user.nip }),
           ...(result.data.user.nim && { nim: result.data.user.nim }),
           ...(result.data.user.programStudi && { programStudi: result.data.user.programStudi }),
-          ...(result.data.user.jurusan && { jurusan: result.data.user.jurusan }),
+          ...(result.data.user.prodi && { prodi: result.data.user.prodi }), // ✅ ADDED: Support prodi field untuk dosen
           ...(result.data.user.isKaprodi !== undefined && { isKaprodi: result.data.user.isKaprodi }),
           ...(result.data.user.angkatan && { angkatan: result.data.user.angkatan }),
-          ...(result.data.user.semester && { semester: result.data.user.semester })
+          ...(result.data.user.semester && { semester: result.data.user.semester }),
+          ...(result.data.user.noTelp && { noTelp: result.data.user.noTelp }),
+          ...(result.data.user.alamat && { alamat: result.data.user.alamat })
         };
         
         const userType = getRoleMapping(result.data.user.role);
@@ -68,6 +88,13 @@ const LoginPage = ({ onLoginSuccess }) => {
         localStorage.setItem('token', token);
         localStorage.setItem('userData', JSON.stringify(userData));
         localStorage.setItem('userType', userType);
+        
+        console.log('✅ Login successful:', {
+          role: result.data.user.role,
+          jurusan: result.data.user.jurusan?.nama,
+          userType: userType,
+          hasJurusanAccess: !!result.data.user.jurusanId
+        });
         
         if (onLoginSuccess) {
           onLoginSuccess(userData, userType, { token });
@@ -85,7 +112,7 @@ const LoginPage = ({ onLoginSuccess }) => {
 
   const getRoleMapping = (backendRole) => {
     const roleMapping = {
-      'ADMIN': 'admin',
+      'SEKJUR': 'sekjur',     // ✅ CHANGED: Admin -> Sekjur
       'MAHASISWA': 'mahasiswa',
       'DOSEN': 'dosen',
       'KAPRODI': 'kaprodi'
@@ -138,7 +165,8 @@ const LoginPage = ({ onLoginSuccess }) => {
                 POLITEKNIK NEGERI MANADO
               </h1>
               <p className="text-blue-100 text-sm font-medium">
-                Sistem Informasi Akademik
+                {/* ✅ UPDATED: Subtitle yang lebih tepat */}
+                Sistem Sekretaris Jurusan
               </p>
             </div>
           </div>
@@ -163,11 +191,12 @@ const LoginPage = ({ onLoginSuccess }) => {
                   Pilih Role
                 </label>
                 <div className="grid grid-cols-2 gap-3">
+                  {/* ✅ UPDATED: Role options sesuai sistem baru */}
                   {[
-                    { value: 'ADMIN', label: 'Admin', color: 'from-gray-500 to-gray-600', icon: '👨‍💼' },
-                    { value: 'DOSEN', label: 'Dosen', color: 'from-blue-500 to-blue-600', icon: '👨‍🏫' },
-                    { value: 'KAPRODI', label: 'Kaprodi', color: 'from-yellow-500 to-yellow-600', icon: '👨‍🎓' },
-                    { value: 'MAHASISWA', label: 'Mahasiswa', color: 'from-green-500 to-green-600', icon: '👨‍🎓' }
+                    { value: 'SEKJUR', label: 'Sekretaris Jurusan', color: 'from-blue-500 to-blue-600', icon: '👨‍💼' },
+                    { value: 'DOSEN', label: 'Dosen', color: 'from-green-500 to-green-600', icon: '👨‍🏫' },
+                    { value: 'KAPRODI', label: 'Ketua Prodi', color: 'from-yellow-500 to-yellow-600', icon: '👨‍🎓' },
+                    { value: 'MAHASISWA', label: 'Mahasiswa', color: 'from-purple-500 to-purple-600', icon: '🎓' }
                   ].map((roleOption) => (
                     <button
                       key={roleOption.value}
@@ -192,7 +221,10 @@ const LoginPage = ({ onLoginSuccess }) => {
               {/* Username Input */}
               <div>
                 <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Username
+                  {/* ✅ UPDATED: Dynamic label berdasarkan role */}
+                  {formData.role === 'MAHASISWA' ? 'NIM' : 
+                   formData.role === 'DOSEN' || formData.role === 'KAPRODI' ? 'NIP' : 
+                   'Username'}
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -207,10 +239,20 @@ const LoginPage = ({ onLoginSuccess }) => {
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
                     className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                    placeholder="Masukkan username"
+                    placeholder={
+                      formData.role === 'MAHASISWA' ? 'Masukkan NIM' : 
+                      formData.role === 'DOSEN' || formData.role === 'KAPRODI' ? 'Masukkan NIP' : 
+                      'Masukkan username'
+                    }
                     disabled={loading}
                   />
                 </div>
+                {/* ✅ ADDED: Helper text untuk user */}
+                <p className="mt-1 text-xs text-gray-500">
+                  {formData.role === 'SEKJUR' && 'Gunakan username sekretaris jurusan (contoh: sekjur_elektro)'}
+                  {formData.role === 'MAHASISWA' && 'Masukkan NIM Anda'}
+                  {(formData.role === 'DOSEN' || formData.role === 'KAPRODI') && 'Masukkan NIP Anda'}
+                </p>
               </div>
 
               {/* Password Input */}
@@ -247,6 +289,10 @@ const LoginPage = ({ onLoginSuccess }) => {
                     )}
                   </button>
                 </div>
+                {/* ✅ ADDED: Helper text untuk password default */}
+                <p className="mt-1 text-xs text-gray-500">
+                  Password default: 123456
+                </p>
               </div>
 
               {/* Submit Button */}
@@ -267,9 +313,16 @@ const LoginPage = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* Footer Section */}
+          {/* Footer Section - ✅ ADDED: Quick login info */}
           <div className="px-8 pb-6">
-            {/* Footer content removed */}
+            <div className="bg-blue-50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">Akun Demo:</h4>
+              <div className="text-xs text-blue-700 space-y-1">
+                <div>• Sekjur Elektro: <code className="bg-blue-100 px-1 rounded">sekjur_elektro</code></div>
+                <div>• Sekjur Informatika: <code className="bg-blue-100 px-1 rounded">sekjur_informatika</code></div>
+                <div>• Password semua: <code className="bg-blue-100 px-1 rounded">123456</code></div>
+              </div>
+            </div>
           </div>
         </div>
 

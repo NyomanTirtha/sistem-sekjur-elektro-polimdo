@@ -1,7 +1,7 @@
 export const STATUS_CONFIG = {
   'PROSES_PENGAJUAN': { 
     color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
-    text: 'Menunggu Verifikasi Admin'
+    text: 'Menunggu Verifikasi Sekjur'
   },
   'MENUNGGU_VERIFIKASI_KAPRODI': { 
     color: 'bg-orange-100 text-orange-800 border-orange-200', 

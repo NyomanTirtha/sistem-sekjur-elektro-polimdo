@@ -84,7 +84,7 @@ export default function App() {
   // Helper function to map backend roles to frontend userTypes  
   const getRoleMapping = (backendRole) => {
     const roleMapping = {
-      'ADMIN': 'admin',
+      'SEKJUR': 'sekjur',
       'MAHASISWA': 'mahasiswa', 
       'DOSEN': 'dosen',
       'KAPRODI': 'kaprodi'
@@ -100,7 +100,7 @@ export default function App() {
       icon: ClipboardList,
       component: ProdiList,
       description: 'Kelola data program studi',
-      allowedRoles: ['admin'] // Only admin can access
+      allowedRoles: ['sekjur'] // Only sekjur can access
     },
     {
       id: 'dosen',
@@ -108,7 +108,7 @@ export default function App() {
       icon: GraduationCap,
       component: DosenList,
       description: 'Kelola data dosen',
-      allowedRoles: ['admin'] // Only admin can access
+      allowedRoles: ['sekjur'] // Only sekjur can access
     },
     {
       id: 'mahasiswa',
@@ -116,7 +116,7 @@ export default function App() {
       icon: Users,
       component: MahasiswaList,
       description: 'Kelola data mahasiswa',
-      allowedRoles: ['admin', 'dosen', 'kaprodi'] // Admin, Dosen, and Kaprodi can access
+      allowedRoles: ['sekjur', 'dosen', 'kaprodi'] // Sekjur, Dosen, and Kaprodi can access
     },
     {
       id: 'pengajuan-sa',
@@ -124,7 +124,7 @@ export default function App() {
       icon: FileText,
       component: PengajuanSAList,
       description: 'Kelola pengajuan SA',
-      allowedRoles: ['admin', 'dosen', 'mahasiswa', 'kaprodi'] // All roles can access
+      allowedRoles: ['sekjur', 'dosen', 'mahasiswa', 'kaprodi'] // All roles can access
     },
     {
       id: 'users',
@@ -132,7 +132,7 @@ export default function App() {
       icon: Users,
       component: UsersList,
       description: 'Kelola akun yang terdaftar di sistem',
-      allowedRoles: ['admin']
+      allowedRoles: ['sekjur']
     }
   ];
 
@@ -206,7 +206,7 @@ export default function App() {
       let defaultTab;
       
       switch(mappedUserType) {
-        case 'admin':
+        case 'sekjur':
           defaultTab = 'prodi';
           break;
         case 'dosen':
@@ -259,7 +259,7 @@ export default function App() {
       let defaultTab;
       
       switch(userType) {
-        case 'admin':
+        case 'sekjur':
           defaultTab = 'prodi';
           break;
         case 'dosen':

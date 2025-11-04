@@ -18,15 +18,17 @@ import {
   Clock,
   IdCard,
   CheckCircle,
-  Settings
+  Settings,
+  Building2, // ✅ ADDED: Icon untuk jurusan
+  Users      // ✅ ADDED: Icon untuk program studi
 } from 'lucide-react';
 import axios from 'axios';
 import { usePasswordChange } from '../../hooks/usePasswordChange';
 
 const Header = ({ 
   title = "Dashboard", 
-  user = "Dr. Budi Santoso, M.Kom", 
-  role = "Kaprodi",
+  user = "Sekretaris Jurusan", 
+  role = "SEKJUR", // ✅ CHANGED: Default role
   onNotificationUpdate = () => {},
   onToggleSidebar,
   sidebarCollapsed = false,
@@ -50,6 +52,41 @@ const Header = ({
 
   // Use the password change hook
   const { changePassword, isLoading, success, resetMessages } = usePasswordChange(authToken, currentUser);
+
+  // ✅ ADDED: Get display name dan role label
+  const getDisplayInfo = () => {
+    const normalizedRole = currentUser.role?.toUpperCase() || role.toUpperCase();
+    
+    let displayName = currentUser.nama || currentUser.name || user;
+    let roleLabel = '';
+    let subtitle = '';
+
+    switch (normalizedRole) {
+      case 'SEKJUR':
+        roleLabel = 'Sekretaris Jurusan';
+        subtitle = currentUser.jurusan?.nama ? `Jurusan ${currentUser.jurusan.nama}` : 'Sekretaris Jurusan';
+        break;
+      case 'KAPRODI':
+        roleLabel = 'Ketua Program Studi';
+        subtitle = currentUser.prodi?.nama || currentUser.programStudi?.nama || 'Ketua Program Studi';
+        break;
+      case 'DOSEN':
+        roleLabel = 'Dosen';
+        subtitle = currentUser.prodi?.nama || currentUser.programStudi?.nama || 'Dosen';
+        break;
+      case 'MAHASISWA':
+        roleLabel = 'Mahasiswa';
+        subtitle = currentUser.programStudi?.nama || currentUser.prodi?.nama || 'Mahasiswa';
+        break;
+      default:
+        roleLabel = role;
+        subtitle = 'Politeknik Negeri Manado';
+    }
+
+    return { displayName, roleLabel, subtitle };
+  };
+
+  const { displayName, roleLabel, subtitle } = getDisplayInfo();
 
   // Animation variants for Framer Motion
   const dropdownVariants = {
@@ -286,7 +323,7 @@ const Header = ({
     resetMessages();
   };
 
-  // Function to render profile fields based on role
+  // ✅ UPDATED: Function to render profile fields based on role
   const renderProfileFields = () => {
     const userRole = currentUser.role || role;
     const normalizedRole = userRole?.toUpperCase();
@@ -296,6 +333,8 @@ const Header = ({
     console.log('Current User:', currentUser);
     console.log('User Role:', userRole);
     console.log('Normalized Role:', normalizedRole);
+    console.log('Jurusan:', currentUser.jurusan);
+    console.log('JurusanId:', currentUser.jurusanId);
     console.log('NIP:', currentUser.nip);
     console.log('NIM:', currentUser.nim);
     console.log('NoTelp:', currentUser.noTelp);
@@ -304,7 +343,36 @@ const Header = ({
     console.log('Prodi:', currentUser.prodi);
     console.log('=====================');
 
-    // Role-specific fields
+    // ✅ ADDED: SEKJUR role handling
+    if (normalizedRole === 'SEKJUR') {
+      return [
+        <div key="username" className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <IdCard className="w-5 h-5 text-blue-600" />
+          <div>
+            <span className="text-sm font-medium text-blue-900">Username</span>
+            <p className="text-sm text-blue-700">{currentUser.username || 'Tidak tersedia'}</p>
+          </div>
+        </div>,
+        <div key="jurusan" className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <Building2 className="w-5 h-5 text-purple-600" />
+          <div>
+            <span className="text-sm font-medium text-purple-900">Jurusan</span>
+            <p className="text-sm text-purple-700">{currentUser.jurusan?.nama || 'Tidak tersedia'}</p>
+          </div>
+        </div>,
+        <div key="access" className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+          <Shield className="w-5 h-5 text-green-600" />
+          <div>
+            <span className="text-sm font-medium text-green-900">Akses Data</span>
+            <p className="text-sm text-green-700">
+              {currentUser.jurusan?.nama ? `Data Jurusan ${currentUser.jurusan.nama}` : 'Terbatas'}
+            </p>
+          </div>
+        </div>
+      ].filter(Boolean);
+    }
+
+    // Role-specific fields untuk role lainnya
     if (normalizedRole === 'MAHASISWA') {
       return [
         <div key="nim" className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -321,6 +389,15 @@ const Header = ({
             <p className="text-sm text-purple-700">{currentUser.programStudi?.nama || currentUser.prodi?.nama || 'Tidak tersedia'}</p>
           </div>
         </div>,
+        <div key="jurusan" className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+          <Building2 className="w-5 h-5 text-indigo-600" />
+          <div>
+            <span className="text-sm font-medium text-indigo-900">Jurusan</span>
+            <p className="text-sm text-indigo-700">
+              {currentUser.programStudi?.jurusan?.nama || currentUser.prodi?.jurusan?.nama || 'Tidak tersedia'}
+            </p>
+          </div>
+        </div>,
         <div key="angkatan" className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
           <Calendar className="w-5 h-5 text-orange-600" />
           <div>
@@ -328,11 +405,11 @@ const Header = ({
             <p className="text-sm text-orange-700">{currentUser.angkatan || 'Tidak tersedia'}</p>
           </div>
         </div>,
-        <div key="semester" className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-          <GraduationCap className="w-5 h-5 text-indigo-600" />
+        <div key="semester" className="flex items-center space-x-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+          <GraduationCap className="w-5 h-5 text-cyan-600" />
           <div>
-            <span className="text-sm font-medium text-indigo-900">Semester</span>
-            <p className="text-sm text-indigo-700">{currentUser.semester || 'Tidak tersedia'}</p>
+            <span className="text-sm font-medium text-cyan-900">Semester</span>
+            <p className="text-sm text-cyan-700">{currentUser.semester || 'Tidak tersedia'}</p>
           </div>
         </div>,
         <div key="phone" className="flex items-center space-x-3 p-3 bg-teal-50 rounded-lg border border-teal-200">
@@ -342,11 +419,11 @@ const Header = ({
             <p className="text-sm text-teal-700">{currentUser.noTelp || 'Tidak tersedia'}</p>
           </div>
         </div>,
-        <div key="address" className="flex items-center space-x-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-          <MapPin className="w-5 h-5 text-cyan-600" />
+        <div key="address" className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+          <MapPin className="w-5 h-5 text-pink-600" />
           <div>
-            <span className="text-sm font-medium text-cyan-900">Alamat</span>
-            <p className="text-sm text-cyan-700">{currentUser.alamat || 'Tidak tersedia'}</p>
+            <span className="text-sm font-medium text-pink-900">Alamat</span>
+            <p className="text-sm text-pink-700">{currentUser.alamat || 'Tidak tersedia'}</p>
           </div>
         </div>
       ].filter(Boolean);
@@ -359,6 +436,33 @@ const Header = ({
             <p className="text-sm text-blue-700">{currentUser.nip || 'Tidak tersedia'}</p>
           </div>
         </div>,
+        <div key="prodi" className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <Building className="w-5 h-5 text-purple-600" />
+          <div>
+            <span className="text-sm font-medium text-purple-900">Program Studi</span>
+            <p className="text-sm text-purple-700">{currentUser.prodi?.nama || currentUser.programStudi?.nama || 'Tidak tersedia'}</p>
+          </div>
+        </div>,
+        <div key="jurusan" className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+          <Building2 className="w-5 h-5 text-indigo-600" />
+          <div>
+            <span className="text-sm font-medium text-indigo-900">Jurusan</span>
+            <p className="text-sm text-indigo-700">
+              {currentUser.prodi?.jurusan?.nama || currentUser.programStudi?.jurusan?.nama || 'Tidak tersedia'}
+            </p>
+          </div>
+        </div>,
+        ...(normalizedRole === 'KAPRODI' ? [
+          <div key="kaprodi-status" className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <Users className="w-5 h-5 text-amber-600" />
+            <div>
+              <span className="text-sm font-medium text-amber-900">Status</span>
+              <p className="text-sm text-amber-700">
+                {currentUser.isKaprodi ? 'Ketua Program Studi' : 'Dosen'}
+              </p>
+            </div>
+          </div>
+        ] : []),
         <div key="phone" className="flex items-center space-x-3 p-3 bg-teal-50 rounded-lg border border-teal-200">
           <Phone className="w-5 h-5 text-teal-600" />
           <div>
@@ -366,34 +470,13 @@ const Header = ({
             <p className="text-sm text-teal-700">{currentUser.noTelp || 'Tidak tersedia'}</p>
           </div>
         </div>,
-        <div key="address" className="flex items-center space-x-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
-          <MapPin className="w-5 h-5 text-cyan-600" />
+        <div key="address" className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+          <MapPin className="w-5 h-5 text-pink-600" />
           <div>
-            <span className="text-sm font-medium text-cyan-900">Alamat</span>
-            <p className="text-sm text-cyan-700">{currentUser.alamat || 'Tidak tersedia'}</p>
+            <span className="text-sm font-medium text-pink-900">Alamat</span>
+            <p className="text-sm text-pink-700">{currentUser.alamat || 'Tidak tersedia'}</p>
           </div>
         </div>
-      ].filter(Boolean);
-    } else if (normalizedRole === 'ADMIN') {
-      return [
-        currentUser.nama && (
-          <div key="nama" className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
-            <User className="w-5 h-5 text-green-600" />
-            <div>
-              <span className="text-sm font-medium text-green-900">Nama Lengkap</span>
-              <p className="text-sm text-green-700">{currentUser.nama}</p>
-            </div>
-          </div>
-        ),
-        currentUser.username && (
-          <div key="username" className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <KeyRound className="w-5 h-5 text-blue-600" />
-            <div>
-              <span className="text-sm font-medium text-blue-900">Username</span>
-              <p className="text-sm text-blue-700">{currentUser.username}</p>
-            </div>
-          </div>
-        )
       ].filter(Boolean);
     }
 
@@ -421,7 +504,8 @@ const Header = ({
         </button>
           <div className="flex flex-col">
             <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-            <p className="text-sm text-gray-600">Politeknik Negeri Manado</p>
+            {/* ✅ UPDATED: Dynamic subtitle berdasarkan role dan jurusan */}
+            <p className="text-sm text-gray-600">{subtitle}</p>
           </div>
       </div>
 
@@ -437,14 +521,22 @@ const Header = ({
               whileTap={{ scale: 0.98 }}
             >
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
+                {/* ✅ UPDATED: Dynamic avatar gradient berdasarkan role */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                  currentUser.role === 'SEKJUR' ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800' :
+                  currentUser.role === 'KAPRODI' ? 'bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800' :
+                  currentUser.role === 'DOSEN' ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800' :
+                  currentUser.role === 'MAHASISWA' ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800' :
+                  'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800'
+                }`}>
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </div>
               <div className="hidden md:block text-left">
-                <span className="text-sm font-semibold text-gray-900 block">{user}</span>
-                <span className="text-xs text-gray-500">{role}</span>
+                {/* ✅ UPDATED: Display name dan role yang lebih akurat */}
+                <span className="text-sm font-semibold text-gray-900 block">{displayName}</span>
+                <span className="text-xs text-gray-500">{roleLabel}</span>
               </div>
               <motion.div
                 animate={{ rotate: showUserMenu ? 180 : 0 }}
@@ -466,17 +558,40 @@ const Header = ({
                   exit="exit"
                 >
                   {/* User Info Header */}
-                  <div className="p-6 bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50 border-b border-gray-200">
-                    <div className="flex items-center space-x-4">
+                  <div className={`p-6 text-center relative ${
+                    currentUser.role === 'SEKJUR' ? 'bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50' :
+                    currentUser.role === 'KAPRODI' ? 'bg-gradient-to-br from-yellow-50 via-yellow-50 to-amber-50' :
+                    currentUser.role === 'DOSEN' ? 'bg-gradient-to-br from-green-50 via-green-50 to-emerald-50' :
+                    currentUser.role === 'MAHASISWA' ? 'bg-gradient-to-br from-purple-50 via-purple-50 to-violet-50' :
+                    'bg-gradient-to-br from-gray-50 via-gray-50 to-slate-50'
+                  } border-b border-gray-200`}>
+                    <div className="absolute top-0 left-0 w-full h-full bg-black/5"></div>
+                    <div className="relative flex items-center space-x-4">
                       <div className="relative">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${
+                          currentUser.role === 'SEKJUR' ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800' :
+                          currentUser.role === 'KAPRODI' ? 'bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800' :
+                          currentUser.role === 'DOSEN' ? 'bg-gradient-to-br from-green-600 via-green-700 to-green-800' :
+                          currentUser.role === 'MAHASISWA' ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800' :
+                          'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800'
+                        }`}>
                           <User className="w-8 h-8 text-white" />
                         </div>
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{user}</h3>
-                        <p className="text-sm text-blue-600 font-medium">{role}</p>
+                      <div className="flex-1 text-left">
+                        <h3 className="font-bold text-gray-900 text-lg">{displayName}</h3>
+                        <p className={`text-sm font-medium ${
+                          currentUser.role === 'SEKJUR' ? 'text-blue-600' :
+                          currentUser.role === 'KAPRODI' ? 'text-yellow-600' :
+                          currentUser.role === 'DOSEN' ? 'text-green-600' :
+                          currentUser.role === 'MAHASISWA' ? 'text-purple-600' :
+                          'text-gray-600'
+                        }`}>{roleLabel}</p>
+                        {/* ✅ ADDED: Show jurusan for SEKJUR */}
+                        {currentUser.role === 'SEKJUR' && currentUser.jurusan && (
+                          <p className="text-xs text-gray-500 mt-1">Jurusan {currentUser.jurusan.nama}</p>
+                        )}
                   </div>
                 </div>
               </div>
@@ -592,8 +707,14 @@ const Header = ({
               exit="exit"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header dengan gradient yang lebih menarik */}
-                <div className="relative p-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+                {/* ✅ UPDATED: Header dengan gradient yang dinamis berdasarkan role */}
+                <div className={`relative p-8 text-white ${
+                  currentUser.role === 'SEKJUR' ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800' :
+                  currentUser.role === 'KAPRODI' ? 'bg-gradient-to-br from-yellow-600 via-yellow-700 to-amber-800' :
+                  currentUser.role === 'DOSEN' ? 'bg-gradient-to-br from-green-600 via-green-700 to-emerald-800' :
+                  currentUser.role === 'MAHASISWA' ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-violet-800' :
+                  'bg-gradient-to-br from-gray-600 via-gray-700 to-slate-800'
+                }`}>
                   <div className="absolute inset-0 bg-black/10"></div>
                   <div className="relative flex justify-between items-start">
                     <div className="flex items-center space-x-4">
@@ -604,14 +725,20 @@ const Header = ({
                         <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 border-3 border-white rounded-full shadow-lg"></div>
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold mb-1">{currentUser.nama || currentUser.name || user}</h2>
+                        <h2 className="text-2xl font-bold mb-1">{displayName}</h2>
                         <div className="flex items-center space-x-2">
                           <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-full border border-white/30">
-                            {role}
+                            {roleLabel}
                           </span>
                           <span className="px-3 py-1 bg-green-500/20 backdrop-blur-sm text-green-100 text-sm font-medium rounded-full border border-green-400/30">
                             Aktif
                           </span>
+                          {/* ✅ ADDED: Jurusan badge untuk SEKJUR */}
+                          {currentUser.role === 'SEKJUR' && currentUser.jurusan && (
+                            <span className="px-3 py-1 bg-blue-500/20 backdrop-blur-sm text-blue-100 text-sm font-medium rounded-full border border-blue-400/30">
+                              {currentUser.jurusan.nama}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -677,17 +804,32 @@ const Header = ({
                               </div>
                               <span className="text-sm font-medium text-gray-700">Role Sistem</span>
                             </div>
-                            <span className="text-sm font-semibold text-blue-600">{role}</span>
+                            <span className="text-sm font-semibold text-blue-600">{roleLabel}</span>
                           </div>
+
+                          {/* ✅ ADDED: Access level info untuk SEKJUR */}
+                          {currentUser.role === 'SEKJUR' && (
+                            <div className="flex items-center justify-between p-3 bg-white/60 rounded-xl">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                  <Building2 className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">Level Akses</span>
+                              </div>
+                              <span className="text-sm font-semibold text-purple-600">
+                                {currentUser.jurusan?.nama ? `Jurusan ${currentUser.jurusan.nama}` : 'Terbatas'}
+                              </span>
+                            </div>
+                          )}
                           
                           <div className="flex items-center justify-between p-3 bg-white/60 rounded-xl">
                             <div className="flex items-center">
-                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                                <Clock className="w-4 h-4 text-purple-600" />
+                              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                <Clock className="w-4 h-4 text-orange-600" />
                               </div>
                               <span className="text-sm font-medium text-gray-700">Terakhir Login</span>
                             </div>
-                            <span className="text-sm font-semibold text-purple-600">
+                            <span className="text-sm font-semibold text-orange-600">
                               {new Date().toLocaleString('id-ID', {
                                 weekday: 'long',
                                 year: 'numeric',

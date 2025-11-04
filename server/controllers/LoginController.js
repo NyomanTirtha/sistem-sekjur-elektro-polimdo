@@ -12,8 +12,8 @@ const statsController = {
       
       // Menghitung total user berdasarkan role
       const totalUsers = await prisma.user.count();
-      const totalAdmins = await prisma.user.count({
-        where: { role: 'ADMIN' }
+      const totalSekjur = await prisma.user.count({
+        where: { role: 'SEKJUR' }
       });
       const totalMahasiswaUsers = await prisma.user.count({
         where: { role: 'MAHASISWA' }
@@ -67,8 +67,8 @@ const statsController = {
         },
         {
           icon: 'Shield',
-          label: 'Total Admin',
-          value: totalAdmins.toString(),
+          label: 'Total Sekjur',
+          value: totalSekjur.toString(),
           color: 'text-red-600'
         },
         {
@@ -115,7 +115,7 @@ const statsController = {
           pengajuanStats: pengajuanStats,
           userStats: {
             totalUsers,
-            totalAdmins,
+            totalSekjur,
             totalMahasiswaUsers,
             totalKaprodiUsers
           }
@@ -237,8 +237,8 @@ const statsController = {
       let stats = {};
 
       switch (userType) {
-        case 'admin':
-          // Admin bisa lihat semua statistik
+        case 'sekjur':
+          // Sekjur bisa lihat semua statistik
           const allStats = await statsController.getAllStats(req, res);
           return;
 

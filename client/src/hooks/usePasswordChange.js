@@ -126,7 +126,7 @@ export const usePasswordChange = (authToken, currentUser) => {
     if (user.nim) return 'MAHASISWA';
     if (user.nip && user.isKaprodi) return 'KAPRODI';
     if (user.nip) return 'DOSEN';
-    return 'ADMIN';
+    return 'SEKJUR';
   };
 
   const resetMessages = () => {

@@ -21,8 +21,6 @@ const pengajuanSARoutes = require('./routes/pengajuanSA');
 const programStudiRoutes = require('./routes/prodi');
 const userRoutes = require('./routes/users'); // Import user routes
 const mataKuliahRoutes = require('./routes/mataKuliah');
-const aiChatRoutes = require('./routes/aiChatRoutes'); // Import AI chat routes
-
 // Authentication routes (public)
 app.use('/api/auth', authRoutes);
 
@@ -33,7 +31,6 @@ app.use('/api/pengajuan-sa', authenticateToken, pengajuanSARoutes);
 app.use('/api/prodi', authenticateToken, programStudiRoutes);
 app.use('/api/users', authenticateToken, userRoutes); // Add user routes
 app.use('/api/mata-kuliah', mataKuliahRoutes);
-app.use('/api/ai-chat', authenticateToken, aiChatRoutes); // Add AI chat routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

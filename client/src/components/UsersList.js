@@ -46,7 +46,7 @@ const UsersList = ({ authToken, currentUser }) => {
   const [formErrors, setFormErrors] = useState({});
 
   const roles = [
-    { value: 'ADMIN', label: 'Admin', icon: Shield, color: 'text-red-600' },
+    { value: 'SEKJUR', label: 'Sekjur', icon: Shield, color: 'text-red-600' },
     { value: 'KAPRODI', label: 'Kaprodi', icon: Crown, color: 'text-purple-600' },
     { value: 'DOSEN', label: 'Dosen', icon: GraduationCap, color: 'text-blue-600' },
     { value: 'MAHASISWA', label: 'Mahasiswa', icon: User, color: 'text-green-600' }
@@ -65,12 +65,12 @@ const UsersList = ({ authToken, currentUser }) => {
 
   // Check if user has permission to add/edit
   const canAddEdit = () => {
-    return ['admin'].includes(userRole); // Only admin can add/edit users
+    return ['sekjur'].includes(userRole); // Only sekjur can add/edit users
   };
 
   // Check if user has permission to delete
   const canDelete = () => {
-    return ['admin'].includes(userRole); // Only admin can delete users
+    return ['sekjur'].includes(userRole); // Only sekjur can delete users
   };
 
   useEffect(() => {
@@ -453,7 +453,7 @@ const UsersList = ({ authToken, currentUser }) => {
             <div key={role.value} className="bg-white p-6 rounded-lg shadow-sm border">
               <div className="flex items-center">
                 <div className={`p-2 rounded-lg ${
-                  role.value === 'ADMIN' ? 'bg-red-100' :
+                  role.value === 'SEKJUR' ? 'bg-red-100' :
                   role.value === 'KAPRODI' ? 'bg-purple-100' :
                   role.value === 'DOSEN' ? 'bg-blue-100' : 'bg-green-100'
                 }`}>
@@ -818,7 +818,7 @@ const UsersList = ({ authToken, currentUser }) => {
           <div className="text-sm text-yellow-700">
             <strong>Panduan Manajemen Akun:</strong>
             <ul className="list-disc list-inside mt-2 space-y-1">
-              <li><strong>Admin:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</li>
+              <li><strong>Sekjur:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</li>
               <li><strong>Kaprodi:</strong> Mengelola pengajuan SA dan penugasan dosen</li>
               <li><strong>Dosen:</strong> Mengajar SA dan memberikan nilai kepada mahasiswa</li>
               <li><strong>Mahasiswa:</strong> Mengajukan SA dan melihat status pengajuan</li>

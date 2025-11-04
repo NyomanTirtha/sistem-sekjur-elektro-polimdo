@@ -17,7 +17,7 @@ const updateAdmin = async (req, res) => {
     const existingAdmin = await prisma.user.findFirst({
       where: { 
         username,
-        role: 'ADMIN'
+        role: 'SEKJUR'
       }
     });
 

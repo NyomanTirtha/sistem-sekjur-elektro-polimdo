@@ -159,7 +159,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
     let confirmMessage = '';
     let actionType = '';
 
-    if (userType === 'admin' && newStatus === 'MENUNGGU_VERIFIKASI_KAPRODI') {
+    if (userType === 'sekjur' && newStatus === 'MENUNGGU_VERIFIKASI_KAPRODI') {
       confirmMessage = 'Apakah Anda yakin ingin memverifikasi pembayaran pengajuan SA ini?\n\nSetelah diverifikasi, pengajuan akan diteruskan ke Kaprodi untuk verifikasi dan penentuan dosen.';
       actionType = 'Verifikasi Pembayaran';
     } else if (userType === 'kaprodi' && dosenId && newStatus === 'DALAM_PROSES_SA') {
@@ -330,7 +330,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
             {userType === 'mahasiswa' ? 'Pengajuan SA Saya' : 
-             userType === 'admin' ? 'Verifikasi Pembayaran SA' :
+             userType === 'sekjur' ? 'Verifikasi Pembayaran SA' :
              userType === 'kaprodi' ? 'Verifikasi & Penugasan SA' :
              'SA yang Saya Ampu'}
           </h1>
@@ -352,8 +352,8 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
             </select>
           </div>
 
-          {/* ✨ REPORT BUTTON - Show for admin, kaprodi, and dosen */}
-          {(userType === 'admin' || userType === 'kaprodi' || userType === 'dosen') && (
+          {/* ✨ REPORT BUTTON - Show for sekjur, kaprodi, and dosen */}
+          {(userType === 'sekjur' || userType === 'kaprodi' || userType === 'dosen') && (
             <button
               onClick={() => setShowLaporan(true)}
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2"
@@ -505,7 +505,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
           onUpdateStatus={handleUpdateStatus}
           onUpdateNilai={handleUpdateNilai}
           onUpdateNilaiDetail={handleUpdateNilaiDetail}
-          onLihatFormDetail={userType === 'admin' ? handleLihatDetailAdmin : handleLihatFormDetail}
+          onLihatFormDetail={userType === 'sekjur' ? handleLihatDetailAdmin : handleLihatFormDetail}
           fetchPengajuanSA={fetchPengajuanSA}
           startIndex={startIndex} // ✨ PASS START INDEX FOR NUMBERING
         />
@@ -595,24 +595,6 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
 
       {/* Info Card */}
       <InfoCard userType={userType} />
-
-      {/* Empty State with Action Button for Mahasiswa */}
-      {totalItems === 0 && userType === 'mahasiswa' && (
-        <div className="text-center py-8">
-          <div className="text-gray-400 mb-4">
-            <FileText className="w-12 h-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Belum ada pengajuan SA</h3>
-          <p className="text-gray-500 mb-4">Mulai dengan mengajukan SA pertama Anda</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2 mx-auto"
-          >
-            <Upload className="w-4 h-4" />
-            Ajukan SA Pertama
-          </button>
-        </div>
-      )}
     </div>
   );
 };

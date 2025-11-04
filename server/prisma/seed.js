@@ -106,23 +106,6 @@ async function main() {
       ]
     });
 
-    // 5. Insert Mata Kuliah
-    console.log('Memasukkan data Mata Kuliah...');
-    await prisma.mataKuliah.createMany({
-      data: [
-        { nama: 'Pemrograman Web', sks: 3 },
-        { nama: 'Basis Data', sks: 3 },
-        { nama: 'Algoritma dan Struktur Data', sks: 4 },
-        { nama: 'Jaringan Komputer', sks: 3 },
-        { nama: 'Sistem Operasi', sks: 3 },
-        { nama: 'Kecerdasan Buatan', sks: 3 },
-        { nama: 'Pemrograman Mobile', sks: 3 },
-        { nama: 'Rekayasa Perangkat Lunak', sks: 3 },
-        { nama: 'Manajemen Proyek TI', sks: 3 },
-        { nama: 'Keamanan Informasi', sks: 3 }
-      ]
-    });
-
     console.log('\n✅ Seeding berhasil!');
     console.log('============================================');
     console.log('Informasi Login:');

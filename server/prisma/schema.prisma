@@ -7,13 +7,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int      @id @default(autoincrement())
-  username String   @unique
-  nama     String
-  password String
-  role     UserRole
+// Tambahkan model Jurusan untuk mengelompokkan Program Studi
+model Jurusan {
+  id           Int            @id @default(autoincrement())
+  nama         String         @unique // contoh: "Teknik Elektro", "Teknik Informatika", "Teknik Sipil"
+  programStudi ProgramStudi[]
+  users        User[]         // Relasi ke User untuk sekretaris jurusan
 
+  @@map("jurusan")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  username   String    @unique
+  nama       String
+  password   String
+  role       UserRole
+  jurusanId  Int?      // Tambahkan field jurusanId untuk sekretaris jurusan
+  jurusan    Jurusan?  @relation(fields: [jurusanId], references: [id])
+
+  @@index([jurusanId])
   @@map("users")
 }
 
@@ -21,9 +34,13 @@ model ProgramStudi {
   id         Int         @id @default(autoincrement())
   nama       String
   ketuaProdi String
+  jurusanId  Int         // Tambahkan relasi ke Jurusan
+  jurusan    Jurusan     @relation(fields: [jurusanId], references: [id])
   dosen      Dosen[]
   mahasiswa  Mahasiswa[]
+  mataKuliah MataKuliah[] // Tambahkan relasi mata kuliah ke prodi
 
+  @@index([jurusanId])
   @@map("program_studi")
 }
 
@@ -31,10 +48,10 @@ model Mahasiswa {
   nim            String        @id
   nama           String
   programStudiId Int
-  angkatan       String
-  semester       Int
-  noTelp         String
-  alamat         String
+  angkatan       String?
+  semester       Int?
+  noTelp         String?
+  alamat         String?
   programStudi   ProgramStudi  @relation(fields: [programStudiId], references: [id])
   pengajuanSA    PengajuanSA[]
 
@@ -60,8 +77,12 @@ model MataKuliah {
   id               Int                 @id @default(autoincrement())
   nama             String
   sks              Int
+  semester         Int
+  programStudiId   Int                 // Tambahkan relasi ke ProgramStudi
+  programStudi     ProgramStudi        @relation(fields: [programStudiId], references: [id])
   pengajuanDetails PengajuanSADetail[]
 
+  @@index([programStudiId])
   @@map("mata_kuliah")
 }
 
@@ -70,6 +91,7 @@ model PengajuanSA {
   mahasiswaId      String
   buktiPembayaran  String
   tanggalPengajuan DateTime            @default(now())
+  semesterPengajuan Int
   status           StatusSA            @default(PROSES_PENGAJUAN)
   keterangan       String?
   keteranganReject String?
@@ -98,10 +120,10 @@ model PengajuanSADetail {
 }
 
 enum UserRole {
-  ADMIN
-  MAHASISWA
-  DOSEN
-  KAPRODI
+  SEKJUR         // Sekretaris Jurusan (dulu ADMIN)
+  MAHASISWA      // Mahasiswa
+  DOSEN          // Dosen
+  KAPRODI        // Ketua Program Studi
 }
 
 enum StatusSA {

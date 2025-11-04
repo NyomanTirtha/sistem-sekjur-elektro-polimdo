@@ -11,7 +11,7 @@ const FilterStatus = ({ filterStatus, setFilterStatus, userType }) => {
         className="border border-gray-300 rounded-lg px-3 py-2"
       >
         <option value="ALL">Semua Status</option>
-        <option value="PROSES_PENGAJUAN">Menunggu Verifikasi Admin</option>
+        <option value="PROSES_PENGAJUAN">Menunggu Verifikasi Sekretaris Jurusan</option>
         <option value="MENUNGGU_VERIFIKASI_KAPRODI">Menunggu Verifikasi Kaprodi</option>
         <option value="DALAM_PROSES_SA">Dalam Proses SA</option>
         <option value="SELESAI">Selesai</option>

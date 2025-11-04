@@ -4,7 +4,7 @@ import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from 
 
 const API_BASE = 'http://localhost:5000/api';
 
-const ProdiContent = ({ authToken }) => {
+const ProdiContent = ({ authToken, currentUser }) => {
   const [prodi, setProdi] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -39,8 +39,8 @@ const ProdiContent = ({ authToken }) => {
       const data = await response.json();
       
       // Pastikan data adalah array
-      if (Array.isArray(data)) {
-        setProdi(data);
+      if (data && data.success && Array.isArray(data.data)) {
+        setProdi(data.data);
       } else {
         console.error('Data prodi bukan array:', data);
         setProdi([]);
@@ -72,10 +72,14 @@ const ProdiContent = ({ authToken }) => {
       
       const method = editData ? 'PUT' : 'POST';
       
+      const submitData = editData
+        ? { ...formData }
+        : { ...formData, jurusanId: currentUser?.jurusanId };
+      
       const response = await fetch(url, {
         method,
         headers: getHeaders(),
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
