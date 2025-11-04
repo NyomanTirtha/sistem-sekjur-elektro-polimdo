@@ -669,12 +669,23 @@ const inputNilaiSA = async (req, res) => {
 
     const allHaveNilai = allDetails.every(detail => detail.nilaiAkhir !== null);
 
+    console.log('✅ Checking all details:', {
+      pengajuanSAId: existingDetail.pengajuanSAId,
+      totalDetails: allDetails.length,
+      detailsWithNilai: allDetails.filter(d => d.nilaiAkhir !== null).length,
+      allHaveNilai: allHaveNilai
+    });
+
     // Jika semua mata kuliah sudah ada nilai, update status master ke SELESAI
     if (allHaveNilai) {
+      console.log('✅ All details have nilai, updating status to SELESAI');
       await prisma.pengajuanSA.update({
         where: { id: existingDetail.pengajuanSAId },
         data: { status: 'SELESAI' }
       });
+      console.log('✅ Status updated to SELESAI for pengajuan:', existingDetail.pengajuanSAId);
+    } else {
+      console.log('⚠️ Not all details have nilai yet, status remains:', existingDetail.pengajuanSA.status);
     }
 
     // Return data pengajuan SA lengkap (status terbaru)

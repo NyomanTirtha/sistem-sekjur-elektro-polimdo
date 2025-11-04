@@ -40,9 +40,39 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // ✅ FIXED: Untuk DOSEN dan KAPRODI, ambil data dosen untuk mendapatkan prodiId
+    let dosenData = null;
+    if (user.role === 'DOSEN' || user.role === 'KAPRODI') {
+      dosenData = await prisma.dosen.findUnique({
+        where: { nip: user.username },
+        include: {
+          prodi: {
+            include: {
+              jurusan: true
+            }
+          }
+        }
+      });
+    }
+
+    // ✅ FIXED: Untuk MAHASISWA, ambil data mahasiswa untuk mendapatkan programStudiId
+    let mahasiswaData = null;
+    if (user.role === 'MAHASISWA') {
+      mahasiswaData = await prisma.mahasiswa.findUnique({
+        where: { nim: user.username },
+        include: {
+          programStudi: {
+            include: {
+              jurusan: true
+            }
+          }
+        }
+      });
+    }
+
     // Tambahkan user info ke request
     req.user = user;
-    req.userContext = getUserContext(user);
+    req.userContext = getUserContext(user, dosenData, mahasiswaData);
     
     next();
   } catch (error) {
@@ -55,7 +85,7 @@ const authenticateToken = async (req, res, next) => {
 };
 
 // ✅ NEW: Fungsi untuk mendapatkan context filter berdasarkan role user
-const getUserContext = (user) => {
+const getUserContext = (user, dosenData = null, mahasiswaData = null) => {
   const context = {
     userId: user.id,
     role: user.role,
@@ -74,17 +104,38 @@ const getUserContext = (user) => {
       break;
       
     case 'KAPRODI':
-      // Kaprodi hanya bisa akses data program studinya
+      // ✅ FIXED: Kaprodi hanya bisa akses data program studinya
+      if (dosenData && dosenData.prodiId) {
+        context.programStudiIds = [dosenData.prodiId];
+        // Ambil jurusanId dari prodi untuk filtering
+        if (dosenData.prodi && dosenData.prodi.jurusanId) {
+          context.jurusanId = dosenData.prodi.jurusanId;
+        }
+      }
       context.canAccessAll = false;
       break;
       
     case 'DOSEN':
-      // Dosen hanya bisa akses data program studinya
+      // ✅ FIXED: Dosen hanya bisa akses data program studinya
+      if (dosenData && dosenData.prodiId) {
+        context.programStudiIds = [dosenData.prodiId];
+        // Ambil jurusanId dari prodi untuk filtering
+        if (dosenData.prodi && dosenData.prodi.jurusanId) {
+          context.jurusanId = dosenData.prodi.jurusanId;
+        }
+      }
       context.canAccessAll = false;
       break;
       
     case 'MAHASISWA':
-      // Mahasiswa hanya bisa akses data dirinya sendiri
+      // ✅ FIXED: Mahasiswa hanya bisa akses data dirinya sendiri
+      if (mahasiswaData && mahasiswaData.programStudiId) {
+        context.programStudiIds = [mahasiswaData.programStudiId];
+        // Ambil jurusanId dari prodi untuk filtering
+        if (mahasiswaData.programStudi && mahasiswaData.programStudi.jurusanId) {
+          context.jurusanId = mahasiswaData.programStudi.jurusanId;
+        }
+      }
       context.canAccessAll = false;
       break;
       
@@ -104,10 +155,12 @@ const createJurusanFilter = (userContext) => {
 };
 
 const createProdiFilter = (userContext) => {
+  // ✅ FIXED: Prioritaskan jurusanId jika ada (untuk SEKJUR)
   if (userContext.jurusanId) {
     return { jurusanId: userContext.jurusanId };
   }
-  if (userContext.programStudiIds.length > 0) {
+  // ✅ FIXED: Jika ada programStudiIds (untuk DOSEN/KAPRODI/MAHASISWA), filter berdasarkan ID
+  if (userContext.programStudiIds && userContext.programStudiIds.length > 0) {
     return { id: { in: userContext.programStudiIds } };
   }
   return null;

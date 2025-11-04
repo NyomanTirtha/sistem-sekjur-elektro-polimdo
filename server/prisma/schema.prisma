@@ -68,6 +68,7 @@ model Dosen {
   isKaprodi          Boolean             @default(false)
   prodi              ProgramStudi        @relation(fields: [prodiId], references: [id])
   pengajuanSADetails PengajuanSADetail[]
+  penugasanMengajar  PenugasanMengajar[]
 
   @@index([prodiId], map: "dosen_prodiId_fkey")
   @@map("dosen")
@@ -81,6 +82,7 @@ model MataKuliah {
   programStudiId   Int                 // Tambahkan relasi ke ProgramStudi
   programStudi     ProgramStudi        @relation(fields: [programStudiId], references: [id])
   pengajuanDetails PengajuanSADetail[]
+  penugasanMengajar  PenugasanMengajar[]
 
   @@index([programStudiId])
   @@map("mata_kuliah")
@@ -132,4 +134,21 @@ enum StatusSA {
   DALAM_PROSES_SA
   SELESAI
   DITOLAK
+}
+
+model PenugasanMengajar {
+  id            Int         @id @default(autoincrement())
+  mataKuliahId  Int
+  dosenId       String
+  tahunAjaran   String
+  semester      Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  mataKuliah    MataKuliah  @relation(fields: [mataKuliahId], references: [id])
+  dosen         Dosen       @relation(fields: [dosenId], references: [nip])
+
+  @@unique([mataKuliahId, tahunAjaran, semester])
+  @@index([dosenId])
+  @@map("penugasan_mengajar")
 }

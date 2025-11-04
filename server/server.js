@@ -21,6 +21,7 @@ const pengajuanSARoutes = require('./routes/pengajuanSA');
 const programStudiRoutes = require('./routes/prodi');
 const userRoutes = require('./routes/users'); // Import user routes
 const mataKuliahRoutes = require('./routes/mataKuliah');
+const teachingAssignmentsRoutes = require('./routes/teachingAssignments');
 // Authentication routes (public)
 app.use('/api/auth', authRoutes);
 
@@ -31,6 +32,7 @@ app.use('/api/pengajuan-sa', authenticateToken, pengajuanSARoutes);
 app.use('/api/prodi', authenticateToken, programStudiRoutes);
 app.use('/api/users', authenticateToken, userRoutes); // Add user routes
 app.use('/api/mata-kuliah', authenticateToken, mataKuliahRoutes);
+app.use('/api/teaching-assignments', authenticateToken, teachingAssignmentsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -144,17 +144,29 @@ export default function MahasiswaList({ authToken, currentUser }) {
       });
       
       if (!response.ok) {
+        // ✅ FIXED: Handle 403 error dengan lebih baik
+        if (response.status === 403) {
+          console.warn('Tidak memiliki akses untuk melihat program studi. Ini normal untuk beberapa role.');
+          setProgramStudi([]);
+          return [];
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      setProgramStudi(data);
-      return data;
+      // ✅ FIXED: Handle response format dari backend (success: true, data: [...])
+      const prodiList = data.success && data.data ? data.data : (Array.isArray(data) ? data : []);
+      setProgramStudi(prodiList);
+      return prodiList;
     } catch (error) {
       console.error('Error fetching program studi:', error);
       if (error.message.includes('401')) {
         alert('Sesi telah berakhir. Silakan login kembali.');
+      } else if (error.message.includes('403')) {
+        // ✅ FIXED: 403 adalah expected untuk beberapa role, tidak perlu alert
+        console.warn('Akses ditolak untuk melihat program studi');
       }
+      setProgramStudi([]);
       return [];
     }
   };

@@ -174,6 +174,29 @@ export const jurusanAPI = {
   getAll: () => apiCall('/auth/jurusan')
 };
 
+// Teaching Assignments API calls
+export const teachingAssignmentsAPI = {
+  getAvailable: ({ tahunAjaran, semester }) =>
+    apiCall(`/teaching-assignments/available?tahunAjaran=${encodeURIComponent(tahunAjaran)}&semester=${encodeURIComponent(semester)}`),
+
+  assign: ({ mataKuliahId, tahunAjaran, semester }) =>
+    apiCall('/teaching-assignments', {
+      method: 'POST',
+      body: JSON.stringify({ mataKuliahId, tahunAjaran, semester })
+    }),
+
+  mine: ({ tahunAjaran, semester } = {}) => {
+    const params = [];
+    if (tahunAjaran) params.push(`tahunAjaran=${encodeURIComponent(tahunAjaran)}`);
+    if (semester) params.push(`semester=${encodeURIComponent(semester)}`);
+    const q = params.length ? `?${params.join('&')}` : '';
+    return apiCall(`/teaching-assignments/me${q}`);
+  },
+
+  unassign: (id) =>
+    apiCall(`/teaching-assignments/${id}`, { method: 'DELETE' })
+};
+
 // Error handling helper
 export const handleAPIError = (error) => {
   if (error.message.includes('Failed to fetch')) {

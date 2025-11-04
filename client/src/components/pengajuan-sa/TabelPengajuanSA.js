@@ -112,6 +112,21 @@ const TabelPengajuanSA = ({
       // ✅ FIXED: Gunakan updateNilaiDetail untuk per mata kuliah
       await onUpdateNilaiDetail(item.id, nilai);
       setNilaiInputs({ ...nilaiInputs, [item.id]: '' });
+      
+      // ✅ FIXED: Pastikan data di-refresh setelah input nilai untuk update status
+      if (typeof fetchPengajuanSA === 'function') {
+        // Reset statusPerRow untuk memastikan status diambil dari data baru setelah fetch
+        // Ini penting karena backend sudah update status master ke SELESAI jika semua sudah dinilai
+        setStatusPerRow({});
+        
+        // Fetch data baru dengan delay kecil untuk memastikan backend sudah selesai update
+        await new Promise(resolve => setTimeout(resolve, 300));
+        await fetchPengajuanSA();
+        
+        // ✅ FIXED: Data sudah ter-refresh, statusPerRow sudah di-reset
+        // Status akan diambil dari item.status yang baru dari backend
+      }
+      
       showSuccessAlert(`Nilai ${nilai} berhasil diinput untuk mata kuliah "${item.mataKuliah?.nama || 'SA'}!\nMata kuliah ini telah selesai dinilai.`);
     } catch (error) {
       console.error('Error updating nilai:', error);
@@ -170,13 +185,34 @@ const TabelPengajuanSA = ({
   // ✅ NEW: Check if sekjur can input nilai untuk mata kuliah spesifik
   const canSekjurInputNilai = (item) => {
     if (userType !== 'sekjur') return false;
-    const currentStatus = statusPerRow[item.id] || item.status;
+    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
+    const currentStatus = item.status || statusPerRow[item.id];
     // Sekjur bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika belum ada nilai)
     if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
     if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
       return false; // Sudah ada nilai untuk mata kuliah ini
     }
     return true; // Sekjur bisa input nilai untuk semua mata kuliah yang belum dinilai
+  };
+
+  // ✅ NEW: Check if dosen can input nilai untuk mata kuliah yang ditugaskan kepadanya
+  const canDosenInputNilai = (item) => {
+    if (userType !== 'dosen') return false;
+    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
+    const currentStatus = item.status || statusPerRow[item.id];
+    // Dosen hanya bisa input nilai untuk status DALAM_PROSES_SA
+    if (currentStatus !== 'DALAM_PROSES_SA') return false;
+    // Jika sudah ada nilai, tidak bisa diubah
+    if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
+      return false;
+    }
+    // Pastikan dosenId sesuai dengan dosen yang login
+    const dosenId = item.dosenId || item.dosen?.nip;
+    const currentUserId = currentUser?.username || currentUser?.nip;
+    if (dosenId && dosenId !== currentUserId) {
+      return false; // Bukan tugas dosen ini
+    }
+    return true;
   };
 
   // Tambahkan fungsi untuk konversi nilai ke indeks huruf
@@ -335,22 +371,46 @@ const TabelPengajuanSA = ({
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
                   </td>
 
-                  {/* Semester */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {typeof item.semesterPengajuan === 'number' ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                        {`(Sem ${item.semesterPengajuan}) ${getSemesterFromDate(item.tanggalPengajuan)}`}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                        Tidak diketahui
-                      </span>
-                    )}
-                  </td>
+                    {/* Semester */}
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {(() => {
+                        // ✅ FIXED: Prioritaskan semesterPengajuan, jika tidak ada gunakan semester dari mata kuliah
+                        const semester = item.semesterPengajuan ?? item.mataKuliah?.semester;
+                        const semesterText = typeof semester === 'number' ? `Sem ${semester}` : null;
+                        const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
+                        
+                        if (semesterText && tahunAjaran) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                              {`(${semesterText}) ${tahunAjaran}`}
+                            </span>
+                          );
+                        } else if (semesterText) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                              {semesterText}
+                            </span>
+                          );
+                        } else if (tahunAjaran) {
+                          return (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                              {tahunAjaran}
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                              Tidak diketahui
+                            </span>
+                          );
+                        }
+                      })()}
+                    </td>
 
                   {/* Status */}
                   <td className="px-4 py-3">
-                    <StatusBadge status={statusPerRow[item.id] || item.status} />
+                    {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
+                    <StatusBadge status={item.status || statusPerRow[item.id]} />
                   </td>
 
                   {/* Dosen */}
@@ -488,27 +548,43 @@ const TabelPengajuanSA = ({
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {typeof item.semesterPengajuan === 'number' ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                        {`(Sem ${item.semesterPengajuan}) ${getSemesterFromDate(item.tanggalPengajuan)}`}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                        Tidak diketahui
-                      </span>
-                    )}
+                    {(() => {
+                      // ✅ FIXED: Prioritaskan semesterPengajuan, jika tidak ada gunakan semester dari mata kuliah
+                      const semester = item.semesterPengajuan ?? item.mataKuliah?.semester;
+                      const semesterText = typeof semester === 'number' ? `Sem ${semester}` : null;
+                      const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
+                      
+                      if (semesterText && tahunAjaran) {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            {`(${semesterText}) ${tahunAjaran}`}
+                          </span>
+                        );
+                      } else if (semesterText) {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            {semesterText}
+                          </span>
+                        );
+                      } else if (tahunAjaran) {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            {tahunAjaran}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                            Tidak diketahui
+                          </span>
+                        );
+                      }
+                    })()}
                   </td>
                   <td className="px-4 py-3">
-                    {userType === 'dosen' && item.nilaiAkhir ? (
-                      <div className="flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
-                          SELESAI
-                        </span>
-                      </div>
-                    ) : (
-                      <StatusBadge status={statusPerRow[item.id] || item.status} />
-                    )}
+                    {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
+                    {/* statusPerRow hanya untuk update sementara sebelum fetch selesai */}
+                    <StatusBadge status={item.status || statusPerRow[item.id]} />
                   </td>
                   {/* Kolom Dosen: hanya tampil jika userType bukan dosen */}
                   {userType !== 'dosen' && (
@@ -532,6 +608,38 @@ const TabelPengajuanSA = ({
                         <CheckCircle className="w-4 h-4 text-green-500" />
                         <span className="font-bold text-green-600 text-lg">{item.nilaiAkhir}</span>
                       </div>
+                    ) : canDosenInputNilai(item) ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="0-100"
+                          value={nilaiInputs[item.id] || ''}
+                          onChange={(e) => handleNilaiInputChange(item.id, e.target.value)}
+                          className="border border-blue-300 rounded px-2 py-1 text-sm w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          disabled={isUpdating[item.id]}
+                        />
+                        <button
+                          onClick={() => handleUpdateNilai(item)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={`Input nilai untuk mata kuliah ${item.mataKuliah?.nama || 'SA'}`}
+                          disabled={!nilaiInputs[item.id] || isUpdating[item.id]}
+                        >
+                          {isUpdating[item.id] ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3 h-3" />
+                              Input
+                            </>
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-gray-400 italic">Belum dinilai</span>
                     )}
@@ -546,7 +654,7 @@ const TabelPengajuanSA = ({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* ✅ ENHANCED: Aksi SEKJUR - Assign Dosen */}
-                      {userType === 'kaprodi' && (statusPerRow[item.id] || item.status) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
+                      {userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
                         <div className="flex items-center gap-2">
                           <select
                             value={selectedDosenPerRow[item.id] || ''}
@@ -616,13 +724,13 @@ const TabelPengajuanSA = ({
                       )}
 
                       {/* ✅ Button Detail untuk semua user type */}
-                      {(userType !== 'kaprodi' || (statusPerRow[item.id] || item.status) !== 'MENUNGGU_VERIFIKASI_KAPRODI' || item.dosenId || assignedRows[item.id]) && (
+                      {(userType !== 'kaprodi' || (item.status || statusPerRow[item.id]) !== 'MENUNGGU_VERIFIKASI_KAPRODI' || item.dosenId || assignedRows[item.id]) && (
                         <button
                           onClick={() => onLihatFormDetail(item)}
                           className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium"
                           title="Lihat detail pengajuan SA"
                         >
-                          {(userType === 'kaprodi' && (statusPerRow[item.id] || item.status) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (item.dosenId || assignedRows[item.id])) ? 'Lihat' : 'Detail'}
+                          {(userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (item.dosenId || assignedRows[item.id])) ? 'Lihat' : 'Detail'}
                         </button>
                       )}
                     </div>

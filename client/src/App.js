@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Users, GraduationCap, FileText, ClipboardList, Home, LogOut } from 'lucide-react';
+import { Users, GraduationCap, FileText, ClipboardList, Home, LogOut, BookOpen } from 'lucide-react';
 import MainLayout from './components/layouts/MainLayouts';
 import MahasiswaList from './components/MahasiswaList';
 import DosenList from './components/DosenList';
 import PengajuanSAList from './components/PengajuanSAList';
 import ProdiList from './components/ProdiList';
 import UsersList from './components/UsersList';
+import TeachingPicker from './components/dosen/TeachingPicker';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
@@ -125,6 +126,14 @@ export default function App() {
       component: PengajuanSAList,
       description: 'Kelola pengajuan SA',
       allowedRoles: ['sekjur', 'dosen', 'mahasiswa', 'kaprodi'] // All roles can access
+    },
+    {
+      id: 'penugasan-mengajar',
+      label: 'Penugasan Mengajar',
+      icon: BookOpen,
+      component: TeachingPicker,
+      description: 'Lihat dan ambil mata kuliah yang akan diajarkan',
+      allowedRoles: ['dosen', 'kaprodi'] // Only dosen and kaprodi can access
     },
     {
       id: 'users',

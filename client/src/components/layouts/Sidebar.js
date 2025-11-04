@@ -4,6 +4,7 @@ import {
   Users,
   GraduationCap,
   Building,
+  School,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -25,6 +26,7 @@ const Sidebar = ({
     { id: 'dosen', label: 'Dosen', icon: Users },
     { id: 'mahasiswa', label: 'Mahasiswa', icon: GraduationCap },
     { id: 'pengajuan-sa', label: 'Pengajuan SA', icon: FileText },
+    { id: 'penugasan-mengajar', label: 'Penugasan Mengajar', icon: School },
   ];
 
   // Use provided menuItems or fallback to default
