@@ -1,6 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const bcrypt = require('bcrypt');
 
 // Mengambil semua dosen (kecuali kaprodi)
 const getAllDosen = async (req, res) => {

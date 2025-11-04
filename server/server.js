@@ -30,7 +30,7 @@ app.use('/api/dosen', authenticateToken, dosenRoutes);
 app.use('/api/pengajuan-sa', authenticateToken, pengajuanSARoutes);
 app.use('/api/prodi', authenticateToken, programStudiRoutes);
 app.use('/api/users', authenticateToken, userRoutes); // Add user routes
-app.use('/api/mata-kuliah', mataKuliahRoutes);
+app.use('/api/mata-kuliah', authenticateToken, mataKuliahRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

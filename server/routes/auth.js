@@ -403,6 +403,9 @@ router.post('/login', async (req, res) => {
 
 // Test endpoint untuk cek user di database
 router.get('/test-users', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ success: false, message: 'Not found' });
+  }
   try {
     const users = await prisma.user.findMany({
       include: { jurusan: true },
@@ -443,6 +446,9 @@ router.get('/test-users', async (req, res) => {
 
 // Debug endpoint untuk cek data mahasiswa dan dosen
 router.get('/debug-data', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ success: false, message: 'Not found' });
+  }
   try {
     const mahasiswaCount = await prisma.mahasiswa.count();
     const dosenCount = await prisma.dosen.count();
