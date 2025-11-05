@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // Hash password untuk semua user
-    const hashedPassword = await bcrypt.hash('123456', 10);
+    // Hash password untuk semua user (password: 123)
+    const hashedPassword = await bcrypt.hash('123', 10);
     console.log('Memulai proses seeding database...');
 
     // Hapus semua data yang ada (hati-hati di production!)
@@ -35,8 +35,8 @@ async function main() {
     console.log('Memasukkan data User...');
     await prisma.user.createMany({
       data: [
-        // Admin
-        { username: 'admin', nama: 'Administrator', password: hashedPassword, role: 'ADMIN' },
+        // Sekretaris Jurusan (SEKJUR)
+        { username: 'admin', nama: 'Administrator', password: hashedPassword, role: 'SEKJUR' },
         
         // Kaprodi (1 orang)
         { username: '198501012010011001', nama: 'Dr. Andi Pratama, M.Kom', password: hashedPassword, role: 'KAPRODI' },
@@ -110,19 +110,19 @@ async function main() {
     console.log('============================================');
     console.log('Informasi Login:');
     console.log('--------------------------------------------');
-    console.log('Admin:');
+    console.log('Sekretaris Jurusan (SEKJUR):');
     console.log('  Username: admin');
-    console.log('  Password: 123456');
+    console.log('  Password: 123');
     console.log('\nKaprodi:');
     console.log('  Username: 198501012010011001 (NIP)');
-    console.log('  Password: 123456');
+    console.log('  Password: 123');
     console.log('\nDosen:');
     console.log('  Username: 198502022010012002 (NIP)');
-    console.log('  Password: 123456');
+    console.log('  Password: 123');
     console.log('\nMahasiswa:');
     console.log('  Username: 22024001 (NIM)');
-    console.log('  Password: 123456');
-    console.log('\nSemua user menggunakan password: 123456');
+    console.log('  Password: 123');
+    console.log('\nSemua user menggunakan password: 123');
     console.log('============================================');
 
   } catch (error) {

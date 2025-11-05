@@ -28,6 +28,7 @@ router.get("/:id", pengajuanSAController.getPengajuanSAById); // Mengambil penga
 router.post("/", upload.single('buktiPembayaran'), pengajuanSAController.createPengajuanSA); // Menambahkan pengajuan SA baru
 
 // Routes untuk assign dosen (Kaprodi) 
+router.get("/suggested-dosen", pengajuanSAController.getSuggestedDosen);
 router.put("/detail/:detailId/assign-dosen", pengajuanSAController.assignDosenToMataKuliah);
 router.put("/:id/assign-all-dosen", pengajuanSAController.assignAllDosenToMataKuliah);
 

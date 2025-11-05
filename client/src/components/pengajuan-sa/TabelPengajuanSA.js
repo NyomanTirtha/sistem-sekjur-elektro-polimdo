@@ -374,21 +374,20 @@ const TabelPengajuanSA = ({
                     {/* Semester */}
                     <td className="px-4 py-3 text-sm text-gray-900">
                       {(() => {
-                        // ✅ FIXED: Prioritaskan semesterPengajuan, jika tidak ada gunakan semester dari mata kuliah
-                        const semester = item.semesterPengajuan ?? item.mataKuliah?.semester;
-                        const semesterText = typeof semester === 'number' ? `Sem ${semester}` : null;
+                        // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
+                        const semesterPengajuan = item.semesterPengajuan;
                         const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
                         
-                        if (semesterText && tahunAjaran) {
+                        if (semesterPengajuan && tahunAjaran) {
                           return (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              {`(${semesterText}) ${tahunAjaran}`}
+                              Semester {semesterPengajuan} • {tahunAjaran}
                             </span>
                           );
-                        } else if (semesterText) {
+                        } else if (semesterPengajuan) {
                           return (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              {semesterText}
+                              Semester {semesterPengajuan}
                             </span>
                           );
                         } else if (tahunAjaran) {
@@ -549,21 +548,20 @@ const TabelPengajuanSA = ({
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {(() => {
-                      // ✅ FIXED: Prioritaskan semesterPengajuan, jika tidak ada gunakan semester dari mata kuliah
-                      const semester = item.semesterPengajuan ?? item.mataKuliah?.semester;
-                      const semesterText = typeof semester === 'number' ? `Sem ${semester}` : null;
+                      // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
+                      const semesterPengajuan = item.semesterPengajuan;
                       const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
                       
-                      if (semesterText && tahunAjaran) {
+                      if (semesterPengajuan && tahunAjaran) {
                         return (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                            {`(${semesterText}) ${tahunAjaran}`}
+                            Semester {semesterPengajuan} • {tahunAjaran}
                           </span>
                         );
-                      } else if (semesterText) {
+                      } else if (semesterPengajuan) {
                         return (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                            {semesterText}
+                            Semester {semesterPengajuan}
                           </span>
                         );
                       } else if (tahunAjaran) {

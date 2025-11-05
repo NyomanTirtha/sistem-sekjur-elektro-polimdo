@@ -107,6 +107,30 @@ export const dosenAPI = {
     })
 };
 
+// Mata Kuliah API calls
+export const mataKuliahAPI = {
+  getAll: () => apiCall('/mata-kuliah'),
+
+  getById: (id) => apiCall(`/mata-kuliah/${id}`),
+
+  create: (data) =>
+    apiCall('/mata-kuliah', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  update: (id, data) =>
+    apiCall(`/mata-kuliah/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  delete: (id) =>
+    apiCall(`/mata-kuliah/${id}`, {
+      method: 'DELETE'
+    })
+};
+
 // Pengajuan SA API calls
 export const pengajuanSAAPI = {
   getAll: () => apiCall('/pengajuan-sa'),
@@ -176,25 +200,67 @@ export const jurusanAPI = {
 
 // Teaching Assignments API calls
 export const teachingAssignmentsAPI = {
-  getAvailable: ({ tahunAjaran, semester }) =>
-    apiCall(`/teaching-assignments/available?tahunAjaran=${encodeURIComponent(tahunAjaran)}&semester=${encodeURIComponent(semester)}`),
+  getAvailable: ({ tahunAjaran }) =>
+    apiCall(`/teaching-assignments/available?tahunAjaran=${encodeURIComponent(tahunAjaran)}`),
 
-  assign: ({ mataKuliahId, tahunAjaran, semester }) =>
+  assign: ({ mataKuliahId, tahunAjaran }) =>
     apiCall('/teaching-assignments', {
       method: 'POST',
-      body: JSON.stringify({ mataKuliahId, tahunAjaran, semester })
+      body: JSON.stringify({ mataKuliahId, tahunAjaran })
     }),
 
-  mine: ({ tahunAjaran, semester } = {}) => {
+  mine: ({ tahunAjaran, status } = {}) => {
     const params = [];
     if (tahunAjaran) params.push(`tahunAjaran=${encodeURIComponent(tahunAjaran)}`);
-    if (semester) params.push(`semester=${encodeURIComponent(semester)}`);
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
     const q = params.length ? `?${params.join('&')}` : '';
     return apiCall(`/teaching-assignments/me${q}`);
   },
 
   unassign: (id) =>
-    apiCall(`/teaching-assignments/${id}`, { method: 'DELETE' })
+    apiCall(`/teaching-assignments/${id}`, { method: 'DELETE' }),
+
+  // Kaprodi functions
+  getPendingApprovals: ({ tahunAjaran } = {}) => {
+    const params = [];
+    if (tahunAjaran) params.push(`tahunAjaran=${encodeURIComponent(tahunAjaran)}`);
+    const q = params.length ? `?${params.join('&')}` : '';
+    return apiCall(`/teaching-assignments/kaprodi/pending${q}`);
+  },
+
+  getAllAssignments: ({ tahunAjaran, status, dosenId, mataKuliahId } = {}) => {
+    const params = [];
+    if (tahunAjaran) params.push(`tahunAjaran=${encodeURIComponent(tahunAjaran)}`);
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (dosenId) params.push(`dosenId=${encodeURIComponent(dosenId)}`);
+    if (mataKuliahId) params.push(`mataKuliahId=${encodeURIComponent(mataKuliahId)}`);
+    const q = params.length ? `?${params.join('&')}` : '';
+    return apiCall(`/teaching-assignments/kaprodi/all${q}`);
+  },
+
+  assignDirectly: ({ mataKuliahId, dosenId, tahunAjaran }) =>
+    apiCall('/teaching-assignments/kaprodi/assign', {
+      method: 'POST',
+      body: JSON.stringify({ mataKuliahId, dosenId, tahunAjaran })
+    }),
+
+  approve: (id) =>
+    apiCall(`/teaching-assignments/kaprodi/${id}/approve`, { method: 'PUT' }),
+
+  reject: (id, rejectionReason) =>
+    apiCall(`/teaching-assignments/kaprodi/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ rejectionReason })
+    }),
+
+  reassign: (id, dosenId) =>
+    apiCall(`/teaching-assignments/kaprodi/${id}/reassign`, {
+      method: 'PUT',
+      body: JSON.stringify({ dosenId })
+    }),
+
+  cancel: (id) =>
+    apiCall(`/teaching-assignments/kaprodi/${id}/cancel`, { method: 'PUT' })
 };
 
 // Error handling helper

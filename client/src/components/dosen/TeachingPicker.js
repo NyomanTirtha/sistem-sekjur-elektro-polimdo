@@ -10,7 +10,6 @@ const currentAcademicYear = () => {
 
 export default function TeachingPicker() {
   const [tahunAjaran, setTahunAjaran] = useState(currentAcademicYear());
-  const [semester, setSemester] = useState(1);
   const [available, setAvailable] = useState([]);
   const [mine, setMine] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,12 +19,16 @@ export default function TeachingPicker() {
     setLoading(true);
     setError('');
     try {
-      const [availRes, mineRes] = await Promise.all([
-        teachingAssignmentsAPI.getAvailable({ tahunAjaran, semester }),
-        teachingAssignmentsAPI.mine({ tahunAjaran, semester })
+      const [availRes, pendingRes, activeRes] = await Promise.all([
+        teachingAssignmentsAPI.getAvailable({ tahunAjaran }),
+        teachingAssignmentsAPI.mine({ tahunAjaran, status: 'PENDING_APPROVAL' }),
+        teachingAssignmentsAPI.mine({ tahunAjaran, status: 'ACTIVE' })
       ]);
       setAvailable(availRes?.data || []);
-      setMine(mineRes?.data || []);
+      setMine([
+        ...(pendingRes?.data || []),
+        ...(activeRes?.data || [])
+      ]);
     } catch (e) {
       setError(e.message || 'Gagal memuat data');
     } finally {
@@ -36,16 +39,17 @@ export default function TeachingPicker() {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tahunAjaran, semester]);
+  }, [tahunAjaran]);
 
   const onAssign = async (mataKuliahId) => {
     setError('');
     try {
-      await teachingAssignmentsAPI.assign({ mataKuliahId, tahunAjaran, semester });
+      await teachingAssignmentsAPI.assign({ mataKuliahId, tahunAjaran });
       await loadData();
+      alert('Pengajuan berhasil dikirim! Menunggu persetujuan Kaprodi.');
     } catch (e) {
       if (e.message?.includes('409') || /sudah diambil/i.test(e.message)) {
-        setError('Mata kuliah sudah diambil dosen lain.');
+        setError('Mata kuliah sudah diambil dosen lain atau sudah ada pengajuan.');
       } else {
         setError(e.message || 'Gagal mengambil mata kuliah');
       }
@@ -84,19 +88,15 @@ export default function TeachingPicker() {
             ))}
           </select>
         </label>
-        <label>
-          Semester
-          <select className="ml-2 border px-2 py-1" value={semester} onChange={(e) => setSemester(Number(e.target.value))}>
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-          </select>
-        </label>
-        <button className="border px-3 py-1" onClick={loadData} disabled={loading}>Refresh</button>
+        <button className="border px-3 py-1 bg-blue-500 text-white hover:bg-blue-600" onClick={loadData} disabled={loading}>Refresh</button>
+        <div className="text-sm text-gray-600">
+          <span className="font-semibold">Info:</span> Semester mengikuti semester kurikulum mata kuliah
+        </div>
       </div>
 
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div>
           <h3 className="font-medium mb-2">Tersedia untuk Diambil</h3>
           {loading ? (
@@ -107,9 +107,9 @@ export default function TeachingPicker() {
                 <li key={mk.id} className="border p-2 flex items-center justify-between">
                   <div>
                     <div className="font-medium">{mk.nama}</div>
-                    <div className="text-xs text-gray-600">SKS {mk.sks} • Smt {mk.semester} • {mk.programStudi?.nama}</div>
+                    <div className="text-xs text-gray-600">SKS {mk.sks} • Semester {mk.semester} (Kurikulum) • {mk.programStudi?.nama}</div>
                   </div>
-                  <button className="border px-3 py-1" onClick={() => onAssign(mk.id)}>Ambil</button>
+                  <button className="border px-3 py-1 bg-blue-500 text-white hover:bg-blue-600" onClick={() => onAssign(mk.id)}>Ajukan</button>
                 </li>
               ))}
               {available.length === 0 && <li className="text-sm text-gray-600">Tidak ada mata kuliah tersedia.</li>}
@@ -118,21 +118,43 @@ export default function TeachingPicker() {
         </div>
 
         <div>
-          <h3 className="font-medium mb-2">Mata Kuliah Saya</h3>
+          <h3 className="font-medium mb-2">Usulan Saya (Menunggu Persetujuan)</h3>
           {loading ? (
             <div>Memuat...</div>
           ) : (
             <ul className="space-y-2">
-              {mine.map((item) => (
-                <li key={item.id} className="border p-2 flex items-center justify-between">
+              {mine.filter(item => item.status === 'PENDING_APPROVAL').map((item) => (
+                <li key={item.id} className="border p-2 flex items-center justify-between bg-yellow-50">
                   <div>
                     <div className="font-medium">{item.mataKuliah?.nama}</div>
-                    <div className="text-xs text-gray-600">{item.tahunAjaran} • Smt {item.semester} • {item.mataKuliah?.programStudi?.nama}</div>
+                    <div className="text-xs text-gray-600">{item.tahunAjaran} • Semester {item.semester} (Kurikulum) • {item.mataKuliah?.programStudi?.nama}</div>
+                    <div className="text-xs text-yellow-600 mt-1">⏳ Menunggu persetujuan Kaprodi</div>
                   </div>
-                  <button className="border px-3 py-1" onClick={() => onUnassign(item.id)}>Lepas</button>
+                  <button className="border px-3 py-1 bg-red-500 text-white hover:bg-red-600" onClick={() => onUnassign(item.id)}>Batalkan</button>
                 </li>
               ))}
-              {mine.length === 0 && <li className="text-sm text-gray-600">Belum ada penugasan.</li>}
+              {mine.filter(item => item.status === 'PENDING_APPROVAL').length === 0 && <li className="text-sm text-gray-600">Tidak ada usulan yang menunggu persetujuan.</li>}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <h3 className="font-medium mb-2">Penugasan Aktif</h3>
+          {loading ? (
+            <div>Memuat...</div>
+          ) : (
+            <ul className="space-y-2">
+              {mine.filter(item => item.status === 'ACTIVE').map((item) => (
+                <li key={item.id} className="border p-2 flex items-center justify-between bg-green-50">
+                  <div>
+                    <div className="font-medium">{item.mataKuliah?.nama}</div>
+                    <div className="text-xs text-gray-600">{item.tahunAjaran} • Semester {item.semester} (Kurikulum) • {item.mataKuliah?.programStudi?.nama}</div>
+                    <div className="text-xs text-green-600 mt-1">✅ Disetujui dan aktif</div>
+                  </div>
+                  <button className="border px-3 py-1 bg-red-500 text-white hover:bg-red-600" onClick={() => onUnassign(item.id)}>Lepas</button>
+                </li>
+              ))}
+              {mine.filter(item => item.status === 'ACTIVE').length === 0 && <li className="text-sm text-gray-600">Belum ada penugasan aktif.</li>}
             </ul>
           )}
         </div>

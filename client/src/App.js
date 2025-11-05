@@ -7,6 +7,7 @@ import PengajuanSAList from './components/PengajuanSAList';
 import ProdiList from './components/ProdiList';
 import UsersList from './components/UsersList';
 import TeachingPicker from './components/dosen/TeachingPicker';
+import TeachingAssignmentManager from './components/kaprodi/TeachingAssignmentManager';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
@@ -132,8 +133,16 @@ export default function App() {
       label: 'Penugasan Mengajar',
       icon: BookOpen,
       component: TeachingPicker,
-      description: 'Lihat dan ambil mata kuliah yang akan diajarkan',
-      allowedRoles: ['dosen', 'kaprodi'] // Only dosen and kaprodi can access
+      description: 'Lihat dan ajukan mata kuliah yang akan diajarkan',
+      allowedRoles: ['dosen'] // Only dosen can access
+    },
+    {
+      id: 'kelola-penugasan',
+      label: 'Kelola Penugasan Mengajar',
+      icon: BookOpen,
+      component: TeachingAssignmentManager,
+      description: 'Kelola dan setujui penugasan mengajar dosen',
+      allowedRoles: ['kaprodi'] // Only kaprodi can access
     },
     {
       id: 'users',

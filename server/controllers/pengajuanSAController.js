@@ -336,6 +336,18 @@ const createPengajuanSA = async (req, res) => {
       return res.status(404).json({ error: 'Beberapa mata kuliah tidak ditemukan' });
     }
     
+    // Validasi semester: Cek apakah semester mahasiswa sesuai dengan semester kurikulum MK
+    const semesterMahasiswa = mahasiswaExists.semester;
+    if (semesterMahasiswa) {
+      const invalidMataKuliah = mataKuliahExists.filter(mk => mk.semester !== semesterMahasiswa);
+      if (invalidMataKuliah.length > 0) {
+        const invalidNames = invalidMataKuliah.map(mk => `"${mk.nama}" (semester ${mk.semester})`).join(', ');
+        return res.status(400).json({ 
+          error: `Anda semester ${semesterMahasiswa} tidak dapat mengambil mata kuliah: ${invalidNames}. Semester harus sesuai dengan semester kurikulum mata kuliah.` 
+        });
+      }
+    }
+    
     // Create pengajuan SA dengan details dalam transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create master pengajuan SA
@@ -454,6 +466,126 @@ const tolakPengajuanSA = async (req, res) => {
   }
 };
 
+// Get suggested dosen untuk mata kuliah tertentu (untuk auto-suggestion)
+const getSuggestedDosen = async (req, res) => {
+  try {
+    const { mataKuliahId, pengajuanSAId } = req.query;
+    
+    if (!mataKuliahId) {
+      return res.status(400).json({ error: 'mataKuliahId wajib diisi' });
+    }
+    
+    const suggestions = [];
+    
+    // Ambil info MK dan pengajuan SA untuk mendapatkan semester pengajuan
+    const mk = await prisma.mataKuliah.findUnique({
+      where: { id: parseInt(mataKuliahId) }
+    });
+    
+    if (!mk) {
+      return res.status(404).json({ error: 'Mata kuliah tidak ditemukan' });
+    }
+    
+    let semesterPengajuan = null;
+    let tahunAjaran = null;
+    
+    // Jika ada pengajuanSAId, ambil semesterPengajuan dari pengajuan SA
+    if (pengajuanSAId) {
+      const pengajuanSA = await prisma.pengajuanSA.findUnique({
+        where: { id: parseInt(pengajuanSAId) },
+        select: { semesterPengajuan: true, tanggalPengajuan: true }
+      });
+      
+      if (pengajuanSA) {
+        semesterPengajuan = pengajuanSA.semesterPengajuan;
+        // Hitung tahun ajaran dari tanggal pengajuan
+        const date = new Date(pengajuanSA.tanggalPengajuan);
+        const year = date.getFullYear();
+        tahunAjaran = `${year}/${year + 1}`;
+      }
+    }
+    
+    // 1. Cek dosen yang ACTIVE untuk MK tersebut di semester kurikulum yang sesuai
+    // Semester di penugasan mengajar = semester kurikulum MK
+    if (semesterPengajuan && mk.semester === semesterPengajuan && tahunAjaran) {
+      const activeAssignments = await prisma.penugasanMengajar.findMany({
+        where: {
+          mataKuliahId: parseInt(mataKuliahId),
+          tahunAjaran,
+          semester: mk.semester, // Semester kurikulum MK
+          status: 'ACTIVE'
+        },
+        include: {
+          dosen: true
+        }
+      });
+      
+      activeAssignments.forEach(assignment => {
+        suggestions.push({
+          dosenId: assignment.dosenId,
+          dosen: assignment.dosen,
+          priority: 1, // Highest priority
+          reason: `Dosen yang aktif mengajar mata kuliah ini di semester ${mk.semester}`
+        });
+      });
+    }
+    
+    // 2. Cek dosen yang pernah mengajar MK tersebut di semester kurikulum yang sama (dari history)
+    const historyAssignments = await prisma.penugasanMengajar.findMany({
+      where: {
+        mataKuliahId: parseInt(mataKuliahId),
+        semester: mk.semester, // Semester kurikulum MK
+        status: 'ACTIVE',
+        dosenId: {
+          notIn: suggestions.map(s => s.dosenId)
+        }
+      },
+      include: {
+        dosen: true
+      },
+      distinct: ['dosenId']
+    });
+    
+    historyAssignments.forEach(assignment => {
+      suggestions.push({
+        dosenId: assignment.dosenId,
+        dosen: assignment.dosen,
+        priority: 2,
+        reason: `Dosen yang pernah mengajar mata kuliah ini di semester ${mk.semester}`
+      });
+    });
+    
+    // 3. Cek dosen di prodi yang sama dengan MK
+    if (mk) {
+      const dosenInProdi = await prisma.dosen.findMany({
+        where: {
+          prodiId: mk.programStudiId,
+          nip: {
+            notIn: suggestions.map(s => s.dosenId)
+          }
+        }
+      });
+      
+      dosenInProdi.forEach(dosen => {
+        suggestions.push({
+          dosenId: dosen.nip,
+          dosen: dosen,
+          priority: 3,
+          reason: 'Dosen di program studi yang sama'
+        });
+      });
+    }
+    
+    // Sort by priority
+    suggestions.sort((a, b) => a.priority - b.priority);
+    
+    res.json({ success: true, data: suggestions });
+  } catch (error) {
+    console.error('Error getting suggested dosen:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Assign dosen ke mata kuliah tertentu (Kaprodi)
 const assignDosenToMataKuliah = async (req, res) => {
   try {
@@ -473,6 +605,52 @@ const assignDosenToMataKuliah = async (req, res) => {
     
     if (!dosenExists) {
       return res.status(404).json({ error: 'Dosen tidak ditemukan' });
+    }
+    
+    // Ambil detail pengajuan dengan info lengkap
+    const existingDetail = await prisma.pengajuanSADetail.findUnique({
+      where: { id: detailId },
+      include: {
+        pengajuanSA: {
+          include: { mahasiswa: true }
+        },
+        mataKuliah: true
+      }
+    });
+    
+    if (!existingDetail) {
+      return res.status(404).json({ error: 'Detail pengajuan tidak ditemukan' });
+    }
+    
+    // Validasi semester: Cek apakah semester pengajuan mahasiswa sesuai dengan semester kurikulum MK
+    const semesterPengajuan = existingDetail.pengajuanSA.semesterPengajuan;
+    const semesterKurikulum = existingDetail.mataKuliah.semester;
+    
+    if (semesterPengajuan !== semesterKurikulum) {
+      return res.status(400).json({ 
+        error: `Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil mata kuliah "${existingDetail.mataKuliah.nama}" (semester kurikulum ${semesterKurikulum}). Semester harus sesuai.` 
+      });
+    }
+    
+    // Validasi: Cek apakah dosen sudah ACTIVE untuk MK ini di semester kurikulum yang sesuai
+    const tanggalPengajuan = new Date(existingDetail.pengajuanSA.tanggalPengajuan);
+    const year = tanggalPengajuan.getFullYear();
+    const tahunAjaran = `${year}/${year + 1}`;
+    
+    const activeAssignment = await prisma.penugasanMengajar.findFirst({
+      where: {
+        mataKuliahId: existingDetail.mataKuliahId,
+        dosenId: dosenId,
+        tahunAjaran: tahunAjaran,
+        semester: semesterKurikulum,
+        status: 'ACTIVE'
+      }
+    });
+    
+    if (!activeAssignment) {
+      return res.status(400).json({ 
+        error: `Dosen ${dosenExists.nama} belum ditugaskan untuk mengajar mata kuliah "${existingDetail.mataKuliah.nama}" di semester ${semesterKurikulum} tahun ajaran ${tahunAjaran}. Silakan assign dosen terlebih dahulu di menu "Kelola Penugasan Mengajar".` 
+      });
     }
     
     const pengajuanDetail = await prisma.pengajuanSADetail.update({
@@ -553,7 +731,12 @@ const assignAllDosenToMataKuliah = async (req, res) => {
     const pengajuanExists = await prisma.pengajuanSA.findUnique({
       where: { id: pengajuanId },
       include: {
-        details: true
+        details: {
+          include: {
+            mataKuliah: true
+          }
+        },
+        mahasiswa: true
       }
     });
     
@@ -566,6 +749,45 @@ const assignAllDosenToMataKuliah = async (req, res) => {
     if (!pengajuanExists) {
       console.log('❌ Error: Pengajuan SA tidak ditemukan');
       return res.status(404).json({ error: 'Pengajuan SA tidak ditemukan' });
+    }
+    
+    // Validasi: Cek apakah dosen sudah ACTIVE untuk semua MK di semester kurikulum yang sesuai
+    const semesterPengajuan = pengajuanExists.semesterPengajuan;
+    const tanggalPengajuan = new Date(pengajuanExists.tanggalPengajuan);
+    const year = tanggalPengajuan.getFullYear();
+    const tahunAjaran = `${year}/${year + 1}`;
+    
+    // Validasi setiap MK
+    const validationErrors = [];
+    for (const detail of pengajuanExists.details) {
+      const semesterKurikulum = detail.mataKuliah.semester;
+      
+      // Validasi semester pengajuan vs semester kurikulum
+      if (semesterPengajuan !== semesterKurikulum) {
+        validationErrors.push(`Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil "${detail.mataKuliah.nama}" (semester ${semesterKurikulum})`);
+        continue;
+      }
+      
+      // Cek apakah dosen sudah ACTIVE untuk MK ini
+      const activeAssignment = await prisma.penugasanMengajar.findFirst({
+        where: {
+          mataKuliahId: detail.mataKuliahId,
+          dosenId: dosenId,
+          tahunAjaran: tahunAjaran,
+          semester: semesterKurikulum,
+          status: 'ACTIVE'
+        }
+      });
+      
+      if (!activeAssignment) {
+        validationErrors.push(`Dosen belum ditugaskan untuk "${detail.mataKuliah.nama}" (semester ${semesterKurikulum})`);
+      }
+    }
+    
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: validationErrors.join('. ') + '. Silakan assign dosen terlebih dahulu di menu "Kelola Penugasan Mengajar".'
+      });
     }
     
     // Update semua detail dengan dosen yang sama
@@ -874,6 +1096,7 @@ module.exports = {
   tolakPengajuanSA,
   
   // Kaprodi functions
+  getSuggestedDosen,
   assignDosenToMataKuliah,
   assignAllDosenToMataKuliah,
   

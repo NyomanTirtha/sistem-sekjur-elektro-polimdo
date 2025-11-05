@@ -136,19 +136,34 @@ enum StatusSA {
   DITOLAK
 }
 
-model PenugasanMengajar {
-  id            Int         @id @default(autoincrement())
-  mataKuliahId  Int
-  dosenId       String
-  tahunAjaran   String
-  semester      Int
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+enum StatusPenugasan {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  CANCELLED
+}
 
-  mataKuliah    MataKuliah  @relation(fields: [mataKuliahId], references: [id])
-  dosen         Dosen       @relation(fields: [dosenId], references: [nip])
+model PenugasanMengajar {
+  id                Int              @id @default(autoincrement())
+  mataKuliahId      Int
+  dosenId           String
+  tahunAjaran       String
+  semester          Int
+  status            StatusPenugasan   @default(PENDING_APPROVAL)
+  assignedBy        String            // "DOSEN" atau "KAPRODI"
+  assignedById      String            // NIP dosen atau username kaprodi
+  requestedBy       String?           // Jika dosen yang request, simpan NIP-nya
+  approvedBy        String?           // Jika kaprodi approve, simpan username-nya
+  approvedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  mataKuliah        MataKuliah       @relation(fields: [mataKuliahId], references: [id])
+  dosen             Dosen             @relation(fields: [dosenId], references: [nip])
 
   @@unique([mataKuliahId, tahunAjaran, semester])
   @@index([dosenId])
+  @@index([status])
   @@map("penugasan_mengajar")
 }
