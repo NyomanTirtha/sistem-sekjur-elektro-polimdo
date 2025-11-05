@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, User, Lock, AlertCircle, Shield } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
 import logoLogin from '../../aset/gambar/xyz-logo.png';
 
 const useDocumentTitle = (title) => {
@@ -132,27 +132,16 @@ const LoginPage = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full opacity-5">
-          <div className="absolute top-20 left-20 w-32 h-32 border border-blue-600 rounded-full animate-pulse"></div>
-          <div className="absolute top-40 right-32 w-24 h-24 border border-yellow-500 rounded-full animate-pulse delay-100"></div>
-          <div className="absolute bottom-32 left-40 w-20 h-20 border border-blue-600 rounded-full animate-pulse delay-200"></div>
-          <div className="absolute bottom-20 right-20 w-28 h-28 border border-yellow-500 rounded-full animate-pulse delay-300"></div>
-        </div>
-      </div>
-
-      <div className="relative w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         {/* Main Login Container */}
-        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300 hover:shadow-3xl">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-10 text-center relative">
-            <div className="absolute top-0 left-0 w-full h-full bg-black/5"></div>
-            <div className="relative">
+          <div className="bg-gray-800 px-8 py-8 text-center">
+            <div>
               {/* Logo Container */}
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4 transform transition-transform duration-300 hover:scale-110">
-                <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
+                <div className="w-12 h-12 rounded flex items-center justify-center overflow-hidden">
                   <img
                     src={logoLogin}
                     alt="Polimdo Logo"
@@ -161,11 +150,10 @@ const LoginPage = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              <h1 className="text-2xl font-bold text-white mb-2">
+              <h1 className="text-xl font-semibold text-white mb-2">
                 POLITEKNIK NEGERI MANADO
               </h1>
-              <p className="text-blue-100 text-sm font-medium">
-                {/* ✅ UPDATED: Subtitle yang lebih tepat */}
+              <p className="text-gray-300 text-sm">
                 Sistem Sekretaris Jurusan
               </p>
             </div>
@@ -175,10 +163,10 @@ const LoginPage = ({ onLoginSuccess }) => {
           <div className="px-8 py-8">
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg animate-fade-in">
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-400 mr-3" />
-                  <span className="text-sm text-red-700 font-medium">{error}</span>
+                  <AlertCircle className="w-5 h-5 text-red-600 mr-3" />
+                  <span className="text-sm text-red-700">{error}</span>
                 </div>
               </div>
             )}
@@ -187,31 +175,25 @@ const LoginPage = ({ onLoginSuccess }) => {
               {/* Role Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  <Shield className="w-4 h-4 inline mr-2" />
                   Pilih Role
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* ✅ UPDATED: Role options sesuai sistem baru */}
                   {[
-                    { value: 'SEKJUR', label: 'Sekretaris Jurusan', color: 'from-blue-500 to-blue-600', icon: '👨‍💼' },
-                    { value: 'DOSEN', label: 'Dosen', color: 'from-green-500 to-green-600', icon: '👨‍🏫' },
-                    { value: 'KAPRODI', label: 'Ketua Prodi', color: 'from-yellow-500 to-yellow-600', icon: '👨‍🎓' },
-                    { value: 'MAHASISWA', label: 'Mahasiswa', color: 'from-purple-500 to-purple-600', icon: '🎓' }
+                    { value: 'SEKJUR', label: 'Sekretaris Jurusan' },
+                    { value: 'DOSEN', label: 'Dosen' },
+                    { value: 'KAPRODI', label: 'Ketua Prodi' },
+                    { value: 'MAHASISWA', label: 'Mahasiswa' }
                   ].map((roleOption) => (
                     <button
                       key={roleOption.value}
                       type="button"
                       onClick={() => handleRoleChange(roleOption.value)}
-                      className={`relative px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${formData.role === roleOption.value
-                        ? `bg-gradient-to-r ${roleOption.color} text-white shadow-lg transform scale-105`
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${formData.role === roleOption.value
+                        ? 'bg-blue-600 text-white border border-blue-600'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                         }`}
                     >
-                      <span className="mr-2">{roleOption.icon}</span>
                       {roleOption.label}
-                      {formData.role === roleOption.value && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-current"></div>
-                      )}
                     </button>
                   ))}
                 </div>
@@ -220,14 +202,13 @@ const LoginPage = ({ onLoginSuccess }) => {
               {/* Username Input */}
               <div>
                 <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
-                  {/* ✅ UPDATED: Dynamic label berdasarkan role */}
                   {formData.role === 'MAHASISWA' ? 'NIM' :
                     formData.role === 'DOSEN' || formData.role === 'KAPRODI' ? 'NIP' :
                       'Username'}
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="username"
@@ -237,7 +218,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                     value={formData.username}
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
-                    className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={
                       formData.role === 'MAHASISWA' ? 'Masukkan NIM' :
                         formData.role === 'DOSEN' || formData.role === 'KAPRODI' ? 'Masukkan NIP' :
@@ -246,7 +227,6 @@ const LoginPage = ({ onLoginSuccess }) => {
                     disabled={loading}
                   />
                 </div>
-                {/* ✅ ADDED: Helper text untuk user */}
                 <p className="mt-1 text-xs text-gray-500">
                   {formData.role === 'SEKJUR' && 'Gunakan username sekretaris jurusan (contoh: sekjur_elektro)'}
                   {formData.role === 'MAHASISWA' && 'Masukkan NIM Anda'}
@@ -259,9 +239,9 @@ const LoginPage = ({ onLoginSuccess }) => {
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Password
                 </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="password"
@@ -271,14 +251,14 @@ const LoginPage = ({ onLoginSuccess }) => {
                     value={formData.password}
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
-                    className="block w-full pl-12 pr-14 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    className="block w-full pl-11 pr-14 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Masukkan password"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600"
                     disabled={loading}
                   >
                     {showPassword ? (
@@ -288,17 +268,13 @@ const LoginPage = ({ onLoginSuccess }) => {
                     )}
                   </button>
                 </div>
-                {/* ✅ ADDED: Helper text untuk password default */}
-                <p className="mt-1 text-xs text-gray-500">
-                  Password default: 123456
-                </p>
               </div>
 
               {/* Submit Button */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -311,23 +287,11 @@ const LoginPage = ({ onLoginSuccess }) => {
               </button>
             </div>
           </div>
-
-          {/* Footer Section - ✅ ADDED: Quick login info */}
-          <div className="px-8 pb-6">
-            <div className="bg-blue-50 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Akun Demo:</h4>
-              <div className="text-xs text-blue-700 space-y-1">
-                <div>• Sekjur Elektro: <code className="bg-blue-100 px-1 rounded">sekjur_elektro</code></div>
-                <div>• Sekjur Informatika: <code className="bg-blue-100 px-1 rounded">sekjur_informatika</code></div>
-                <div>• Password semua: <code className="bg-blue-100 px-1 rounded">123456</code></div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Copyright */}
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-500 font-medium">
+          <p className="text-sm text-gray-500">
             © 2025 Politeknik Negeri Manado. All rights reserved.
           </p>
         </div>

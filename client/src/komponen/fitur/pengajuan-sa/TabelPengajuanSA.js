@@ -358,29 +358,27 @@ const TabelPengajuanSA = ({
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.isGrouped ? (
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900">
                           {item.mataKuliahList && item.mataKuliahList.length > 0
                             ? item.mataKuliahList.map((mk, idx) => (
                               <span key={mk.id}>
-                                {mk.nama} (Sem {mk.semester}){idx < item.mataKuliahList.length - 1 ? ', ' : ''}
+                                {mk.nama}{idx < item.mataKuliahList.length - 1 ? ', ' : ''}
                               </span>
                             ))
                             : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900">
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
-                          {item.mataKuliah?.semester && (
-                            <span> (Sem {item.mataKuliah.semester})</span>
-                          )}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           {item.mataKuliah?.sks || 0} SKS
+                          {item.mataKuliah?.semester && ` • Semester ${item.mataKuliah.semester}`}
                         </div>
                       </div>
                     )}
@@ -391,11 +389,6 @@ const TabelPengajuanSA = ({
                     <div className="font-medium text-green-600">
                       {formatCurrency(item.nominal || 0)}
                     </div>
-                    {item.isGrouped ? null : (
-                      <div className="text-xs text-gray-500">
-                        {item.mataKuliah?.sks || 0} SKS
-                      </div>
-                    )}
                   </td>
 
                   {/* Tanggal */}
@@ -412,26 +405,26 @@ const TabelPengajuanSA = ({
 
                       if (semesterPengajuan && tahunAjaran) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                            Semester {semesterPengajuan} • {tahunAjaran}
+                          <span className="text-gray-700">
+                            {tahunAjaran}
                           </span>
                         );
                       } else if (semesterPengajuan) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="text-gray-700">
                             Semester {semesterPengajuan}
                           </span>
                         );
                       } else if (tahunAjaran) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="text-gray-700">
                             {tahunAjaran}
                           </span>
                         );
                       } else {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                            Tidak diketahui
+                          <span className="text-gray-400 italic">
+                            -
                           </span>
                         );
                       }
@@ -447,39 +440,30 @@ const TabelPengajuanSA = ({
                   {/* Dosen */}
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.dosen ? (
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium">{item.dosen.nama}</div>
-                          <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
-                        </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{item.dosen.nama}</div>
+                        <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
                       </div>
                     ) : (
-                      <span className="text-gray-400 italic">Belum ditentukan</span>
+                      <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
 
                   {/* Nilai */}
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="font-bold text-green-600 text-lg">{item.nilaiAkhir}</span>
-                        {userType === 'mahasiswa' && item.semuaSudahDinilai && (
-                          <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">✓ Selesai</span>
-                        )}
-                      </div>
+                      <span className="font-semibold text-gray-900">{item.nilaiAkhir}</span>
                     ) : (
-                      <span className="text-gray-400 italic">Belum dinilai</span>
+                      <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
 
                   {/* Indeks */}
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
-                      <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                      <span className="font-semibold text-gray-900">{getIndeksHuruf(item.nilaiAkhir)}</span>
                     ) : (
-                      <span className="text-gray-400 italic">Belum dinilai</span>
+                      <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
 
@@ -538,29 +522,27 @@ const TabelPengajuanSA = ({
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.isGrouped ? (
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900">
                           {item.mataKuliahList && item.mataKuliahList.length > 0
                             ? item.mataKuliahList.map((mk, idx) => (
                               <span key={mk.id}>
-                                {mk.nama} (Sem {mk.semester}){idx < item.mataKuliahList.length - 1 ? ', ' : ''}
+                                {mk.nama}{idx < item.mataKuliahList.length - 1 ? ', ' : ''}
                               </span>
                             ))
                             : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900">
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
-                          {item.mataKuliah?.semester && (
-                            <span> (Sem {item.mataKuliah.semester})</span>
-                          )}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           {item.mataKuliah?.sks || 0} SKS
+                          {item.mataKuliah?.semester && ` • Semester ${item.mataKuliah.semester}`}
                         </div>
                       </div>
                     )}
@@ -569,11 +551,6 @@ const TabelPengajuanSA = ({
                     <div className="font-medium text-green-600">
                       {formatCurrency(item.nominal || 0)}
                     </div>
-                    {item.isGrouped ? null : (
-                      <div className="text-xs text-gray-500">
-                        {item.mataKuliah?.sks || 0} SKS
-                      </div>
-                    )}
                   </td>
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
@@ -586,26 +563,26 @@ const TabelPengajuanSA = ({
 
                       if (semesterPengajuan && tahunAjaran) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                            Semester {semesterPengajuan} • {tahunAjaran}
+                          <span className="text-gray-700">
+                            {tahunAjaran}
                           </span>
                         );
                       } else if (semesterPengajuan) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="text-gray-700">
                             Semester {semesterPengajuan}
                           </span>
                         );
                       } else if (tahunAjaran) {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="text-gray-700">
                             {tahunAjaran}
                           </span>
                         );
                       } else {
                         return (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                            Tidak diketahui
+                          <span className="text-gray-400 italic">
+                            -
                           </span>
                         );
                       }
@@ -620,24 +597,18 @@ const TabelPengajuanSA = ({
                   {userType !== 'dosen' && (
                     <td className="px-3 py-3 text-sm text-gray-900">
                       {item.dosen ? (
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <div className="font-medium">{item.dosen.nama}</div>
-                            <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
-                          </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{item.dosen.nama}</div>
+                          <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
                         </div>
                       ) : (
-                        <span className="text-gray-400 italic">Belum ditentukan</span>
+                        <span className="text-gray-400 italic">-</span>
                       )}
                     </td>
                   )}
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="font-bold text-green-600 text-lg">{item.nilaiAkhir}</span>
-                      </div>
+                      <span className="font-semibold text-gray-900">{item.nilaiAkhir}</span>
                     ) : canDosenInputNilai(item) ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -671,14 +642,14 @@ const TabelPengajuanSA = ({
                         </button>
                       </div>
                     ) : (
-                      <span className="text-gray-400 italic">Belum dinilai</span>
+                      <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
-                      <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                      <span className="font-semibold text-gray-900">{getIndeksHuruf(item.nilaiAkhir)}</span>
                     ) : (
-                      <span className="text-gray-400 italic">Belum dinilai</span>
+                      <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
                   <td className="px-3 py-3">

@@ -165,7 +165,12 @@ export default function App() {
 
   // Get menu items for sidebar (without navigation items like Home and Logout)
   const getSidebarMenuItems = () => {
-    return getFilteredMenuItems().map(item => ({
+    const filtered = getFilteredMenuItems();
+    // Remove duplicates based on id to prevent duplicate menu items
+    const uniqueItems = filtered.filter((item, index, self) => 
+      index === self.findIndex((t) => t.id === item.id)
+    );
+    return uniqueItems.map(item => ({
       id: item.id,
       label: item.label,
       icon: item.icon

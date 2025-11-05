@@ -2,10 +2,8 @@
 
 // Mapping program studi ID ke nama
 export const PROGRAM_STUDI_MAPPING = {
-  1: 'S1 Teknik Informatika',
-  2: 'S1 Sistem Informasi', 
-  3: 'S1 Teknik Komputer',
-  4: 'D3 Teknik Informatika'
+  1: 'D4 Teknik Informatika',
+  2: 'D4 Teknik Listrik'
 };
 
 // Function untuk mendapatkan nama program studi berdasarkan ID

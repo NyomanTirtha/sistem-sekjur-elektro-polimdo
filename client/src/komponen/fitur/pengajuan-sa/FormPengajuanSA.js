@@ -60,12 +60,13 @@ const FormPengajuanSA = ({
   const getAvailableMataKuliah = (list) => {
     if (!currentSemester || !list) return list || [];
     
-    // Mahasiswa hanya bisa mengajukan SA untuk semester di bawah semester saat ini
-    // Contoh: semester 4 bisa mengajukan semester 1, 2, 3
-    // Semester 3 bisa mengajukan semester 1, 2
+    // Mahasiswa hanya bisa mengajukan SA untuk semester DI BAWAH semester saat ini
+    // Contoh: semester 3 bisa mengajukan semester 1, 2 (tidak bisa semester 3, 4, 5, dst)
+    // Semester 4 bisa mengajukan semester 1, 2, 3 (tidak bisa semester 4, 5, 6, dst)
     return list.filter(mk => {
-      const mkSemester = mk.semester ? parseInt(mk.semester) : null;
+      const mkSemester = mk.semester ? parseInt(mk.semester, 10) : null;
       if (!mkSemester) return true; // Jika tidak ada semester, tetap tampilkan
+      // Hanya tampilkan mata kuliah dengan semester < currentSemester
       return mkSemester < currentSemester;
     });
   };
@@ -182,14 +183,15 @@ const FormPengajuanSA = ({
       return;
     }
 
-    // Validasi semester: mahasiswa hanya bisa mengajukan SA untuk semester di bawah semester saat ini
+    // Validasi semester: mahasiswa hanya bisa mengajukan SA untuk semester DI BAWAH semester saat ini
     if (currentSemester && mataKuliah.semester) {
-      const mkSemester = parseInt(mataKuliah.semester);
+      const mkSemester = parseInt(mataKuliah.semester, 10);
+      // Blokir jika mata kuliah semester >= semester mahasiswa saat ini
       if (mkSemester >= currentSemester) {
         showWarningAlert(
           `Anda tidak dapat mengajukan SA untuk mata kuliah semester ${mkSemester}!\n\n` +
           `Anda saat ini berada di semester ${currentSemester}.\n` +
-          `Anda hanya dapat mengajukan SA untuk mata kuliah semester ${currentSemester - 1} ke bawah.\n\n` +
+          `Anda hanya dapat mengajukan SA untuk mata kuliah di semester DI BAWAH semester ${currentSemester}.\n\n` +
           `Mata kuliah yang dapat diajukan: Semester 1 sampai Semester ${currentSemester - 1}.`
         );
         return;
@@ -243,7 +245,8 @@ const FormPengajuanSA = ({
     if (currentSemester) {
       const invalidMataKuliah = formData.selectedMataKuliah.filter(mk => {
         if (!mk.semester) return false; // Jika tidak ada semester, skip
-        const mkSemester = parseInt(mk.semester);
+        const mkSemester = parseInt(mk.semester, 10);
+        // Invalid jika semester mata kuliah >= semester mahasiswa saat ini
         return mkSemester >= currentSemester;
       });
 
@@ -253,7 +256,7 @@ const FormPengajuanSA = ({
           `Terdapat mata kuliah dengan semester yang tidak valid!\n\n` +
           `Mata kuliah yang tidak valid: ${invalidNames}\n\n` +
           `Anda saat ini berada di semester ${currentSemester}.\n` +
-          `Anda hanya dapat mengajukan SA untuk mata kuliah semester ${currentSemester - 1} ke bawah.\n\n` +
+          `Anda hanya dapat mengajukan SA untuk mata kuliah di semester DI BAWAH semester ${currentSemester}.\n\n` +
           `Harap hapus mata kuliah yang tidak valid dari daftar pilihan.`
         );
         return;
@@ -341,22 +344,14 @@ const FormPengajuanSA = ({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -20, scale: 0.98 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="bg-white border border-gray-200 rounded-xl shadow-lg p-8 mb-6 relative overflow-hidden"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 mb-6"
       >
-        {/* Background decoration */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600"></div>
-        
         {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex items-center justify-between mb-8"
-        >
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <FileText className="w-6 h-6 text-blue-600" />
@@ -366,23 +361,16 @@ const FormPengajuanSA = ({
               <p className="text-sm text-gray-500">Silakan lengkapi formulir di bawah ini</p>
             </div>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={resetForm}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-6 h-6" />
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
 
         {/* Info Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8"
-        >
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="p-2 bg-blue-100 rounded-lg">
               <AlertCircle className="w-5 h-5 text-blue-600" />
@@ -396,23 +384,19 @@ const FormPengajuanSA = ({
               {currentSemester && (
                 <p className="text-blue-700 leading-relaxed">
                   <span className="font-semibold">Ketentuan Semester:</span> Anda saat ini berada di semester {currentSemester}. 
-                  Anda hanya dapat mengajukan SA untuk mata kuliah semester {currentSemester - 1} ke bawah 
+                  Anda hanya dapat mengajukan SA untuk mata kuliah di semester DI BAWAH semester {currentSemester} 
                   (Semester 1 sampai Semester {currentSemester - 1}).
                 </p>
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="space-y-6">
             {/* Upload Section */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <Upload className="w-5 h-5 text-gray-600" />
                 <label className="text-lg font-semibold text-gray-800">
@@ -477,14 +461,10 @@ const FormPengajuanSA = ({
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Nominal Section */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <CreditCard className="w-5 h-5 text-gray-600" />
                 <label className="text-lg font-semibold text-gray-800">
@@ -508,35 +488,23 @@ const FormPengajuanSA = ({
                 </div>
               </div>
               
-              <AnimatePresence>
-                {formData.nominal && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-lg"
-                  >
+              {formData.nominal && (
+                  <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-amber-800">Maksimal SKS:</span>
                       <span className="font-semibold text-amber-900">
                         {maxSKS} SKS
                       </span>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right Column */}
           <div className="space-y-6">
             {/* Mata Kuliah Search */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="relative"
-            >
+            <div className="relative">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="w-5 h-5 text-gray-600" />
                 <label className="text-lg font-semibold text-gray-800">
@@ -556,28 +524,22 @@ const FormPengajuanSA = ({
               </div>
 
               {/* Dropdown */}
-              <AnimatePresence>
-                {showMataKuliahDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+              {showMataKuliahDropdown && (
+                  <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                   >
                     {filteredMataKuliah.length > 0 ? (
                       filteredMataKuliah.map((mataKuliah) => {
                       const isSelected = formData.selectedMataKuliah.some(mk => mk.id === mataKuliah.id);
                       const canAdd = canAddMataKuliah(formData.selectedMataKuliah, formData.nominal, mataKuliah.sks);
                       
-                      // Validasi semester
-                      const mkSemester = mataKuliah.semester ? parseInt(mataKuliah.semester) : null;
+                      // Validasi semester: hanya semester < currentSemester yang valid
+                      const mkSemester = mataKuliah.semester ? parseInt(mataKuliah.semester, 10) : null;
                       const isValidSemester = !currentSemester || !mkSemester || mkSemester < currentSemester;
                       const canSelect = !isSelected && canAdd && isValidSemester;
                       
                       return (
-                        <motion.div
+                        <div
                           key={mataKuliah.id}
-                          whileHover={{ backgroundColor: canSelect ? '#f8fafc' : undefined }}
                           onClick={() => canSelect && handleSelectMataKuliah(mataKuliah)}
                           className={`p-4 border-b border-gray-100 transition-colors ${
                             isSelected ? 'bg-green-50 cursor-not-allowed' : 
@@ -612,7 +574,7 @@ const FormPengajuanSA = ({
                               )}
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       );
                     })
                     ) : (
@@ -627,17 +589,12 @@ const FormPengajuanSA = ({
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </motion.div>
+            </div>
 
             {/* Keterangan */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <MessageSquare className="w-5 h-5 text-gray-600" />
                 <label className="text-lg font-semibold text-gray-800">
@@ -652,28 +609,19 @@ const FormPengajuanSA = ({
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
                 required
               />
-            </motion.div>
+            </div>
           </div>
         </div>
 
         {/* Selected Mata Kuliah */}
-        <AnimatePresence>
-          {formData.selectedMataKuliah.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mt-8"
-            >
+        {formData.selectedMataKuliah.length > 0 && (
+            <div className="mt-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Mata Kuliah Dipilih</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {formData.selectedMataKuliah.map((mataKuliah, index) => (
-                  <motion.div
+                  <div
                     key={mataKuliah.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl"
+                    className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg"
                   >
                     <div>
                       <p className="font-medium text-blue-900">{index + 1}. {mataKuliah.nama}</p>
@@ -682,23 +630,19 @@ const FormPengajuanSA = ({
                         {mataKuliah.semester && ` • Semester ${mataKuliah.semester}`}
                       </p>
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={() => handleRemoveMataKuliah(mataKuliah.id)}
                       className="p-2 text-red-500 hover:text-red-700 hover:bg-white rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </motion.button>
-                  </motion.div>
+                    </button>
+                  </div>
                 ))}
               </div>
               
               {/* Summary */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-4 p-6 bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-xl"
+              <div
+                className="mt-4 p-6 bg-gray-50 border border-gray-200 rounded-lg"
               >
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-gray-800">Total Ringkasan:</span>
@@ -711,27 +655,19 @@ const FormPengajuanSA = ({
                     </p>
                   </div>
                 </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* Submit Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="mt-8 flex justify-end"
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        <div className="mt-8 flex justify-end">
+          <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={`px-8 py-3 rounded-xl font-semibold text-white transition-all ${
+            className={`px-8 py-3 rounded-lg font-medium text-white transition-colors ${
               isSubmitting
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
             {isSubmitting ? (
@@ -745,8 +681,8 @@ const FormPengajuanSA = ({
                 <span>Submit Pengajuan SA</span>
               </div>
             )}
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
