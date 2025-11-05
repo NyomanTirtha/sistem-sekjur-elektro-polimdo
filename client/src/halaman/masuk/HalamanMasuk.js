@@ -203,8 +203,8 @@ const LoginPage = ({ onLoginSuccess }) => {
                       type="button"
                       onClick={() => handleRoleChange(roleOption.value)}
                       className={`relative px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${formData.role === roleOption.value
-                          ? `bg-gradient-to-r ${roleOption.color} text-white shadow-lg transform scale-105`
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        ? `bg-gradient-to-r ${roleOption.color} text-white shadow-lg transform scale-105`
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
                         }`}
                     >
                       <span className="mr-2">{roleOption.icon}</span>
