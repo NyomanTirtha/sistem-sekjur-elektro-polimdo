@@ -95,51 +95,36 @@ export const showAlert = (message, type = ALERT_TYPES.INFO, duration = 5000) => 
 
     const getAlertStyles = () => {
       const baseStyles = {
-        padding: '16px',
-        borderRadius: '12px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+        padding: '12px 16px',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         marginBottom: '12px',
-        transform: `translateY(${isVisible ? '0' : '-100%'})`,
-        transition: 'transform 0.3s ease-in-out',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: '12px',
+        gap: '10px',
         maxWidth: '100%',
         wordWrap: 'break-word',
         pointerEvents: 'auto',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        backgroundColor: '#fff',
+        border: '1px solid #ccc'
       };
 
       switch (type) {
         case ALERT_TYPES.SUCCESS:
-          return { ...baseStyles, backgroundColor: '#d1fae5', border: '1px solid #10b981', color: '#065f46' };
+          return { ...baseStyles, borderColor: '#28a745', color: '#155724' };
         case ALERT_TYPES.ERROR:
-          return { ...baseStyles, backgroundColor: '#fee2e2', border: '1px solid #ef4444', color: '#991b1b' };
+          return { ...baseStyles, borderColor: '#dc3545', color: '#721c24' };
         case ALERT_TYPES.WARNING:
-          return { ...baseStyles, backgroundColor: '#fef3c7', border: '1px solid #f59e0b', color: '#92400e' };
+          return { ...baseStyles, borderColor: '#ffc107', color: '#856404' };
         case ALERT_TYPES.INFO:
         default:
-          return { ...baseStyles, backgroundColor: '#dbeafe', border: '1px solid #3b82f6', color: '#1e40af' };
-      }
-    };
-
-    const getIcon = () => {
-      switch (type) {
-        case ALERT_TYPES.SUCCESS:
-          return '✅';
-        case ALERT_TYPES.ERROR:
-          return '❌';
-        case ALERT_TYPES.WARNING:
-          return '⚠️';
-        case ALERT_TYPES.INFO:
-        default:
-          return 'ℹ️';
+          return { ...baseStyles, borderColor: '#17a2b8', color: '#0c5460' };
       }
     };
 
     return (
       <div style={getAlertStyles()} onClick={handleClose}>
-        <span style={{ fontSize: '18px', flexShrink: 0 }}>{getIcon()}</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, marginBottom: '4px' }}>
             {type === ALERT_TYPES.SUCCESS && 'Berhasil'}
@@ -162,10 +147,11 @@ export const showAlert = (message, type = ALERT_TYPES.INFO, duration = 5000) => 
             color: 'inherit',
             opacity: 0.7,
             flexShrink: 0,
-            padding: '4px'
+            padding: '4px',
+            fontWeight: 'bold'
           }}
         >
-          ✕
+          ×
         </button>
       </div>
     );
@@ -199,33 +185,21 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
 
   // Confirm component
   const Confirm = () => {
-    const [isVisible, setIsVisible] = React.useState(false);
-
-    React.useEffect(() => {
-      // Trigger animation
-      setTimeout(() => setIsVisible(true), 10);
-    }, []);
 
     const handleConfirm = () => {
-      setIsVisible(false);
-      setTimeout(() => {
-        root.unmount();
-        if (document.body.contains(confirmContainer)) {
-          document.body.removeChild(confirmContainer);
-        }
-        if (onConfirm) onConfirm();
-      }, 200);
+      root.unmount();
+      if (document.body.contains(confirmContainer)) {
+        document.body.removeChild(confirmContainer);
+      }
+      if (onConfirm) onConfirm();
     };
 
     const handleCancel = () => {
-      setIsVisible(false);
-      setTimeout(() => {
-        root.unmount();
-        if (document.body.contains(confirmContainer)) {
-          document.body.removeChild(confirmContainer);
-        }
-        if (onCancel) onCancel();
-      }, 200);
+      root.unmount();
+      if (document.body.contains(confirmContainer)) {
+        document.body.removeChild(confirmContainer);
+      }
+      if (onCancel) onCancel();
     };
 
     const handleBackdropClick = (e) => {
@@ -237,58 +211,30 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
     const getConfirmStyles = () => {
       return {
         background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        borderRadius: '4px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
         maxWidth: '500px',
         width: '100%',
-        transform: `scale(${isVisible ? 1 : 0.9})`,
-        opacity: isVisible ? 1 : 0,
-        transition: 'all 0.2s ease-in-out',
+        border: '1px solid #ccc',
         overflow: 'hidden'
       };
     };
 
     const getButtonStyles = (isPrimary = false) => {
       const baseStyles = {
-        padding: '12px 24px',
-        borderRadius: '8px',
-        fontWeight: 600,
+        padding: '8px 16px',
+        borderRadius: '4px',
+        fontWeight: 500,
         fontSize: '14px',
         cursor: 'pointer',
-        transition: 'all 0.2s ease-in-out',
-        border: 'none',
-        minWidth: '100px'
+        border: '1px solid #ccc',
+        minWidth: '80px'
       };
 
       if (isPrimary) {
-        switch (type) {
-          case CONFIRM_TYPES.DANGER:
-            return { ...baseStyles, backgroundColor: '#ef4444', color: 'white' };
-          case CONFIRM_TYPES.SUCCESS:
-            return { ...baseStyles, backgroundColor: '#10b981', color: 'white' };
-          case CONFIRM_TYPES.INFO:
-            return { ...baseStyles, backgroundColor: '#3b82f6', color: 'white' };
-          case CONFIRM_TYPES.WARNING:
-          default:
-            return { ...baseStyles, backgroundColor: '#f59e0b', color: 'white' };
-        }
+        return { ...baseStyles, backgroundColor: '#007bff', color: 'white', borderColor: '#007bff' };
       } else {
-        return { ...baseStyles, backgroundColor: '#f3f4f6', color: '#374151' };
-      }
-    };
-
-    const getIcon = () => {
-      switch (type) {
-        case CONFIRM_TYPES.SUCCESS:
-          return '✅';
-        case CONFIRM_TYPES.ERROR:
-        case CONFIRM_TYPES.DANGER:
-          return '❌';
-        case CONFIRM_TYPES.WARNING:
-          return '⚠️';
-        case CONFIRM_TYPES.INFO:
-        default:
-          return 'ℹ️';
+        return { ...baseStyles, backgroundColor: '#fff', color: '#333' };
       }
     };
 
@@ -297,12 +243,8 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
         {/* Header */}
         <div style={{
           padding: '24px 24px 16px 24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
+          borderBottom: '1px solid #e5e7eb'
         }}>
-          <span style={{ fontSize: '24px' }}>{getIcon()}</span>
           <h3 style={{
             margin: 0,
             fontSize: '18px',
@@ -403,37 +345,25 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
 
   // Prompt component
   const Prompt = () => {
-    const [isVisible, setIsVisible] = React.useState(false);
     const [inputValue, setInputValue] = React.useState(defaultValue);
-
-    React.useEffect(() => {
-      // Trigger animation
-      setTimeout(() => setIsVisible(true), 10);
-    }, []);
 
     const handleConfirm = () => {
       if (!inputValue.trim()) {
         return;
       }
-      setIsVisible(false);
-      setTimeout(() => {
-        root.unmount();
-        if (document.body.contains(promptContainer)) {
-          document.body.removeChild(promptContainer);
-        }
-        if (onConfirm) onConfirm(inputValue);
-      }, 200);
+      root.unmount();
+      if (document.body.contains(promptContainer)) {
+        document.body.removeChild(promptContainer);
+      }
+      if (onConfirm) onConfirm(inputValue);
     };
 
     const handleCancel = () => {
-      setIsVisible(false);
-      setTimeout(() => {
-        root.unmount();
-        if (document.body.contains(promptContainer)) {
-          document.body.removeChild(promptContainer);
-        }
-        if (onCancel) onCancel();
-      }, 200);
+      root.unmount();
+      if (document.body.contains(promptContainer)) {
+        document.body.removeChild(promptContainer);
+      }
+      if (onCancel) onCancel();
     };
 
     const handleKeyPress = (e) => {
@@ -447,33 +377,30 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
     const getPromptStyles = () => {
       return {
         background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        borderRadius: '4px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
         maxWidth: '500px',
         width: '100%',
-        transform: `scale(${isVisible ? 1 : 0.9})`,
-        opacity: isVisible ? 1 : 0,
-        transition: 'all 0.2s ease-in-out',
+        border: '1px solid #ccc',
         overflow: 'hidden'
       };
     };
 
     const getButtonStyles = (isPrimary = false) => {
       const baseStyles = {
-        padding: '12px 24px',
-        borderRadius: '8px',
-        fontWeight: 600,
+        padding: '8px 16px',
+        borderRadius: '4px',
+        fontWeight: 500,
         fontSize: '14px',
         cursor: 'pointer',
-        transition: 'all 0.2s ease-in-out',
-        border: 'none',
-        minWidth: '100px'
+        border: '1px solid #ccc',
+        minWidth: '80px'
       };
 
       if (isPrimary) {
-        return { ...baseStyles, backgroundColor: '#3b82f6', color: 'white' };
+        return { ...baseStyles, backgroundColor: '#007bff', color: 'white', borderColor: '#007bff' };
       } else {
-        return { ...baseStyles, backgroundColor: '#f3f4f6', color: '#374151' };
+        return { ...baseStyles, backgroundColor: '#fff', color: '#333' };
       }
     };
 
@@ -482,12 +409,8 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
         {/* Header */}
         <div style={{
           padding: '24px 24px 16px 24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
+          borderBottom: '1px solid #e5e7eb'
         }}>
-          <span style={{ fontSize: '24px' }}>ℹ️</span>
           <h3 style={{
             margin: 0,
             fontSize: '18px',

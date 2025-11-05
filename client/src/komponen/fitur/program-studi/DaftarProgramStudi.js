@@ -68,38 +68,56 @@ const ProdiContent = ({ authToken, currentUser }) => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-    
-    try {
-      const url = editData 
-        ? `${API_BASE}/prodi/${editData.id}`
-        : `${API_BASE}/prodi`;
-      
-      const method = editData ? 'PUT' : 'POST';
-      
-      const submitData = editData
-        ? { ...formData }
-        : { ...formData, jurusanId: currentUser?.jurusanId };
-      
-      const response = await fetch(url, {
-        method,
-        headers: getHeaders(),
-        body: JSON.stringify(submitData),
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+    const confirmMessage = editData 
+      ? `Apakah Anda yakin ingin memperbarui program studi "${formData.nama}"?\n\nData yang sudah diperbarui tidak dapat dikembalikan.`
+      : `Apakah Anda yakin ingin menambahkan program studi baru dengan nama "${formData.nama}"?`;
 
-      const result = await response.json();
-      console.log('Success:', result);
-      
-      setShowModal(false);
-      resetForm();
-      fetchProdi();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError(`Gagal menyimpan data: ${error.message}`);
-    }
+    showConfirm(
+      confirmMessage,
+      async () => {
+        try {
+          const url = editData 
+            ? `${API_BASE}/prodi/${editData.id}`
+            : `${API_BASE}/prodi`;
+          
+          const method = editData ? 'PUT' : 'POST';
+          
+          const submitData = editData
+            ? { ...formData }
+            : { ...formData, jurusanId: currentUser?.jurusanId };
+          
+          const response = await fetch(url, {
+            method,
+            headers: getHeaders(),
+            body: JSON.stringify(submitData),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          console.log('Success:', result);
+          
+          setShowModal(false);
+          resetForm();
+          fetchProdi();
+          showSuccessAlert(editData ? 'Program studi berhasil diperbarui!' : 'Program studi berhasil ditambahkan!');
+        } catch (error) {
+          console.error('Error submitting form:', error);
+          showErrorAlert(`Gagal menyimpan data: ${error.message}`);
+          setError(`Gagal menyimpan data: ${error.message}`);
+        }
+      },
+      () => {
+        // User cancelled
+      },
+      editData ? 'Konfirmasi Perbarui Data' : 'Konfirmasi Tambah Data',
+      'warning',
+      editData ? 'Perbarui' : 'Tambah',
+      'Batal'
+    );
   };
 
   // Handle delete
@@ -258,37 +276,37 @@ const ProdiContent = ({ authToken, currentUser }) => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
           ) : (
-            <table className="w-full">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left p-4 font-medium text-gray-900">No</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Nama Program Studi</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Ketua Prodi</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Jumlah Dosen</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Jumlah Mahasiswa</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Aksi</th>
+                <tr className="bg-gray-100 border-b border-gray-300">
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">No</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Nama Program Studi</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Ketua Prodi</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Jumlah Dosen</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Jumlah Mahasiswa</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProdi.map((prd, index) => (
-                  <tr key={prd.id} className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                    <td className="p-4">{index + 1}</td>
-                    <td className="p-4">{prd.nama || '-'}</td>
-                    <td className="p-4">{prd.ketuaProdi || '-'}</td>
-                    <td className="p-4">{prd.dosen?.length || 0}</td>
-                    <td className="p-4">{prd.mahasiswa?.length || 0}</td>
-                    <td className="p-4">
+                  <tr key={prd.id} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="p-3 text-sm text-gray-900">{index + 1}</td>
+                    <td className="p-3 text-sm text-gray-900">{prd.nama || '-'}</td>
+                    <td className="p-3 text-sm text-gray-900">{prd.ketuaProdi || '-'}</td>
+                    <td className="p-3 text-sm text-gray-900">{prd.dosen?.length || 0}</td>
+                    <td className="p-3 text-sm text-gray-900">{prd.mahasiswa?.length || 0}</td>
+                    <td className="p-3">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => openModal(prd)}
-                          className="text-blue-500 hover:text-blue-700 p-1 rounded transition-colors"
+                          className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(prd.id)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                          className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
                           title="Hapus"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -320,12 +338,12 @@ const ProdiContent = ({ authToken, currentUser }) => {
         <AnimatePresence>
           {showModal && (
             <motion.div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
               style={{ zIndex: 9999 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setShowModal(false);
@@ -334,63 +352,43 @@ const ProdiContent = ({ authToken, currentUser }) => {
               }}
             >
               <motion.div 
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
                 style={{ zIndex: 10000 }}
-                initial={{ opacity: 0, scale: 0.8, y: 50 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 50 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                  duration: 0.3
-                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header dengan gradient */}
-                <div className="relative p-8 text-white bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800">
-                  <div className="absolute inset-0 bg-black/10"></div>
-                  <div className="relative flex justify-between items-start">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                          <BookOpen className="w-8 h-8 text-white" />
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full shadow-lg"></div>
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold mb-1">
-                          {editData ? 'Edit Program Studi' : 'Tambah Program Studi Baru'}
-                        </h2>
-                        <p className="text-sm text-indigo-100">
-                          {editData ? 'Perbarui informasi program studi' : 'Lengkapi informasi program studi baru'}
-                        </p>
-                      </div>
+                {/* Header */}
+                <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-1">
+                        {editData ? 'Edit Program Studi' : 'Tambah Program Studi Baru'}
+                      </h2>
+                      <p className="text-sm text-blue-100">
+                        {editData ? 'Perbarui informasi program studi' : 'Lengkapi informasi program studi baru'}
+                      </p>
                     </div>
-                    <motion.button
+                    <button
                       onClick={() => {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/80 hover:text-white"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                      className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
                       aria-label="Close modal"
                     >
-                      <X className="w-6 h-6" />
-                    </motion.button>
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="p-8">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                      >
+                  <div className="p-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Nama Program Studi <span className="text-red-500">*</span>
                         </label>
@@ -400,18 +398,14 @@ const ProdiContent = ({ authToken, currentUser }) => {
                             type="text"
                             value={formData.nama}
                             onChange={(e) => setFormData({...formData, nama: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Masukkan nama program studi"
                             required
                           />
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                      >
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Ketua Program Studi <span className="text-red-500">*</span>
                         </label>
@@ -421,39 +415,35 @@ const ProdiContent = ({ authToken, currentUser }) => {
                             type="text"
                             value={formData.ketuaProdi}
                             onChange={(e) => setFormData({...formData, ketuaProdi: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Masukkan nama ketua program studi"
                             required
                           />
                         </div>
-                      </motion.div>
+                      </div>
                     </form>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex justify-end space-x-3 rounded-b-3xl">
-                  <motion.button
+                <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                  <button
                     type="button"
                     onClick={() => {
                       setShowModal(false);
                       resetForm();
                     }}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md rounded-xl transition-all duration-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                   >
                     Batal
-                  </motion.button>
-                  <motion.button
+                  </button>
+                  <button
                     type="button"
                     onClick={handleSubmit}
-                    className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all duration-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
                   >
                     {editData ? 'Perbarui Data' : 'Simpan Data'}
-                  </motion.button>
+                  </button>
                 </div>
               </motion.div>
             </motion.div>

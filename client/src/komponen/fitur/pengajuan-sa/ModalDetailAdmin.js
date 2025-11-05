@@ -92,12 +92,12 @@ const ModalDetailSekjur = ({
       {createPortal(
         <AnimatePresence>
           <motion.div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
             style={{ zIndex: 9999 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowModal(false);
@@ -105,44 +105,28 @@ const ModalDetailSekjur = ({
             }}
           >
         <motion.div 
-          className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+          className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
           style={{ zIndex: 10000 }}
-          initial={{ opacity: 0, scale: 0.8, y: 50 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 50 }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 25,
-            duration: 0.3
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header dengan gradient */}
-          <div className="relative p-8 text-white bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative flex justify-between items-start">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                    <FileText className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full shadow-lg"></div>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold mb-1">Detail Pengajuan SA</h2>
-                  <p className="text-sm text-emerald-100">Verifikasi Pembayaran - Sekretaris Jurusan</p>
-                </div>
+          {/* Header */}
+          <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold mb-1">Detail Pengajuan SA</h2>
+                <p className="text-sm text-blue-100">Verifikasi Pembayaran - Sekretaris Jurusan</p>
               </div>
-              <motion.button
+              <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/80 hover:text-white"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
                 aria-label="Close modal"
               >
-                <XCircle className="w-6 h-6" />
-              </motion.button>
+                <XCircle className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
@@ -360,12 +344,12 @@ const ModalTolakPengajuan = ({ showModal, setShowModal, alasanPenolakan, setAlas
     <AnimatePresence>
       {showModal && (
         <motion.div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
           style={{ zIndex: 10001 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowModal(false);
@@ -374,58 +358,38 @@ const ModalTolakPengajuan = ({ showModal, setShowModal, alasanPenolakan, setAlas
           }}
         >
           <motion.div 
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
             style={{ zIndex: 10002 }}
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 25,
-              duration: 0.3
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header dengan gradient */}
-            <div className="relative p-8 text-white bg-gradient-to-br from-red-600 via-red-700 to-rose-800">
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative flex justify-between items-start">
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                      <X className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-yellow-400 border-2 border-white rounded-full shadow-lg"></div>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-1">Alasan Penolakan</h2>
-                    <p className="text-sm text-red-100">Berikan alasan penolakan pengajuan</p>
-                  </div>
+            {/* Header */}
+            <div className="p-6 text-white bg-red-600 border-b border-red-700">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold mb-1">Alasan Penolakan</h2>
+                  <p className="text-sm text-red-100">Berikan alasan penolakan pengajuan</p>
                 </div>
-                <motion.button
+                <button
                   onClick={() => {
                     setShowModal(false);
                     setAlasanPenolakan('');
                   }}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/80 hover:text-white"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  className="p-2 hover:bg-red-700 rounded transition-colors text-white"
                   aria-label="Close modal"
                 >
-                  <X className="w-6 h-6" />
-                </motion.button>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="p-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
+              <div className="p-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Alasan Penolakan <span className="text-red-500">*</span>
                   </label>
@@ -434,44 +398,40 @@ const ModalTolakPengajuan = ({ showModal, setShowModal, alasanPenolakan, setAlas
                     onChange={(e) => setAlasanPenolakan(e.target.value)}
                     placeholder="Masukkan alasan penolakan pengajuan..."
                     rows="5"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none transition-all duration-200"
+                    className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-1 focus:ring-red-500 focus:border-red-500 resize-none"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-2">
                     Alasan penolakan akan dikirim ke mahasiswa yang mengajukan SA
                   </p>
-                </motion.div>
+                </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex justify-end space-x-3 rounded-b-3xl">
-              <motion.button
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button
                 type="button"
                 onClick={() => {
                   setShowModal(false);
                   setAlasanPenolakan('');
                 }}
-                className="px-6 py-3 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md rounded-xl transition-all duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
                 Batal
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
                 onClick={onConfirm}
                 disabled={!alasanPenolakan.trim()}
-                className={`px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
                   alasanPenolakan.trim()
                     ? 'bg-red-600 text-white hover:bg-red-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
-                whileHover={alasanPenolakan.trim() ? { scale: 1.05 } : {}}
-                whileTap={alasanPenolakan.trim() ? { scale: 0.95 } : {}}
               >
                 Konfirmasi Tolak
-              </motion.button>
+              </button>
             </div>
           </motion.div>
         </motion.div>

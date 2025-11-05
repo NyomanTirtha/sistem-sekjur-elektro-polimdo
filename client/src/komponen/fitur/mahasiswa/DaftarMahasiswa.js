@@ -238,50 +238,67 @@ export default function MahasiswaList({ authToken, currentUser }) {
       showWarningAlert('Semua field yang bertanda * wajib diisi');
       return;
     }
-    
-    try {
-      const submitData = {
-        ...formData,
-        programStudiId: parseInt(formData.programStudiId),
-        semester: parseInt(formData.semester)
-      };
 
-      const url = editData 
-        ? `${API_BASE}/mahasiswa/${editData.nim}`
-        : `${API_BASE}/mahasiswa`;
-      
-      const method = editData ? 'PUT' : 'POST';
-      
-      console.log('Submitting data:', {
-        url,
-        method,
-        data: submitData
-      });
+    const action = editData ? 'memperbarui' : 'menambahkan';
+    const confirmMessage = editData 
+      ? `Apakah Anda yakin ingin memperbarui data mahasiswa "${formData.nama}" (NIM: ${formData.nim})?\n\nData yang sudah diperbarui tidak dapat dikembalikan.`
+      : `Apakah Anda yakin ingin menambahkan mahasiswa baru dengan nama "${formData.nama}" (NIM: ${formData.nim})?`;
 
-      const response = await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(submitData),
-      });
+    showConfirm(
+      confirmMessage,
+      async () => {
+        try {
+          const submitData = {
+            ...formData,
+            programStudiId: parseInt(formData.programStudiId),
+            semester: parseInt(formData.semester)
+          };
 
-      if (response.ok) {
-        setShowModal(false);
-        resetForm();
-        await fetchMahasiswa();
-        showSuccessAlert(editData ? 'Data mahasiswa berhasil diperbarui!' : 'Data mahasiswa berhasil ditambahkan!');
-      } else {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        if (response.status === 401) {
-          showWarningAlert('Sesi telah berakhir. Silakan login kembali.');
-        } else {
-          showErrorAlert(errorData.message || 'Terjadi kesalahan saat menyimpan data');
+          const url = editData 
+            ? `${API_BASE}/mahasiswa/${editData.nim}`
+            : `${API_BASE}/mahasiswa`;
+          
+          const method = editData ? 'PUT' : 'POST';
+          
+          console.log('Submitting data:', {
+            url,
+            method,
+            data: submitData
+          });
+
+          const response = await fetch(url, {
+            method,
+            headers: getAuthHeaders(),
+            body: JSON.stringify(submitData),
+          });
+
+          if (response.ok) {
+            setShowModal(false);
+            resetForm();
+            await fetchMahasiswa();
+            showSuccessAlert(editData ? 'Data mahasiswa berhasil diperbarui!' : 'Data mahasiswa berhasil ditambahkan!');
+          } else {
+            const errorData = await response.json();
+            console.error('Error response:', errorData);
+            if (response.status === 401) {
+              showWarningAlert('Sesi telah berakhir. Silakan login kembali.');
+            } else {
+              showErrorAlert(errorData.message || 'Terjadi kesalahan saat menyimpan data');
+            }
+          }
+        } catch (error) {
+          console.error('Error submitting form:', error);
+          showErrorAlert('Terjadi kesalahan saat menyimpan data');
         }
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      showErrorAlert('Terjadi kesalahan saat menyimpan data');
-    }
+      },
+      () => {
+        // User cancelled
+      },
+      editData ? 'Konfirmasi Perbarui Data' : 'Konfirmasi Tambah Data',
+      'warning',
+      editData ? 'Perbarui' : 'Tambah',
+      'Batal'
+    );
   };
 
   // Handle delete with authentication
@@ -555,19 +572,19 @@ export default function MahasiswaList({ authToken, currentUser }) {
             </div>
           ) : (
             <div className="transition-opacity duration-300 ease-in-out opacity-100">
-              <table className="w-full">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left p-4 font-medium text-gray-900">No</th>
-                    <th className="text-left p-4 font-medium text-gray-900">Nama</th>
-                    <th className="text-left p-4 font-medium text-gray-900">NIM</th>
-                    <th className="text-left p-4 font-medium text-gray-900">Program Studi</th>
-                    <th className="text-left p-4 font-medium text-gray-900">Angkatan</th>
-                    <th className="text-left p-4 font-medium text-gray-900">Semester</th>
-                    <th className="text-left p-4 font-medium text-gray-900">No. Telp</th>
-                    <th className="text-left p-4 font-medium text-gray-900">Alamat</th>
+                  <tr className="bg-gray-100 border-b border-gray-300">
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Nama</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">NIM</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Program Studi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Angkatan</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Semester</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No. Telp</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
                     {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-4 font-medium text-gray-900">Aksi</th>
+                      <th className="text-center p-3 text-sm font-semibold text-gray-700">Aksi</th>
                     )}
                   </tr>
                 </thead>
@@ -580,27 +597,23 @@ export default function MahasiswaList({ authToken, currentUser }) {
                     return (
                       <tr 
                         key={mhs.nim} 
-                        className={`border-b hover:bg-gray-50 transition-colors duration-200 ${globalIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}
-                        style={{
-                          animationDelay: `${index * 50}ms`,
-                          animation: 'fadeInUp 0.3s ease-out forwards'
-                        }}
+                        className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                       >
-                        <td className="p-4">{globalIndex + 1}</td>
-                        <td className="p-4">{mhs.nama}</td>
-                        <td className="p-4">{mhs.nim}</td>
-                        <td className="p-4">{prodiName}</td>
-                        <td className="p-4">{mhs.angkatan || '-'}</td>
-                        <td className="p-4">{mhs.semester || '-'}</td>
-                        <td className="p-4">{mhs.noTelp || '-'}</td>
-                        <td className="p-4 max-w-xs truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
+                        <td className="p-3 text-sm text-gray-900">{mhs.nama}</td>
+                        <td className="p-3 text-sm text-gray-900">{mhs.nim}</td>
+                        <td className="p-3 text-sm text-gray-900">{prodiName}</td>
+                        <td className="p-3 text-sm text-gray-900">{mhs.angkatan || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900">{mhs.semester || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900">{mhs.noTelp || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900 max-w-xs truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
                         {(canAddEdit() || canDelete()) && (
-                          <td className="p-4">
-                            <div className="flex space-x-2">
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center space-x-2">
                               {canAddEdit() && (
                                 <button
                                   onClick={() => openModal(mhs)}
-                                  className="text-blue-500 hover:text-blue-700 p-1 rounded transition-colors duration-200"
+                                  className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
                                   title="Edit"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -609,7 +622,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                               {canDelete() && (
                                 <button
                                   onClick={() => handleDelete(mhs.nim)}
-                                  className="text-red-500 hover:text-red-700 p-1 rounded transition-colors duration-200"
+                                  className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
                                   title="Hapus"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -742,12 +755,12 @@ export default function MahasiswaList({ authToken, currentUser }) {
         <AnimatePresence>
           {showModal && (
             <motion.div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
               style={{ zIndex: 9999 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setShowModal(false);
@@ -756,64 +769,44 @@ export default function MahasiswaList({ authToken, currentUser }) {
               }}
             >
               <motion.div 
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
                 style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.8, y: 50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 50 }}
-              transition={{
-                type: "spring",
-                stiffness: 400,
-                damping: 25,
-                duration: 0.3
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header dengan gradient */}
-              <div className="relative p-8 text-white bg-gradient-to-br from-purple-600 via-purple-700 to-violet-800">
-                <div className="absolute inset-0 bg-black/10"></div>
-                <div className="relative flex justify-between items-start">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                        <Users className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full shadow-lg"></div>
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold mb-1">
-                        {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
-                      </h2>
-                      <p className="text-sm text-purple-100">
-                        {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
-                      </p>
-                    </div>
+              {/* Header */}
+              <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-1">
+                      {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
+                    </h2>
+                    <p className="text-sm text-blue-100">
+                      {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
+                    </p>
                   </div>
-                  <motion.button
+                  <button
                     onClick={() => {
                       setShowModal(false);
                       resetForm();
                     }}
-                    className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/80 hover:text-white"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
                     aria-label="Close modal"
                   >
-                    <X className="w-6 h-6" />
-                  </motion.button>
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
-                <div className="p-8">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                      >
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Nama Lengkap <span className="text-red-500">*</span>
                         </label>
@@ -823,18 +816,14 @@ export default function MahasiswaList({ authToken, currentUser }) {
                             type="text"
                             value={formData.nama}
                             onChange={(e) => setFormData({...formData, nama: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Masukkan nama lengkap"
                             required
                           />
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                      >
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           NIM <span className="text-red-500">*</span>
                         </label>
@@ -844,7 +833,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                             type="text"
                             value={formData.nim}
                             onChange={(e) => setFormData({...formData, nim: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             placeholder="Masukkan NIM"
                             disabled={editData}
                             required
@@ -856,14 +845,10 @@ export default function MahasiswaList({ authToken, currentUser }) {
                             NIM tidak dapat diubah
                           </p>
                         )}
-                      </motion.div>
+                      </div>
                     </div>
                     
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Program Studi <span className="text-red-500">*</span>
                       </label>
@@ -872,7 +857,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                         <select
                           value={formData.programStudiId}
                           onChange={(e) => setFormData({...formData, programStudiId: e.target.value})}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 appearance-none bg-white"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
                           required
                         >
                           <option value="">Pilih Program Studi</option>
@@ -881,14 +866,10 @@ export default function MahasiswaList({ authToken, currentUser }) {
                           ))}
                         </select>
                       </div>
-                    </motion.div>
+                    </div>
                     
-                    <div className="grid grid-cols-2 gap-6">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 }}
-                      >
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Angkatan <span className="text-red-500">*</span>
                         </label>
@@ -899,17 +880,13 @@ export default function MahasiswaList({ authToken, currentUser }) {
                             value={formData.angkatan}
                             onChange={(e) => setFormData({...formData, angkatan: e.target.value})}
                             placeholder="2023"
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             required
                           />
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Semester <span className="text-red-500">*</span>
                         </label>
@@ -921,18 +898,14 @@ export default function MahasiswaList({ authToken, currentUser }) {
                             max="14"
                             value={formData.semester}
                             onChange={(e) => setFormData({...formData, semester: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             required
                           />
                         </div>
-                      </motion.div>
+                      </div>
                     </div>
                     
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 }}
-                    >
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         No. Telepon <span className="text-red-500">*</span>
                       </label>
@@ -943,17 +916,13 @@ export default function MahasiswaList({ authToken, currentUser }) {
                           value={formData.noTelp}
                           onChange={(e) => setFormData({...formData, noTelp: e.target.value})}
                           placeholder="08xxxxxxxxxx"
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                           required
                         />
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Alamat <span className="text-red-500">*</span>
                       </label>
@@ -964,38 +933,34 @@ export default function MahasiswaList({ authToken, currentUser }) {
                           onChange={(e) => setFormData({...formData, alamat: e.target.value})}
                           placeholder="Alamat lengkap"
                           rows="3"
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 resize-none"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
                           required
                         />
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex justify-end space-x-3 rounded-b-3xl">
-                <motion.button
+              <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="px-6 py-3 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md rounded-xl transition-all duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                 >
                   Batal
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-3 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
                 >
                   {editData ? 'Perbarui Data' : 'Simpan Data'}
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </motion.div>

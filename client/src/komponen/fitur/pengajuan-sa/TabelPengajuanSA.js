@@ -56,34 +56,51 @@ const TabelPengajuanSA = ({
       return;
     }
 
-    setAssigningRows(prev => ({ ...prev, [rowId]: true }));
+    const selectedDosenName = dosenList.find(d => d.nip === selectedDosen || d.id === selectedDosen)?.nama || selectedDosen;
+    const mataKuliahName = item.mataKuliah?.nama || item.mataKuliah || 'SA';
 
-    try {
-      // Use detailId for per-mata-kuliah assignment
-      await onUpdateStatus(item.pengajuanSAId || item.id, 'DALAM_PROSES_SA', selectedDosen, item.id);
+    showConfirm(
+      `Apakah Anda yakin ingin menugaskan "${selectedDosenName}" sebagai dosen pengampu untuk mata kuliah "${mataKuliahName}"?\n\nSetelah ditugaskan, dosen akan bertanggung jawab mengampu mahasiswa untuk mata kuliah ini.`,
+      async () => {
+        setAssigningRows(prev => ({ ...prev, [rowId]: true }));
 
-      // Clear selected dosen untuk baris ini
-      setSelectedDosenPerRow(prev => {
-        const newState = { ...prev };
-        delete newState[rowId];
-        return newState;
-      });
+        try {
+          // Use detailId for per-mata-kuliah assignment
+          await onUpdateStatus(item.pengajuanSAId || item.id, 'DALAM_PROSES_SA', selectedDosen, item.id);
 
-      // ✅ FIXED: Mark baris ini sebagai sudah di-assign
-      setAssignedRows(prev => ({ ...prev, [rowId]: true }));
+          // Clear selected dosen untuk baris ini
+          setSelectedDosenPerRow(prev => {
+            const newState = { ...prev };
+            delete newState[rowId];
+            return newState;
+          });
 
-      // ✅ FIXED: Update status per baris menjadi DALAM_PROSES_SA
-      setStatusPerRow(prev => ({ ...prev, [rowId]: 'DALAM_PROSES_SA' }));
+          // ✅ FIXED: Mark baris ini sebagai sudah di-assign
+          setAssignedRows(prev => ({ ...prev, [rowId]: true }));
 
-      // Refresh data
-      await fetchPengajuanSA();
+          // ✅ FIXED: Update status per baris menjadi DALAM_PROSES_SA
+          setStatusPerRow(prev => ({ ...prev, [rowId]: 'DALAM_PROSES_SA' }));
 
-    } catch (error) {
-      console.error('Error assigning dosen:', error);
-      showErrorAlert('Gagal menugaskan dosen. Silakan coba lagi.');
-    } finally {
-      setAssigningRows(prev => ({ ...prev, [rowId]: false }));
-    }
+          // Refresh data
+          await fetchPengajuanSA();
+
+          showSuccessAlert(`Dosen "${selectedDosenName}" berhasil ditugaskan untuk mata kuliah "${mataKuliahName}"!`);
+
+        } catch (error) {
+          console.error('Error assigning dosen:', error);
+          showErrorAlert('Gagal menugaskan dosen. Silakan coba lagi.');
+        } finally {
+          setAssigningRows(prev => ({ ...prev, [rowId]: false }));
+        }
+      },
+      () => {
+        // User cancelled
+      },
+      'Konfirmasi Penugasan Dosen',
+      'warning',
+      'Tugaskan',
+      'Batal'
+    );
   };
 
   // ✅ IMPROVED: Handle nilai input dengan row-specific state
@@ -104,48 +121,61 @@ const TabelPengajuanSA = ({
 
     // Validasi ID
     if (!item.id || isNaN(item.id) || item.id <= 0) {
-      showErrorAlert('❌ ID pengajuan SA tidak valid. Silakan refresh halaman.');
+      showErrorAlert('ID pengajuan SA tidak valid. Silakan refresh halaman.');
       return;
     }
 
-    // Remove the confirmation dialog from here - it will be handled in PengajuanSAList.js
-    setIsUpdating({ ...isUpdating, [item.id]: true });
-    try {
-      // ✅ FIXED: Gunakan updateNilaiDetail untuk per mata kuliah
-      await onUpdateNilaiDetail(item.id, nilai);
-      setNilaiInputs({ ...nilaiInputs, [item.id]: '' });
+    const mataKuliahName = item.mataKuliah?.nama || item.mataKuliah || 'SA';
 
-      // ✅ FIXED: Pastikan data di-refresh setelah input nilai untuk update status
-      if (typeof fetchPengajuanSA === 'function') {
-        // Reset statusPerRow untuk memastikan status diambil dari data baru setelah fetch
-        // Ini penting karena backend sudah update status master ke SELESAI jika semua sudah dinilai
-        setStatusPerRow({});
+    showConfirm(
+      `Apakah Anda yakin ingin memberikan nilai "${nilai}" untuk mata kuliah "${mataKuliahName}"?\n\nSetelah nilai diinput, mata kuliah ini akan dinyatakan SELESAI dan tidak dapat diubah lagi.`,
+      async () => {
+        setIsUpdating({ ...isUpdating, [item.id]: true });
+        try {
+          // ✅ FIXED: Gunakan updateNilaiDetail untuk per mata kuliah
+          await onUpdateNilaiDetail(item.id, nilai);
+          setNilaiInputs({ ...nilaiInputs, [item.id]: '' });
 
-        // Fetch data baru dengan delay kecil untuk memastikan backend sudah selesai update
-        await new Promise(resolve => setTimeout(resolve, 300));
-        await fetchPengajuanSA();
+          // ✅ FIXED: Pastikan data di-refresh setelah input nilai untuk update status
+          if (typeof fetchPengajuanSA === 'function') {
+            // Reset statusPerRow untuk memastikan status diambil dari data baru setelah fetch
+            // Ini penting karena backend sudah update status master ke SELESAI jika semua sudah dinilai
+            setStatusPerRow({});
 
-        // ✅ FIXED: Data sudah ter-refresh, statusPerRow sudah di-reset
-        // Status akan diambil dari item.status yang baru dari backend
-      }
+            // Fetch data baru dengan delay kecil untuk memastikan backend sudah selesai update
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchPengajuanSA();
 
-      showSuccessAlert(`Nilai ${nilai} berhasil diinput untuk mata kuliah "${item.mataKuliah?.nama || 'SA'}!\nMata kuliah ini telah selesai dinilai.`);
-    } catch (error) {
-      console.error('Error updating nilai:', error);
+            // ✅ FIXED: Data sudah ter-refresh, statusPerRow sudah di-reset
+            // Status akan diambil dari item.status yang baru dari backend
+          }
 
-      // Jika error 404 (data tidak ditemukan), refresh data otomatis
-      if (error.message.includes('tidak ditemukan')) {
-        showWarningAlert(`❌ ${error.message}\n\nMemperbarui data...`);
-        // Trigger refresh dari parent component
-        if (typeof fetchPengajuanSA === 'function') {
-          fetchPengajuanSA();
+          showSuccessAlert(`Nilai ${nilai} berhasil diinput untuk mata kuliah "${mataKuliahName}"!\nMata kuliah ini telah selesai dinilai.`);
+        } catch (error) {
+          console.error('Error updating nilai:', error);
+
+          // Jika error 404 (data tidak ditemukan), refresh data otomatis
+          if (error.message.includes('tidak ditemukan')) {
+            showWarningAlert(`${error.message}\n\nMemperbarui data...`);
+            // Trigger refresh dari parent component
+            if (typeof fetchPengajuanSA === 'function') {
+              fetchPengajuanSA();
+            }
+          } else {
+            showErrorAlert(`Error: ${error.message}`);
+          }
+        } finally {
+          setIsUpdating({ ...isUpdating, [item.id]: false });
         }
-      } else {
-        showErrorAlert(`❌ Error: ${error.message}`);
-      }
-    } finally {
-      setIsUpdating({ ...isUpdating, [item.id]: false });
-    }
+      },
+      () => {
+        // User cancelled
+      },
+      'Konfirmasi Input Nilai',
+      'warning',
+      'Input Nilai',
+      'Batal'
+    );
   };
 
   const handleTolakPengajuan = async (pengajuanId) => {
@@ -171,7 +201,7 @@ const TabelPengajuanSA = ({
           setAlasanPenolakan('');
         } catch (error) {
           console.error('Error rejecting pengajuan:', error);
-          showErrorAlert(`❌ Error: ${error.message}`);
+          showErrorAlert(`Error: ${error.message}`);
         }
       },
       () => {
@@ -261,45 +291,45 @@ const TabelPengajuanSA = ({
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full border-collapse">
           {/* ✅ CONDITIONAL HEADER - SEKJUR vs OTHERS */}
           {userType === 'sekjur' ? (
             // 🎯 HEADER SEKJUR - WITH MATA KULIAH
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">No</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Mahasiswa</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Mata Kuliah</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nominal</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Tanggal</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Semester</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Dosen</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nilai</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Indeks</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Aksi</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">No</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mahasiswa</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mata Kuliah</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nominal</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Semester</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Dosen</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nilai</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Indeks</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
               </tr>
             </thead>
           ) : (
             // 🎯 HEADER NORMAL - UNTUK USER TYPE LAIN
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">No</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">No</th>
                 {userType !== 'mahasiswa' && (
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Mahasiswa</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mahasiswa</th>
                 )}
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Mata Kuliah</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nominal</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Tanggal</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Semester</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mata Kuliah</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nominal</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Semester</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                 {/* Sembunyikan kolom Dosen jika userType === 'dosen' */}
                 {userType !== 'dosen' && (
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Dosen</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Dosen</th>
                 )}
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nilai</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Indeks</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Aksi</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nilai</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Indeks</th>
+                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
               </tr>
             </thead>
           )}
@@ -307,13 +337,13 @@ const TabelPengajuanSA = ({
           {/* ✅ CONDITIONAL BODY - SEKJUR vs OTHERS */}
           {userType === 'sekjur' ? (
             // 🎯 BODY SEKJUR - SIMPLIFIED
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {currentRows.map((item, index) => (
-                <tr key={item.id || index} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
+                <tr key={item.id || index} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <td className="px-3 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
 
                   {/* Mahasiswa */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       <div>
@@ -325,7 +355,7 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Mata Kuliah - SEKJUR View */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.isGrouped ? (
                       <div>
                         <div className="font-medium">
@@ -357,7 +387,7 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Nominal */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     <div className="font-medium text-green-600">
                       {formatCurrency(item.nominal || 0)}
                     </div>
@@ -369,12 +399,12 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Tanggal */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
                   </td>
 
                   {/* Semester */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {(() => {
                       // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
                       const semesterPengajuan = item.semesterPengajuan;
@@ -409,13 +439,13 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Status */}
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
                     <StatusBadge status={item.status || statusPerRow[item.id]} />
                   </td>
 
                   {/* Dosen */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.dosen ? (
                       <div className="flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-gray-400" />
@@ -430,7 +460,7 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Nilai */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
@@ -445,7 +475,7 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Indeks */}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
                       <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
                     ) : (
@@ -454,7 +484,7 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Aksi SEKJUR */}
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onLihatFormDetail(item)}
@@ -489,12 +519,12 @@ const TabelPengajuanSA = ({
             </tbody>
           ) : (
             // 🎯 BODY NORMAL - UNTUK USER TYPE LAIN
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {currentRows.map((item, index) => (
-                <tr key={item.id || index} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
+                <tr key={item.id || index} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <td className="px-3 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
                   {userType !== 'mahasiswa' && (
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-3 py-3 text-sm text-gray-900">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-400" />
                         <div>
@@ -505,7 +535,7 @@ const TabelPengajuanSA = ({
                       </div>
                     </td>
                   )}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.isGrouped ? (
                       <div>
                         <div className="font-medium">
@@ -535,7 +565,7 @@ const TabelPengajuanSA = ({
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     <div className="font-medium text-green-600">
                       {formatCurrency(item.nominal || 0)}
                     </div>
@@ -545,10 +575,10 @@ const TabelPengajuanSA = ({
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {(() => {
                       // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
                       const semesterPengajuan = item.semesterPengajuan;
@@ -581,14 +611,14 @@ const TabelPengajuanSA = ({
                       }
                     })()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
                     {/* statusPerRow hanya untuk update sementara sebelum fetch selesai */}
                     <StatusBadge status={item.status || statusPerRow[item.id]} />
                   </td>
                   {/* Kolom Dosen: hanya tampil jika userType bukan dosen */}
                   {userType !== 'dosen' && (
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-3 py-3 text-sm text-gray-900">
                       {item.dosen ? (
                         <div className="flex items-center gap-2">
                           <GraduationCap className="w-4 h-4 text-gray-400" />
@@ -602,7 +632,7 @@ const TabelPengajuanSA = ({
                       )}
                     </td>
                   )}
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
@@ -644,14 +674,14 @@ const TabelPengajuanSA = ({
                       <span className="text-gray-400 italic">Belum dinilai</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900">
                     {item.nilaiAkhir ? (
                       <span className="font-bold text-blue-700">{getIndeksHuruf(item.nilaiAkhir)}</span>
                     ) : (
                       <span className="text-gray-400 italic">Belum dinilai</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* ✅ ENHANCED: Aksi SEKJUR - Assign Dosen */}
                       {userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
@@ -778,12 +808,12 @@ const TabelPengajuanSA = ({
         <AnimatePresence>
           {showTolakModal && (
             <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
               style={{ zIndex: 9999 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setShowTolakModal(false);
@@ -792,58 +822,38 @@ const TabelPengajuanSA = ({
               }}
             >
               <motion.div
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
                 style={{ zIndex: 10000 }}
-                initial={{ opacity: 0, scale: 0.8, y: 50 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 50 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                  duration: 0.3
-                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header dengan gradient */}
-                <div className="relative p-8 text-white bg-gradient-to-br from-red-600 via-red-700 to-rose-800">
-                  <div className="absolute inset-0 bg-black/10"></div>
-                  <div className="relative flex justify-between items-start">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                          <AlertCircle className="w-8 h-8 text-white" />
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-yellow-400 border-2 border-white rounded-full shadow-lg"></div>
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold mb-1">Tolak Pengajuan SA</h2>
-                        <p className="text-sm text-red-100">Berikan alasan penolakan pengajuan</p>
-                      </div>
+                {/* Header */}
+                <div className="p-6 text-white bg-red-600 border-b border-red-700">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-1">Tolak Pengajuan SA</h2>
+                      <p className="text-sm text-red-100">Berikan alasan penolakan pengajuan</p>
                     </div>
-                    <motion.button
+                    <button
                       onClick={() => {
                         setShowTolakModal(false);
                         setAlasanPenolakan('');
                       }}
-                      className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/80 hover:text-white"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                      className="p-2 hover:bg-red-700 rounded transition-colors text-white"
                       aria-label="Close modal"
                     >
-                      <X className="w-6 h-6" />
-                    </motion.button>
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="p-8">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
+                  <div className="p-6">
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Alasan Penolakan <span className="text-red-500">*</span>
                       </label>
@@ -852,43 +862,39 @@ const TabelPengajuanSA = ({
                         onChange={(e) => setAlasanPenolakan(e.target.value)}
                         placeholder="Masukkan alasan penolakan pengajuan..."
                         rows="5"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none transition-all duration-200"
+                        className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-1 focus:ring-red-500 focus:border-red-500 resize-none"
                         required
                       />
                       <p className="text-xs text-gray-500 mt-2">
                         Alasan penolakan akan dikirim ke mahasiswa yang mengajukan SA
                       </p>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex justify-end space-x-3 rounded-b-3xl">
-                  <motion.button
+                <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                  <button
                     type="button"
                     onClick={() => {
                       setShowTolakModal(false);
                       setAlasanPenolakan('');
                     }}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md rounded-xl transition-all duration-200"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                   >
                     Batal
-                  </motion.button>
-                  <motion.button
+                  </button>
+                  <button
                     type="button"
                     onClick={handleTolakConfirm}
                     disabled={!alasanPenolakan.trim()}
-                    className={`px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${alasanPenolakan.trim()
+                    className={`px-4 py-2 text-sm font-medium rounded transition-colors ${alasanPenolakan.trim()
                         ? 'bg-red-600 text-white hover:bg-red-700'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
-                    whileHover={alasanPenolakan.trim() ? { scale: 1.05 } : {}}
-                    whileTap={alasanPenolakan.trim() ? { scale: 0.95 } : {}}
                   >
                     Tolak Pengajuan
-                  </motion.button>
+                  </button>
                 </div>
               </motion.div>
             </motion.div>

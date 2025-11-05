@@ -53,15 +53,33 @@ const FormPengajuanSA = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
 
+  // Get current student semester
+  const currentSemester = currentUser?.semester ? parseInt(currentUser.semester) : null;
+
+  // Filter mata kuliah based on student semester
+  const getAvailableMataKuliah = (list) => {
+    if (!currentSemester || !list) return list || [];
+    
+    // Mahasiswa hanya bisa mengajukan SA untuk semester di bawah semester saat ini
+    // Contoh: semester 4 bisa mengajukan semester 1, 2, 3
+    // Semester 3 bisa mengajukan semester 1, 2
+    return list.filter(mk => {
+      const mkSemester = mk.semester ? parseInt(mk.semester) : null;
+      if (!mkSemester) return true; // Jika tidak ada semester, tetap tampilkan
+      return mkSemester < currentSemester;
+    });
+  };
+
   useEffect(() => {
     if (mataKuliahList) {
-      const filtered = mataKuliahList.filter(mk =>
+      const availableMataKuliah = getAvailableMataKuliah(mataKuliahList);
+      const filtered = availableMataKuliah.filter(mk =>
         mk.nama.toLowerCase().includes(searchMataKuliah.toLowerCase())
       );
       setFilteredMataKuliah(filtered);
       setShowMataKuliahDropdown(searchMataKuliah.length > 0);
     }
-  }, [searchMataKuliah, mataKuliahList]);
+  }, [searchMataKuliah, mataKuliahList, currentSemester]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -164,6 +182,20 @@ const FormPengajuanSA = ({
       return;
     }
 
+    // Validasi semester: mahasiswa hanya bisa mengajukan SA untuk semester di bawah semester saat ini
+    if (currentSemester && mataKuliah.semester) {
+      const mkSemester = parseInt(mataKuliah.semester);
+      if (mkSemester >= currentSemester) {
+        showWarningAlert(
+          `Anda tidak dapat mengajukan SA untuk mata kuliah semester ${mkSemester}!\n\n` +
+          `Anda saat ini berada di semester ${currentSemester}.\n` +
+          `Anda hanya dapat mengajukan SA untuk mata kuliah semester ${currentSemester - 1} ke bawah.\n\n` +
+          `Mata kuliah yang dapat diajukan: Semester 1 sampai Semester ${currentSemester - 1}.`
+        );
+        return;
+      }
+    }
+
     if (!canAddMataKuliah(formData.selectedMataKuliah, formData.nominal, mataKuliah.sks)) {
       const maxSKS = calculateMaxSKS(formData.nominal);
       const currentTotalSKS = calculateTotalSKS(formData.selectedMataKuliah);
@@ -205,6 +237,27 @@ const FormPengajuanSA = ({
     if (formData.selectedMataKuliah.length === 0) {
       showWarningAlert('Harap pilih minimal 1 mata kuliah');
       return;
+    }
+
+    // Validasi semester untuk semua mata kuliah yang dipilih
+    if (currentSemester) {
+      const invalidMataKuliah = formData.selectedMataKuliah.filter(mk => {
+        if (!mk.semester) return false; // Jika tidak ada semester, skip
+        const mkSemester = parseInt(mk.semester);
+        return mkSemester >= currentSemester;
+      });
+
+      if (invalidMataKuliah.length > 0) {
+        const invalidNames = invalidMataKuliah.map(mk => `${mk.nama} (Semester ${mk.semester})`).join(', ');
+        showWarningAlert(
+          `Terdapat mata kuliah dengan semester yang tidak valid!\n\n` +
+          `Mata kuliah yang tidak valid: ${invalidNames}\n\n` +
+          `Anda saat ini berada di semester ${currentSemester}.\n` +
+          `Anda hanya dapat mengajukan SA untuk mata kuliah semester ${currentSemester - 1} ke bawah.\n\n` +
+          `Harap hapus mata kuliah yang tidak valid dari daftar pilihan.`
+        );
+        return;
+      }
     }
 
     if (!formData.keterangan.trim()) {
@@ -254,7 +307,7 @@ const FormPengajuanSA = ({
           }
         } catch (error) {
           console.error('Error submitting pengajuan:', error);
-          showErrorAlert('❌ Terjadi kesalahan saat submit pengajuan');
+          showErrorAlert('Terjadi kesalahan saat submit pengajuan');
         } finally {
           setIsSubmitting(false);
         }
@@ -336,10 +389,17 @@ const FormPengajuanSA = ({
             </div>
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">Informasi Penting</h3>
-              <p className="text-blue-700 leading-relaxed">
+              <p className="text-blue-700 leading-relaxed mb-2">
                 Biaya per SKS adalah <span className="font-semibold">Rp 300.000</span>. 
                 Pastikan nominal pembayaran sesuai dengan total SKS mata kuliah yang dipilih.
               </p>
+              {currentSemester && (
+                <p className="text-blue-700 leading-relaxed">
+                  <span className="font-semibold">Ketentuan Semester:</span> Anda saat ini berada di semester {currentSemester}. 
+                  Anda hanya dapat mengajukan SA untuk mata kuliah semester {currentSemester - 1} ke bawah 
+                  (Semester 1 sampai Semester {currentSemester - 1}).
+                </p>
+              )}
             </div>
           </div>
         </motion.div>
@@ -497,25 +557,33 @@ const FormPengajuanSA = ({
 
               {/* Dropdown */}
               <AnimatePresence>
-                {showMataKuliahDropdown && filteredMataKuliah.length > 0 && (
+                {showMataKuliahDropdown && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto"
                   >
-                    {filteredMataKuliah.map((mataKuliah) => {
+                    {filteredMataKuliah.length > 0 ? (
+                      filteredMataKuliah.map((mataKuliah) => {
                       const isSelected = formData.selectedMataKuliah.some(mk => mk.id === mataKuliah.id);
                       const canAdd = canAddMataKuliah(formData.selectedMataKuliah, formData.nominal, mataKuliah.sks);
+                      
+                      // Validasi semester
+                      const mkSemester = mataKuliah.semester ? parseInt(mataKuliah.semester) : null;
+                      const isValidSemester = !currentSemester || !mkSemester || mkSemester < currentSemester;
+                      const canSelect = !isSelected && canAdd && isValidSemester;
                       
                       return (
                         <motion.div
                           key={mataKuliah.id}
-                          whileHover={{ backgroundColor: !isSelected && canAdd ? '#f8fafc' : undefined }}
-                          onClick={() => !isSelected && canAdd && handleSelectMataKuliah(mataKuliah)}
-                          className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
+                          whileHover={{ backgroundColor: canSelect ? '#f8fafc' : undefined }}
+                          onClick={() => canSelect && handleSelectMataKuliah(mataKuliah)}
+                          className={`p-4 border-b border-gray-100 transition-colors ${
                             isSelected ? 'bg-green-50 cursor-not-allowed' : 
-                            !canAdd ? 'bg-red-50 cursor-not-allowed' : ''
+                            !canAdd ? 'bg-red-50 cursor-not-allowed' :
+                            !isValidSemester ? 'bg-orange-50 cursor-not-allowed' :
+                            'cursor-pointer'
                           }`}
                         >
                           <div className="flex justify-between items-center">
@@ -523,6 +591,7 @@ const FormPengajuanSA = ({
                               <p className="font-medium text-gray-900">{mataKuliah.nama}</p>
                               <p className="text-sm text-gray-500">
                                 {mataKuliah.sks} SKS • Rp {(mataKuliah.sks * 300000).toLocaleString()}
+                                {mkSemester && ` • Semester ${mkSemester}`}
                               </p>
                             </div>
                             <div>
@@ -536,11 +605,28 @@ const FormPengajuanSA = ({
                                   SKS Habis
                                 </span>
                               )}
+                              {!isSelected && canAdd && !isValidSemester && (
+                                <span className="text-xs bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-medium">
+                                  Semester Tidak Valid
+                                </span>
+                              )}
                             </div>
                           </div>
                         </motion.div>
                       );
-                    })}
+                    })
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        {currentSemester ? (
+                          <p className="text-sm">
+                            Tidak ada mata kuliah yang tersedia untuk semester Anda saat ini.<br />
+                            <span className="text-xs">Anda hanya dapat mengajukan SA untuk mata kuliah semester {currentSemester - 1} ke bawah.</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm">Tidak ada mata kuliah yang ditemukan.</p>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -593,6 +679,7 @@ const FormPengajuanSA = ({
                       <p className="font-medium text-blue-900">{index + 1}. {mataKuliah.nama}</p>
                       <p className="text-sm text-blue-700">
                         {mataKuliah.sks} SKS • Rp {(mataKuliah.sks * 300000).toLocaleString()}
+                        {mataKuliah.semester && ` • Semester ${mataKuliah.semester}`}
                       </p>
                     </div>
                     <motion.button
