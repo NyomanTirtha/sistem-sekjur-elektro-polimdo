@@ -336,14 +336,17 @@ const createPengajuanSA = async (req, res) => {
       return res.status(404).json({ error: 'Beberapa mata kuliah tidak ditemukan' });
     }
     
-    // Validasi semester: Cek apakah semester mahasiswa sesuai dengan semester kurikulum MK
+    // Validasi semester: Mahasiswa hanya bisa mengambil mata kuliah di semester DI BAWAH semester saat ini
     const semesterMahasiswa = mahasiswaExists.semester;
     if (semesterMahasiswa) {
-      const invalidMataKuliah = mataKuliahExists.filter(mk => mk.semester !== semesterMahasiswa);
+      const invalidMataKuliah = mataKuliahExists.filter(mk => {
+        // Blokir jika semester mata kuliah >= semester mahasiswa saat ini
+        return mk.semester >= semesterMahasiswa;
+      });
       if (invalidMataKuliah.length > 0) {
         const invalidNames = invalidMataKuliah.map(mk => `"${mk.nama}" (semester ${mk.semester})`).join(', ');
         return res.status(400).json({ 
-          error: `Anda semester ${semesterMahasiswa} tidak dapat mengambil mata kuliah: ${invalidNames}. Semester harus sesuai dengan semester kurikulum mata kuliah.` 
+          error: `Anda semester ${semesterMahasiswa} tidak dapat mengambil mata kuliah: ${invalidNames}. Anda hanya dapat mengajukan SA untuk mata kuliah di semester ${semesterMahasiswa - 1} ke bawah (Semester 1 sampai Semester ${semesterMahasiswa - 1}).` 
         });
       }
     }
@@ -622,13 +625,14 @@ const assignDosenToMataKuliah = async (req, res) => {
       return res.status(404).json({ error: 'Detail pengajuan tidak ditemukan' });
     }
     
-    // Validasi semester: Cek apakah semester pengajuan mahasiswa sesuai dengan semester kurikulum MK
+    // Validasi semester: Mahasiswa hanya bisa mengambil mata kuliah di semester DI BAWAH semester saat ini
     const semesterPengajuan = existingDetail.pengajuanSA.semesterPengajuan;
     const semesterKurikulum = existingDetail.mataKuliah.semester;
     
-    if (semesterPengajuan !== semesterKurikulum) {
+    // Blokir jika semester mata kuliah >= semester mahasiswa saat ini
+    if (semesterKurikulum >= semesterPengajuan) {
       return res.status(400).json({ 
-        error: `Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil mata kuliah "${existingDetail.mataKuliah.nama}" (semester kurikulum ${semesterKurikulum}). Semester harus sesuai.` 
+        error: `Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil mata kuliah "${existingDetail.mataKuliah.nama}" (semester ${semesterKurikulum}). Anda hanya dapat mengajukan SA untuk mata kuliah di semester ${semesterPengajuan - 1} ke bawah.` 
       });
     }
     
@@ -737,14 +741,14 @@ const assignAllDosenToMataKuliah = async (req, res) => {
     // Validasi semester pengajuan vs semester kurikulum
     const semesterPengajuan = pengajuanExists.semesterPengajuan;
     
-    // Validasi setiap MK - hanya cek semester, tidak cek penugasan mengajar
+    // Validasi setiap MK - Mahasiswa hanya bisa mengambil mata kuliah di semester DI BAWAH semester saat ini
     const validationErrors = [];
     for (const detail of pengajuanExists.details) {
       const semesterKurikulum = detail.mataKuliah.semester;
       
-      // Validasi semester pengajuan vs semester kurikulum
-      if (semesterPengajuan !== semesterKurikulum) {
-        validationErrors.push(`Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil "${detail.mataKuliah.nama}" (semester ${semesterKurikulum})`);
+      // Blokir jika semester mata kuliah >= semester mahasiswa saat ini
+      if (semesterKurikulum >= semesterPengajuan) {
+        validationErrors.push(`Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil "${detail.mataKuliah.nama}" (semester ${semesterKurikulum}). Anda hanya dapat mengajukan SA untuk mata kuliah di semester ${semesterPengajuan - 1} ke bawah.`);
       }
     }
     
@@ -850,18 +854,20 @@ const inputNilaiSA = async (req, res) => {
     });
 
     // Cek apakah semua detail dalam pengajuan SA ini sudah ada nilainya
+    // Ambil ulang semua details setelah update untuk mendapatkan data terbaru
     const allDetails = await prisma.pengajuanSADetail.findMany({
       where: {
         pengajuanSAId: existingDetail.pengajuanSAId
       }
     });
 
-    const allHaveNilai = allDetails.every(detail => detail.nilaiAkhir !== null);
+    // Cek apakah semua detail sudah ada nilai (tidak null)
+    const allHaveNilai = allDetails.length > 0 && allDetails.every(detail => detail.nilaiAkhir !== null && detail.nilaiAkhir !== undefined);
 
     console.log('✅ Checking all details:', {
       pengajuanSAId: existingDetail.pengajuanSAId,
       totalDetails: allDetails.length,
-      detailsWithNilai: allDetails.filter(d => d.nilaiAkhir !== null).length,
+      detailsWithNilai: allDetails.filter(d => d.nilaiAkhir !== null && d.nilaiAkhir !== undefined).length,
       allHaveNilai: allHaveNilai
     });
 
