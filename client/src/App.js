@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Users, GraduationCap, FileText, ClipboardList, Home, LogOut, BookOpen } from 'lucide-react';
-import MainLayout from './components/layouts/MainLayouts';
-import MahasiswaList from './components/MahasiswaList';
-import DosenList from './components/DosenList';
-import PengajuanSAList from './components/PengajuanSAList';
-import ProdiList from './components/ProdiList';
-import UsersList from './components/UsersList';
-import TeachingPicker from './components/dosen/TeachingPicker';
-import TeachingAssignmentManager from './components/kaprodi/TeachingAssignmentManager';
-import LoginPage from './pages/LoginPage';
+import MainLayout from './komponen/layout/MainLayouts';
+import MahasiswaList from './komponen/fitur/mahasiswa/DaftarMahasiswa';
+import DosenList from './komponen/fitur/dosen/DaftarDosen';
+import PengajuanSAList from './komponen/fitur/pengajuan-sa/DaftarPengajuanSA';
+import ProdiList from './komponen/fitur/program-studi/DaftarProgramStudi';
+import UsersList from './komponen/fitur/pengguna/DaftarPengguna';
+import TeachingPicker from './komponen/fitur/dosen/PilihPenugasan';
+import TeachingAssignmentManager from './komponen/fitur/penugasan-mengajar/KelolaPenugasan';
+import LoginPage from './halaman/masuk/HalamanMasuk';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('login');

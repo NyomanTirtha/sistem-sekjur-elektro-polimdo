@@ -633,25 +633,8 @@ const assignDosenToMataKuliah = async (req, res) => {
     }
     
     // Validasi: Cek apakah dosen sudah ACTIVE untuk MK ini di semester kurikulum yang sesuai
-    const tanggalPengajuan = new Date(existingDetail.pengajuanSA.tanggalPengajuan);
-    const year = tanggalPengajuan.getFullYear();
-    const tahunAjaran = `${year}/${year + 1}`;
-    
-    const activeAssignment = await prisma.penugasanMengajar.findFirst({
-      where: {
-        mataKuliahId: existingDetail.mataKuliahId,
-        dosenId: dosenId,
-        tahunAjaran: tahunAjaran,
-        semester: semesterKurikulum,
-        status: 'ACTIVE'
-      }
-    });
-    
-    if (!activeAssignment) {
-      return res.status(400).json({ 
-        error: `Dosen ${dosenExists.nama} belum ditugaskan untuk mengajar mata kuliah "${existingDetail.mataKuliah.nama}" di semester ${semesterKurikulum} tahun ajaran ${tahunAjaran}. Silakan assign dosen terlebih dahulu di menu "Kelola Penugasan Mengajar".` 
-      });
-    }
+    // DIHAPUS: Tidak perlu cek penugasan mengajar, pengajuan SA terpisah dari penugasan mengajar
+    // Kaprodi bisa langsung assign dosen untuk pengajuan SA tanpa perlu dosen sudah ditugaskan mengajar
     
     const pengajuanDetail = await prisma.pengajuanSADetail.update({
       where: { id: detailId },
@@ -751,13 +734,10 @@ const assignAllDosenToMataKuliah = async (req, res) => {
       return res.status(404).json({ error: 'Pengajuan SA tidak ditemukan' });
     }
     
-    // Validasi: Cek apakah dosen sudah ACTIVE untuk semua MK di semester kurikulum yang sesuai
+    // Validasi semester pengajuan vs semester kurikulum
     const semesterPengajuan = pengajuanExists.semesterPengajuan;
-    const tanggalPengajuan = new Date(pengajuanExists.tanggalPengajuan);
-    const year = tanggalPengajuan.getFullYear();
-    const tahunAjaran = `${year}/${year + 1}`;
     
-    // Validasi setiap MK
+    // Validasi setiap MK - hanya cek semester, tidak cek penugasan mengajar
     const validationErrors = [];
     for (const detail of pengajuanExists.details) {
       const semesterKurikulum = detail.mataKuliah.semester;
@@ -765,30 +745,17 @@ const assignAllDosenToMataKuliah = async (req, res) => {
       // Validasi semester pengajuan vs semester kurikulum
       if (semesterPengajuan !== semesterKurikulum) {
         validationErrors.push(`Mahasiswa semester ${semesterPengajuan} tidak dapat mengambil "${detail.mataKuliah.nama}" (semester ${semesterKurikulum})`);
-        continue;
-      }
-      
-      // Cek apakah dosen sudah ACTIVE untuk MK ini
-      const activeAssignment = await prisma.penugasanMengajar.findFirst({
-        where: {
-          mataKuliahId: detail.mataKuliahId,
-          dosenId: dosenId,
-          tahunAjaran: tahunAjaran,
-          semester: semesterKurikulum,
-          status: 'ACTIVE'
-        }
-      });
-      
-      if (!activeAssignment) {
-        validationErrors.push(`Dosen belum ditugaskan untuk "${detail.mataKuliah.nama}" (semester ${semesterKurikulum})`);
       }
     }
     
     if (validationErrors.length > 0) {
       return res.status(400).json({ 
-        error: validationErrors.join('. ') + '. Silakan assign dosen terlebih dahulu di menu "Kelola Penugasan Mengajar".'
+        error: validationErrors.join('. ')
       });
     }
+    
+    // DIHAPUS: Tidak perlu cek penugasan mengajar, pengajuan SA terpisah dari penugasan mengajar
+    // Kaprodi bisa langsung assign dosen untuk pengajuan SA tanpa perlu dosen sudah ditugaskan mengajar
     
     // Update semua detail dengan dosen yang sama
     const updateResult = await prisma.pengajuanSADetail.updateMany({
