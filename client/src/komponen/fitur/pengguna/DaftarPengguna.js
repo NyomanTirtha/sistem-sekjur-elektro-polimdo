@@ -382,8 +382,17 @@ const UsersList = ({ authToken, currentUser }) => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <Users className="w-8 h-8 mx-auto mb-2 animate-spin" />
-          <p>Loading users...</p>
+          <div 
+            className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full mx-auto mb-3"
+            style={{ animation: 'spin 0.6s linear infinite' }}
+          ></div>
+          <p className="text-sm text-gray-600 font-medium">Memuat pengguna...</p>
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </div>
     );

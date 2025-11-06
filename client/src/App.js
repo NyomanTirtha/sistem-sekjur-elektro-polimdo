@@ -376,7 +376,23 @@ export default function App() {
       authToken={authToken} // Pass token to child components if needed
     >
       {ActiveComponent && (
-        <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-gray-500">Memuat...</div></div>}>
+        <Suspense fallback={
+          <div className="flex items-center justify-center p-8">
+            <div className="flex flex-col items-center gap-3">
+              <div 
+                className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
+                style={{ animation: 'spin 0.6s linear infinite' }}
+              ></div>
+              <div className="text-sm text-gray-500 font-medium">Memuat...</div>
+            </div>
+            <style>{`
+              @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
+        }>
           <ActiveComponent authToken={authToken} currentUser={currentUser} userType={userType} />
         </Suspense>
       )}

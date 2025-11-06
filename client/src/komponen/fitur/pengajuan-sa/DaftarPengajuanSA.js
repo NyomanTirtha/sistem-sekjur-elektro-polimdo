@@ -312,8 +312,19 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-gray-600">Memuat data pengajuan SA...</span>
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
+            style={{ animation: 'spin 0.6s linear infinite' }}
+          ></div>
+          <span className="text-sm text-gray-600 font-medium">Memuat data pengajuan SA...</span>
+        </div>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }

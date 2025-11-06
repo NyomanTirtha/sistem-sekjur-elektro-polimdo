@@ -278,7 +278,16 @@ const LoginPage = ({ onLoginSuccess }) => {
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    <div
+                      className="h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"
+                      style={{ animation: 'spin 0.5s linear infinite' }}
+                    ></div>
+                    <style>{`
+                      @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                      }
+                    `}</style>
                     Memproses...
                   </>
                 ) : (

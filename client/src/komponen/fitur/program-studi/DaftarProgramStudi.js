@@ -261,7 +261,16 @@ const ProdiContent = ({ authToken, currentUser }) => {
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div 
+                className="w-8 h-8 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
+                style={{ animation: 'spin 0.6s linear infinite' }}
+              ></div>
+              <style>{`
+                @keyframes spin {
+                  from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
             </div>
           ) : (
             <table className="w-full border-collapse">
