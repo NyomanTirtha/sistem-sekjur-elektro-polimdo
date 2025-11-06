@@ -3,15 +3,50 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { helmetConfig, apiLimiter } = require('./middleware/security');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+// ✅ SECURITY: Helmet.js - Security Headers (PRIORITY 1)
+app.use(helmetConfig);
+
+// ✅ SECURITY: CORS Configuration - Restrict Origins (PRIORITY 2)
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:3000', 'http://localhost:3001']; // Development defaults
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// ✅ SECURITY: Body Parser - Limit size
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ✅ SECURITY: Rate Limiting untuk semua API (PRIORITY 1)
+app.use('/api/', apiLimiter);
+
+// ✅ SECURITY: Static File Serving dengan restrictions
+app.use('/uploads', express.static('uploads', {
+  setHeaders: (res, path) => {
+    // Set security headers untuk file uploads
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Content-Disposition', 'inline'); // Jangan auto-download
+  }
+}));
 
 // Import routes
 const { router: authRoutes, authenticateToken } = require('./routes/auth');

@@ -8,7 +8,7 @@ const multer = require('multer');
 // Mengimpor controller yang berisi fungsi-fungsi
 const pengajuanSAController = require("../controllers/pengajuanSAController");
 
-// Konfigurasi multer untuk upload file
+// ✅ SECURITY: Konfigurasi multer dengan validasi (PRIORITY 1)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -20,20 +20,49 @@ const storage = multer.diskStorage({
     const dateStr = timestamp.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
     const timeStr = timestamp.toTimeString().slice(0, 8).replace(/:/g, ''); // HHmmss
     const randomStr = Math.random().toString(36).substring(2, 8); // Random 6 karakter
-    const ext = file.originalname.split('.').pop(); // Ekstensi file
-    const filename = `bukti-pembayaran-sa-${mahasiswaId}-${dateStr}-${timeStr}-${randomStr}.${ext}`;
+    
+    // ✅ SECURITY: Sanitize extension - hanya allow image extensions
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const ext = file.originalname.split('.').pop()?.toLowerCase() || 'jpg';
+    const safeExt = allowedExts.includes(ext) ? ext : 'jpg';
+    
+    // ✅ SECURITY: Sanitize filename - remove dangerous characters
+    const sanitizedMahasiswaId = mahasiswaId.replace(/[^a-zA-Z0-9_-]/g, '');
+    
+    const filename = `bukti-pembayaran-sa-${sanitizedMahasiswaId}-${dateStr}-${timeStr}-${randomStr}.${safeExt}`;
     cb(null, filename);
   }
 });
 
-const upload = multer({ storage: storage });
+// ✅ SECURITY: File filter - hanya allow image files (PRIORITY 1)
+const fileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('File harus berupa gambar (JPG, PNG, GIF, atau WEBP)'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // ✅ SECURITY: Max 5MB (PRIORITY 1)
+    files: 1 // ✅ SECURITY: Maksimal 1 file per request
+  }
+});
 
 // Mendefinisikan rute-rute untuk API Pengajuan SA
 router.get("/", pengajuanSAController.getAllPengajuanSA); // Mengambil semua pengajuan SA
 router.get("/mahasiswa/:mahasiswaId", pengajuanSAController.getPengajuanSAByMahasiswa); // Mengambil pengajuan SA berdasarkan mahasiswa
 router.get("/dosen/:dosenId", pengajuanSAController.getPengajuanSAByDosen);
 router.get("/:id", pengajuanSAController.getPengajuanSAById); // Mengambil pengajuan SA berdasarkan ID
-router.post("/", upload.single('buktiPembayaran'), pengajuanSAController.createPengajuanSA); // Menambahkan pengajuan SA baru
+// ✅ SECURITY: Import upload limiter
+const { uploadLimiter } = require('../middleware/security');
+
+router.post("/", uploadLimiter, upload.single('buktiPembayaran'), pengajuanSAController.createPengajuanSA); // Menambahkan pengajuan SA baru
 
 // Routes untuk assign dosen (Kaprodi) 
 router.get("/suggested-dosen", pengajuanSAController.getSuggestedDosen);

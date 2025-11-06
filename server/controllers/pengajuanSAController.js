@@ -255,9 +255,20 @@ const createPengajuanSA = async (req, res) => {
     console.log('mataKuliahIds raw:', mataKuliahIds);
     console.log('mataKuliahIds type:', typeof mataKuliahIds);
     
-    // Validasi file
+    // ✅ SECURITY: Validasi file upload (PRIORITY 1)
     if (!req.file) {
       return res.status(400).json({ error: 'Bukti pembayaran harus diupload' });
+    }
+    
+    // ✅ SECURITY: Double check file type (prevent mimetype spoofing)
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedMimes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'File harus berupa gambar (JPG, PNG, GIF, atau WEBP)' });
+    }
+    
+    // ✅ SECURITY: Check file size (max 5MB)
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Ukuran file terlalu besar. Maksimal 5MB' });
     }
     
     // Validasi mahasiswa ID
