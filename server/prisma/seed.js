@@ -26,7 +26,8 @@ async function main() {
     console.log('Memasukkan data Jurusan...');
     await prisma.jurusan.createMany({
       data: [
-        { id: 1, nama: 'Teknik Elektro' }
+        { id: 1, nama: 'Teknik Elektro' },
+        { id: 2, nama: 'Teknik Sipil' }
       ],
     });
 
@@ -45,6 +46,18 @@ async function main() {
           nama: 'D4 Teknik Listrik', 
           ketuaProdi: 'I Gede Para Atmaja,ST.,MT',
           jurusanId: 1
+        },
+        { 
+          id: 3, 
+          nama: 'D4 Teknik Konstruksi Bangunan Gedung', 
+          ketuaProdi: 'Ketua Prodi TKBG',
+          jurusanId: 2
+        },
+        { 
+          id: 4, 
+          nama: 'D4 Teknik Konstruksi Jalan dan Jembatan', 
+          ketuaProdi: 'Ketua Prodi TKJJ',
+          jurusanId: 2
         }
       ],
     });
@@ -53,13 +66,21 @@ async function main() {
     console.log('Memasukkan data User...');
     await prisma.user.createMany({
       data: [
-        // Kajur (Admin)
+        // Sekretaris Jurusan Teknik Elektro
         { 
           username: 'admin', 
           nama: 'Marson James Budiman, SST., MT.', 
           password: hashedPassword, 
           role: 'SEKJUR',
           jurusanId: 1
+        },
+        // Sekretaris Jurusan Teknik Sipil
+        { 
+          username: 'sekjur_sipil', 
+          nama: 'Sekretaris Jurusan Teknik Sipil', 
+          password: hashedPassword, 
+          role: 'SEKJUR',
+          jurusanId: 2
         },
         
         { 
@@ -79,7 +100,7 @@ async function main() {
           programStudiId: 2
         },
         
-        // Dosen
+        // Dosen Teknik Elektro
         { 
           username: '197405232002121004', 
           nama: 'Maksy Sendiang, SST.,MIT', 
@@ -94,8 +115,23 @@ async function main() {
           role: 'DOSEN',
           jurusanId: null
         },
+        // Dosen Teknik Sipil
+        { 
+          username: '197501011998031005', 
+          nama: 'Dosen Teknik Sipil 1', 
+          password: hashedPassword, 
+          role: 'DOSEN',
+          jurusanId: null
+        },
+        { 
+          username: '197601011998031006', 
+          nama: 'Dosen Teknik Sipil 2', 
+          password: hashedPassword, 
+          role: 'DOSEN',
+          jurusanId: null
+        },
         
-        // Mahasiswa
+        // Mahasiswa Teknik Elektro
         { 
           username: '23024099', 
           nama: 'RICHARD APOUW', 
@@ -106,6 +142,21 @@ async function main() {
         { 
           username: '24023052', 
           nama: 'ARIEL PAULUS KAPOH', 
+          password: hashedPassword, 
+          role: 'MAHASISWA',
+          jurusanId: null
+        },
+        // Mahasiswa Teknik Sipil
+        { 
+          username: '23025001', 
+          nama: 'MAHASISWA TKBG 1', 
+          password: hashedPassword, 
+          role: 'MAHASISWA',
+          jurusanId: null
+        },
+        { 
+          username: '24025002', 
+          nama: 'MAHASISWA TKJJ 1', 
           password: hashedPassword, 
           role: 'MAHASISWA',
           jurusanId: null
@@ -135,7 +186,7 @@ async function main() {
           alamat: 'Jl. Sam Ratulangi No. 78, Manado',
           isKaprodi: true
         },
-        // Dosen biasa
+        // Dosen biasa Teknik Elektro
         {
           nip: '197405232002121004',
           nama: 'Maksy Sendiang, SST.,MIT',
@@ -150,6 +201,23 @@ async function main() {
           prodiId: 2,
           noTelp: '081234567893',
           alamat: 'Jl. Wolter Monginsidi No. 33, Manado',
+          isKaprodi: false
+        },
+        // Dosen Teknik Sipil
+        {
+          nip: '197501011998031005',
+          nama: 'Dosen Teknik Sipil 1',
+          prodiId: 3,
+          noTelp: '081234567894',
+          alamat: 'Jl. Teknik Sipil No. 1, Manado',
+          isKaprodi: false
+        },
+        {
+          nip: '197601011998031006',
+          nama: 'Dosen Teknik Sipil 2',
+          prodiId: 4,
+          noTelp: '081234567895',
+          alamat: 'Jl. Teknik Sipil No. 2, Manado',
           isKaprodi: false
         }
       ]
@@ -176,6 +244,25 @@ async function main() {
           semester: 3, 
           noTelp: '082134567891', 
           alamat: 'Jl. Sario No. 456, Manado' 
+        },
+        // Mahasiswa Teknik Sipil
+        { 
+          nim: '23025001', 
+          nama: 'MAHASISWA TKBG 1', 
+          programStudiId: 3,
+          angkatan: '2023', 
+          semester: 3, 
+          noTelp: '082134567892', 
+          alamat: 'Jl. Teknik Sipil No. 100, Manado' 
+        },
+        { 
+          nim: '24025002', 
+          nama: 'MAHASISWA TKJJ 1', 
+          programStudiId: 4,
+          angkatan: '2024', 
+          semester: 3, 
+          noTelp: '082134567893', 
+          alamat: 'Jl. Teknik Sipil No. 200, Manado' 
         }
       ]
     });
@@ -243,8 +330,66 @@ async function main() {
       { nama: 'Kewirausahaan', sks: 2, semester: 2, programStudiId: 2 }
     ];
 
+    // Mata Kuliah D4 Teknik Konstruksi Bangunan Gedung (Semester 1-2)
+    const mataKuliahTKBG = [
+      // Semester 1
+      { nama: 'Agama', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Pancasila', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Bahasa Indonesia', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Bahasa Inggris Teknik 1', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Matematika Dasar', sks: 3, semester: 1, programStudiId: 3 },
+      { nama: 'Fisika Dasar', sks: 3, semester: 1, programStudiId: 3 },
+      { nama: 'Kimia Dasar', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Gambar Teknik Sipil', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Pengantar Teknik Sipil', sks: 2, semester: 1, programStudiId: 3 },
+      { nama: 'Mekanika Teknik Dasar', sks: 3, semester: 1, programStudiId: 3 },
+      { nama: 'Praktikum Mekanika Teknik', sks: 1, semester: 1, programStudiId: 3 },
+      
+      // Semester 2
+      { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 3 },
+      { nama: 'Matematika Teknik', sks: 3, semester: 2, programStudiId: 3 },
+      { nama: 'Mekanika Tanah Dasar', sks: 3, semester: 2, programStudiId: 3 },
+      { nama: 'Praktikum Mekanika Tanah', sks: 1, semester: 2, programStudiId: 3 },
+      { nama: 'Struktur Beton Dasar', sks: 3, semester: 2, programStudiId: 3 },
+      { nama: 'Praktikum Struktur Beton', sks: 1, semester: 2, programStudiId: 3 },
+      { nama: 'Bahan Bangunan', sks: 2, semester: 2, programStudiId: 3 },
+      { nama: 'Praktikum Bahan Bangunan', sks: 1, semester: 2, programStudiId: 3 },
+      { nama: 'Perencanaan Bangunan Gedung', sks: 2, semester: 2, programStudiId: 3 },
+      { nama: 'Keselamatan dan Kesehatan Kerja', sks: 2, semester: 2, programStudiId: 3 },
+      { nama: 'Kewirausahaan', sks: 2, semester: 2, programStudiId: 3 }
+    ];
+
+    // Mata Kuliah D4 Teknik Konstruksi Jalan dan Jembatan (Semester 1-2)
+    const mataKuliahTKJJ = [
+      // Semester 1
+      { nama: 'Agama', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Pancasila', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Bahasa Indonesia', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Bahasa Inggris Teknik 1', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Matematika Dasar', sks: 3, semester: 1, programStudiId: 4 },
+      { nama: 'Fisika Dasar', sks: 3, semester: 1, programStudiId: 4 },
+      { nama: 'Kimia Dasar', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Gambar Teknik Sipil', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Pengantar Teknik Sipil', sks: 2, semester: 1, programStudiId: 4 },
+      { nama: 'Mekanika Teknik Dasar', sks: 3, semester: 1, programStudiId: 4 },
+      { nama: 'Praktikum Mekanika Teknik', sks: 1, semester: 1, programStudiId: 4 },
+      
+      // Semester 2
+      { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 4 },
+      { nama: 'Matematika Teknik', sks: 3, semester: 2, programStudiId: 4 },
+      { nama: 'Mekanika Tanah Dasar', sks: 3, semester: 2, programStudiId: 4 },
+      { nama: 'Praktikum Mekanika Tanah', sks: 1, semester: 2, programStudiId: 4 },
+      { nama: 'Perencanaan Jalan', sks: 3, semester: 2, programStudiId: 4 },
+      { nama: 'Praktikum Perencanaan Jalan', sks: 1, semester: 2, programStudiId: 4 },
+      { nama: 'Bahan Konstruksi Jalan', sks: 2, semester: 2, programStudiId: 4 },
+      { nama: 'Praktikum Bahan Konstruksi Jalan', sks: 1, semester: 2, programStudiId: 4 },
+      { nama: 'Perencanaan Jembatan Dasar', sks: 2, semester: 2, programStudiId: 4 },
+      { nama: 'Keselamatan dan Kesehatan Kerja', sks: 2, semester: 2, programStudiId: 4 },
+      { nama: 'Kewirausahaan', sks: 2, semester: 2, programStudiId: 4 }
+    ];
+
     await prisma.mataKuliah.createMany({
-      data: [...mataKuliahInformatika, ...mataKuliahListrik]
+      data: [...mataKuliahInformatika, ...mataKuliahListrik, ...mataKuliahTKBG, ...mataKuliahTKJJ]
     });
 
     console.log('\n✅ Seeding berhasil!');

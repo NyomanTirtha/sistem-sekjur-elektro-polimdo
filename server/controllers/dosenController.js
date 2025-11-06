@@ -1,16 +1,23 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { createDosenFilter } = require('../routes/auth');
 
 //PERFORMANCE: Mengambil semua dosen - Optimized query
 const getAllDosen = async (req, res) => {
   try {
-    //PERFORMANCE: Hanya select field yang diperlukan
     const whereClause = {
       isKaprodi: false
     };
 
+    // Filter untuk KAPRODI berdasarkan programStudiId
     if (req.user && req.user.programStudiId) {
       whereClause.prodiId = req.user.programStudiId;
+    }
+
+    // Filter untuk SEKJUR berdasarkan jurusanId
+    const dosenFilter = createDosenFilter(req.userContext || {});
+    if (dosenFilter) {
+      whereClause.prodi = dosenFilter.prodi;
     }
 
     const dosen = await prisma.dosen.findMany({
