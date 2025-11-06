@@ -443,26 +443,23 @@ const UsersList = ({ authToken, currentUser }) => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         {roles.map(role => {
           const Icon = role.icon;
           const roleCount = users.filter(user => user.role === role.value).length;
           
+          // Get subtle color for icon
+          const iconColor = role.value === 'SEKJUR' ? 'text-red-500' :
+                           role.value === 'KAPRODI' ? 'text-purple-500' :
+                           role.value === 'DOSEN' ? 'text-blue-500' : 'text-green-500';
+          
           return (
-            <div key={role.value} className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex items-center">
-                <div className={`p-2 rounded-lg ${
-                  role.value === 'SEKJUR' ? 'bg-red-100' :
-                  role.value === 'KAPRODI' ? 'bg-purple-100' :
-                  role.value === 'DOSEN' ? 'bg-blue-100' : 'bg-green-100'
-                }`}>
-                  <Icon className={`w-6 h-6 ${role.color}`} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{role.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{roleCount}</p>
-                </div>
+            <div key={role.value} className="bg-white p-3 rounded border border-gray-200">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Icon className={`w-4 h-4 ${iconColor} opacity-70`} />
+                <p className="text-xs text-gray-500">{role.label}</p>
               </div>
+              <p className="text-lg font-semibold text-gray-900">{roleCount}</p>
             </div>
           );
         })}

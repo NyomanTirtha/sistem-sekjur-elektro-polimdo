@@ -323,39 +323,39 @@ const TabelPengajuanSA = ({
             // 🎯 HEADER SEKJUR - WITH MATA KULIAH
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">No</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mahasiswa</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mata Kuliah</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nominal</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Semester</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Dosen</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nilai</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Indeks</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">No</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Mahasiswa</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Mata Kuliah</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Nominal</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Tanggal</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Semester</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Status</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Dosen</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Nilai</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Indeks</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Aksi</th>
               </tr>
             </thead>
           ) : (
             // 🎯 HEADER NORMAL - UNTUK USER TYPE LAIN
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">No</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">No</th>
                 {userType !== 'mahasiswa' && (
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mahasiswa</th>
+                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Mahasiswa</th>
                 )}
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Mata Kuliah</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nominal</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Semester</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Mata Kuliah</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Nominal</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Tanggal</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Semester</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Status</th>
                 {/* Sembunyikan kolom Dosen jika userType === 'dosen' */}
                 {userType !== 'dosen' && (
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Dosen</th>
+                  <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Dosen</th>
                 )}
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Nilai</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Indeks</th>
-                <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Nilai</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Indeks</th>
+                <th className="px-2.5 py-2 text-left text-xs font-semibold text-gray-700">Aksi</th>
               </tr>
             </thead>
           )}
@@ -366,109 +366,144 @@ const TabelPengajuanSA = ({
             <tbody>
               {currentRows.map((item, index) => (
                 <tr key={item.id || index} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="px-3 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">{startIndex + index + 1}</td>
 
                   {/* Mahasiswa */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <div className="font-medium">{item.mahasiswa?.nama || 'N/A'}</div>
-                        <div className="text-gray-500 text-xs">{item.mahasiswaId}</div>
-                        <div className="text-gray-400 text-xs">{getProgramStudiName(item.mahasiswa?.programStudiId)}</div>
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div 
+                          className="font-medium truncate max-w-[140px] cursor-help" 
+                          title={`${item.mahasiswa?.nama || 'N/A'} - ${item.mahasiswaId || ''} - ${getProgramStudiName(item.mahasiswa?.programStudiId) || ''}`}
+                        >
+                          {item.mahasiswa?.nama || 'N/A'}
+                        </div>
+                        <div className="text-gray-500 text-[10px]" title={item.mahasiswaId}>
+                          {item.mahasiswaId}
+                        </div>
                       </div>
                     </div>
                   </td>
 
                   {/* Mata Kuliah - SEKJUR View */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
                     {item.isGrouped ? (
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {item.mataKuliahList && item.mataKuliahList.length > 0
-                            ? item.mataKuliahList.map((mk, idx) => (
-                              <span key={mk.id}>
-                                {mk.nama}{idx < item.mataKuliahList.length - 1 ? ', ' : ''}
-                              </span>
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.mataKuliahList && item.mataKuliahList.length > 0 ? (
+                            item.mataKuliahList.map((mk, idx) => (
+                              <div
+                                key={mk.id || idx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-xs font-medium text-blue-900 cursor-help"
+                                title={`${mk.nama} - ${mk.sks} SKS${mk.semester ? ` - Semester ${mk.semester}` : ''}`}
+                              >
+                                <span className="w-4 h-4 rounded-full bg-blue-200 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="truncate max-w-[140px]">{mk.nama}</span>
+                                <span className="text-blue-600 font-semibold flex-shrink-0">{mk.sks}</span>
+                              </div>
                             ))
-                            : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
+                          ) : (
+                            <span className="text-gray-500 italic">Mata kuliah tidak tersedia</span>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
+                        <div className="text-xs text-gray-500" title={`${item.jumlahMataKuliah || 0} mata kuliah • Total ${item.totalSKS || 0} SKS`}>
+                          {item.jumlahMataKuliah || 0} MK • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div 
+                          className="font-medium text-gray-900 truncate max-w-[180px] cursor-help" 
+                          title={`${item.mataKuliah?.nama || item.mataKuliah || 'N/A'} - ${item.mataKuliah?.sks || 0} SKS${item.mataKuliah?.semester ? ` - Semester ${item.mataKuliah.semester}` : ''}`}
+                        >
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {item.mataKuliah?.sks || 0} SKS
-                          {item.mataKuliah?.semester && ` • Semester ${item.mataKuliah.semester}`}
+                          {item.mataKuliah?.semester && ` • S${item.mataKuliah.semester}`}
                         </div>
                       </div>
                     )}
                   </td>
 
                   {/* Nominal */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
-                    <div className="font-medium text-green-600">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
+                    <div 
+                      className="font-medium text-green-600 whitespace-nowrap cursor-help" 
+                      title={`Nominal: ${formatCurrency(item.nominal || 0)}`}
+                    >
                       {formatCurrency(item.nominal || 0)}
                     </div>
                   </td>
 
                   {/* Tanggal */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
-                    {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
+                  <td className="px-2.5 py-2 text-xs text-gray-900 whitespace-nowrap">
+                    <span 
+                      className="cursor-help"
+                      title={new Date(item.tanggalPengajuan).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    >
+                      {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
                   </td>
 
                   {/* Semester */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
                     {(() => {
-                      // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
                       const semesterPengajuan = item.semesterPengajuan;
                       const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
+                      const fullText = semesterPengajuan && tahunAjaran 
+                        ? `${tahunAjaran} - Semester ${semesterPengajuan}`
+                        : semesterPengajuan 
+                        ? `Semester ${semesterPengajuan}`
+                        : tahunAjaran || '-';
 
                       if (semesterPengajuan && tahunAjaran) {
-                        return (
-                          <span className="text-gray-700">
-                            {tahunAjaran}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>{tahunAjaran}</span>;
                       } else if (semesterPengajuan) {
-                        return (
-                          <span className="text-gray-700">
-                            Semester {semesterPengajuan}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>S{semesterPengajuan}</span>;
                       } else if (tahunAjaran) {
-                        return (
-                          <span className="text-gray-700">
-                            {tahunAjaran}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>{tahunAjaran}</span>;
                       } else {
-                        return (
-                          <span className="text-gray-400 italic">
-                            -
-                          </span>
-                        );
+                        return <span className="text-gray-400 italic">-</span>;
                       }
                     })()}
                   </td>
 
                   {/* Status */}
-                  <td className="px-3 py-3">
-                    {/* ✅ FIXED: Tampilkan status SELESAI untuk detail yang sudah ada nilai, meskipun master status masih DALAM_PROSES_SA */}
-                    <StatusBadge status={getDetailStatus(item)} />
+                  <td className="px-2.5 py-2">
+                    <div className="cursor-help" title={`Status: ${getDetailStatus(item)}`}>
+                      <StatusBadge status={getDetailStatus(item)} />
+                    </div>
                   </td>
 
                   {/* Dosen */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
                     {item.dosen ? (
-                      <div>
-                        <div className="font-medium text-gray-900">{item.dosen.nama}</div>
-                        <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
+                      <div className="min-w-0">
+                        <div 
+                          className="font-medium text-gray-900 truncate max-w-[120px] cursor-help" 
+                          title={`${item.dosen.nama} - ${item.dosen.nip || item.dosenId}`}
+                        >
+                          {item.dosen.nama}
+                        </div>
+                        <div 
+                          className="text-gray-500 text-[10px] truncate max-w-[120px] cursor-help" 
+                          title={item.dosen.nip || item.dosenId}
+                        >
+                          {item.dosen.nip || item.dosenId}
+                        </div>
                       </div>
                     ) : (
                       <span className="text-gray-400 italic">-</span>
@@ -476,29 +511,39 @@ const TabelPengajuanSA = ({
                   </td>
 
                   {/* Nilai */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">
                     {item.nilaiAkhir ? (
-                      <span className="font-semibold text-gray-900">{item.nilaiAkhir}</span>
+                      <span 
+                        className="font-semibold text-gray-900 cursor-help" 
+                        title={`Nilai: ${item.nilaiAkhir} - Indeks: ${getIndeksHuruf(item.nilaiAkhir)}`}
+                      >
+                        {item.nilaiAkhir}
+                      </span>
                     ) : (
                       <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
 
                   {/* Indeks */}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">
                     {item.nilaiAkhir ? (
-                      <span className="font-semibold text-gray-900">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                      <span 
+                        className="font-semibold text-gray-900 cursor-help" 
+                        title={`Indeks: ${getIndeksHuruf(item.nilaiAkhir)} - Nilai: ${item.nilaiAkhir}`}
+                      >
+                        {getIndeksHuruf(item.nilaiAkhir)}
+                      </span>
                     ) : (
                       <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
 
                   {/* Aksi SEKJUR */}
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-2.5 py-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         onClick={() => onLihatFormDetail(item)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium"
+                        className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-600 font-medium whitespace-nowrap"
                         title="Lihat detail pengajuan SA"
                       >
                         Detail
@@ -508,14 +553,14 @@ const TabelPengajuanSA = ({
                         <>
                           <button
                             onClick={() => handleUpdateStatus(item.id, 'MENUNGGU_VERIFIKASI_KAPRODI')}
-                            className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600 font-medium"
+                            className="bg-green-500 text-white px-2 py-0.5 rounded text-xs hover:bg-green-600 font-medium whitespace-nowrap"
                             title="Verifikasi pembayaran SA"
                           >
                             Verifikasi
                           </button>
                           <button
                             onClick={() => handleTolakPengajuan(item.id)}
-                            className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 font-medium"
+                            className="bg-red-500 text-white px-2 py-0.5 rounded text-xs hover:bg-red-600 font-medium whitespace-nowrap"
                             title="Tolak pengajuan SA"
                           >
                             Tolak
@@ -532,110 +577,150 @@ const TabelPengajuanSA = ({
             <tbody>
               {currentRows.map((item, index) => (
                 <tr key={item.id || index} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="px-3 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">{startIndex + index + 1}</td>
                   {userType !== 'mahasiswa' && (
-                    <td className="px-3 py-3 text-sm text-gray-900">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium">{item.mahasiswa?.nama || 'N/A'}</div>
-                          <div className="text-gray-500 text-xs">{item.mahasiswaId}</div>
-                          <div className="text-gray-400 text-xs">{getProgramStudiName(item.mahasiswa?.programStudiId)}</div>
+                    <td className="px-2.5 py-2 text-xs text-gray-900">
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div 
+                            className="font-medium truncate max-w-[140px] cursor-help" 
+                            title={`${item.mahasiswa?.nama || 'N/A'} - ${item.mahasiswaId || ''} - ${getProgramStudiName(item.mahasiswa?.programStudiId) || ''}`}
+                          >
+                            {item.mahasiswa?.nama || 'N/A'}
+                          </div>
+                          <div className="text-gray-500 text-[10px]" title={item.mahasiswaId}>
+                            {item.mahasiswaId}
+                          </div>
                         </div>
                       </div>
                     </td>
                   )}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
                     {item.isGrouped ? (
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {item.mataKuliahList && item.mataKuliahList.length > 0
-                            ? item.mataKuliahList.map((mk, idx) => (
-                              <span key={mk.id}>
-                                {mk.nama}{idx < item.mataKuliahList.length - 1 ? ', ' : ''}
-                              </span>
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.mataKuliahList && item.mataKuliahList.length > 0 ? (
+                            item.mataKuliahList.map((mk, idx) => (
+                              <div
+                                key={mk.id || idx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-xs font-medium text-blue-900 cursor-help"
+                                title={`${mk.nama} - ${mk.sks} SKS${mk.semester ? ` - Semester ${mk.semester}` : ''}`}
+                              >
+                                <span className="w-4 h-4 rounded-full bg-blue-200 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="truncate max-w-[140px]">{mk.nama}</span>
+                                <span className="text-blue-600 font-semibold flex-shrink-0">{mk.sks}</span>
+                              </div>
                             ))
-                            : (item.mataKuliah || 'Mata kuliah tidak tersedia')}
+                          ) : (
+                            <span className="text-gray-500 italic">Mata kuliah tidak tersedia</span>
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {item.jumlahMataKuliah || 0} mata kuliah • {item.totalSKS || 0} SKS
+                        <div className="text-xs text-gray-500 cursor-help" title={`${item.jumlahMataKuliah || 0} mata kuliah • Total ${item.totalSKS || 0} SKS`}>
+                          {item.jumlahMataKuliah || 0} MK • {item.totalSKS || 0} SKS
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div 
+                          className="font-medium text-gray-900 truncate max-w-[180px] cursor-help" 
+                          title={`${item.mataKuliah?.nama || item.mataKuliah || 'N/A'} - ${item.mataKuliah?.sks || 0} SKS${item.mataKuliah?.semester ? ` - Semester ${item.mataKuliah.semester}` : ''}`}
+                        >
                           {item.mataKuliah?.nama || item.mataKuliah || 'N/A'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {item.mataKuliah?.sks || 0} SKS
-                          {item.mataKuliah?.semester && ` • Semester ${item.mataKuliah.semester}`}
+                          {item.mataKuliah?.semester && ` • S${item.mataKuliah.semester}`}
                         </div>
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-sm text-gray-900">
-                    <div className="font-medium text-green-600">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
+                    <div 
+                      className="font-medium text-green-600 whitespace-nowrap cursor-help" 
+                      title={`Nominal: ${formatCurrency(item.nominal || 0)}`}
+                    >
                       {formatCurrency(item.nominal || 0)}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-sm text-gray-900">
-                    {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID')}
+                  <td className="px-2.5 py-2 text-xs text-gray-900 whitespace-nowrap">
+                    <span 
+                      className="cursor-help"
+                      title={new Date(item.tanggalPengajuan).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    >
+                      {new Date(item.tanggalPengajuan).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
                   </td>
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900">
                     {(() => {
-                      // Prioritaskan semesterPengajuan (semester mahasiswa saat mengajukan)
                       const semesterPengajuan = item.semesterPengajuan;
                       const tahunAjaran = item.tanggalPengajuan ? getSemesterFromDate(item.tanggalPengajuan) : null;
+                      const fullText = semesterPengajuan && tahunAjaran 
+                        ? `${tahunAjaran} - Semester ${semesterPengajuan}`
+                        : semesterPengajuan 
+                        ? `Semester ${semesterPengajuan}`
+                        : tahunAjaran || '-';
 
                       if (semesterPengajuan && tahunAjaran) {
-                        return (
-                          <span className="text-gray-700">
-                            {tahunAjaran}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>{tahunAjaran}</span>;
                       } else if (semesterPengajuan) {
-                        return (
-                          <span className="text-gray-700">
-                            Semester {semesterPengajuan}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>S{semesterPengajuan}</span>;
                       } else if (tahunAjaran) {
-                        return (
-                          <span className="text-gray-700">
-                            {tahunAjaran}
-                          </span>
-                        );
+                        return <span className="text-gray-700 whitespace-nowrap cursor-help" title={fullText}>{tahunAjaran}</span>;
                       } else {
-                        return (
-                          <span className="text-gray-400 italic">
-                            -
-                          </span>
-                        );
+                        return <span className="text-gray-400 italic">-</span>;
                       }
                     })()}
                   </td>
-                  <td className="px-3 py-3">
-                    {/* ✅ FIXED: Tampilkan status SELESAI untuk detail yang sudah ada nilai, meskipun master status masih DALAM_PROSES_SA */}
-                    <StatusBadge status={getDetailStatus(item)} />
+                  <td className="px-2.5 py-2">
+                    <div className="cursor-help" title={`Status: ${getDetailStatus(item)}`}>
+                      <StatusBadge status={getDetailStatus(item)} />
+                    </div>
                   </td>
                   {/* Kolom Dosen: hanya tampil jika userType bukan dosen */}
                   {userType !== 'dosen' && (
-                    <td className="px-3 py-3 text-sm text-gray-900">
+                    <td className="px-2.5 py-2 text-xs text-gray-900">
                       {item.dosen ? (
-                        <div>
-                          <div className="font-medium text-gray-900">{item.dosen.nama}</div>
-                          <div className="text-gray-500 text-xs">{item.dosen.nip || item.dosenId}</div>
+                        <div className="min-w-0">
+                          <div 
+                            className="font-medium text-gray-900 truncate max-w-[120px] cursor-help" 
+                            title={`${item.dosen.nama} - ${item.dosen.nip || item.dosenId}`}
+                          >
+                            {item.dosen.nama}
+                          </div>
+                          <div 
+                            className="text-gray-500 text-[10px] truncate max-w-[120px] cursor-help" 
+                            title={item.dosen.nip || item.dosenId}
+                          >
+                            {item.dosen.nip || item.dosenId}
+                          </div>
                         </div>
                       ) : (
                         <span className="text-gray-400 italic">-</span>
                       )}
                     </td>
                   )}
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">
                     {item.nilaiAkhir ? (
-                      <span className="font-semibold text-gray-900">{item.nilaiAkhir}</span>
+                      <span 
+                        className="font-semibold text-gray-900 cursor-help" 
+                        title={`Nilai: ${item.nilaiAkhir} - Indeks: ${getIndeksHuruf(item.nilaiAkhir)}`}
+                      >
+                        {item.nilaiAkhir}
+                      </span>
                     ) : canDosenInputNilai(item) ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           min="0"
@@ -644,24 +729,24 @@ const TabelPengajuanSA = ({
                           placeholder="0-100"
                           value={nilaiInputs[item.id] || ''}
                           onChange={(e) => handleNilaiInputChange(item.id, e.target.value)}
-                          className="border border-blue-300 rounded px-2 py-1 text-sm w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="border border-blue-300 rounded px-1.5 py-0.5 text-xs w-16 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                           disabled={isUpdating[item.id]}
                         />
                         <button
                           onClick={() => handleUpdateNilai(item)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           title={`Input nilai untuk mata kuliah ${item.mataKuliah?.nama || 'SA'}`}
                           disabled={!nilaiInputs[item.id] || isUpdating[item.id]}
                         >
                           {isUpdating[item.id] ? (
                             <>
                               <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              Saving...
+                              ...
                             </>
                           ) : (
                             <>
                               <Save className="w-3 h-3" />
-                              Input
+                              Save
                             </>
                           )}
                         </button>
@@ -670,15 +755,20 @@ const TabelPengajuanSA = ({
                       <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-sm text-gray-900">
+                  <td className="px-2.5 py-2 text-xs text-gray-900 text-center">
                     {item.nilaiAkhir ? (
-                      <span className="font-semibold text-gray-900">{getIndeksHuruf(item.nilaiAkhir)}</span>
+                      <span 
+                        className="font-semibold text-gray-900 cursor-help" 
+                        title={`Indeks: ${getIndeksHuruf(item.nilaiAkhir)} - Nilai: ${item.nilaiAkhir}`}
+                      >
+                        {getIndeksHuruf(item.nilaiAkhir)}
+                      </span>
                     ) : (
                       <span className="text-gray-400 italic">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2 flex-wrap min-h-[32px]">
+                  <td className="px-2.5 py-2">
+                    <div className="flex items-center gap-1.5 flex-wrap min-h-[28px]">
                       {/* ✅ SIMPLIFIED: Form Assign Dosen - Kompak dan Inline */}
                       {userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
                         <>
@@ -719,8 +809,8 @@ const TabelPengajuanSA = ({
 
                       {/* ✅ ENHANCED: Aksi SEKJUR - Input Nilai */}
                       {canSekjurInputNilai(item) && (
-                        <div className="flex items-center gap-2 bg-green-50 p-2 rounded border border-green-200">
-                          <Edit3 className="w-4 h-4 text-green-600" />
+                        <div className="flex items-center gap-1.5 bg-green-50 p-1.5 rounded border border-green-200">
+                          <Edit3 className="w-3 h-3 text-green-600 flex-shrink-0" />
                           <input
                             type="number"
                             min="0"
@@ -729,24 +819,24 @@ const TabelPengajuanSA = ({
                             placeholder="0-100"
                             value={nilaiInputs[item.id] || ''}
                             onChange={(e) => handleNilaiInputChange(item.id, e.target.value)}
-                            className="border border-gray-300 rounded px-2 py-1 text-xs w-20 focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                            className="border border-gray-300 rounded px-1.5 py-0.5 text-xs w-16 focus:border-green-500 focus:ring-1 focus:ring-green-500"
                             disabled={isUpdating[item.id]}
                           />
                           <button
                             onClick={() => handleUpdateNilai(item)}
-                            className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-green-500 text-white px-2 py-0.5 rounded text-xs hover:bg-green-600 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             title={`Input nilai untuk mata kuliah ${item.mataKuliah?.nama || 'SA'}`}
                             disabled={!nilaiInputs[item.id] || isUpdating[item.id]}
                           >
                             {isUpdating[item.id] ? (
                               <>
                                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Saving...
+                                ...
                               </>
                             ) : (
                               <>
                                 <Save className="w-3 h-3" />
-                                Input
+                                Save
                               </>
                             )}
                           </button>

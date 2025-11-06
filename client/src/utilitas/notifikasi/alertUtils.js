@@ -19,149 +19,240 @@ const CONFIRM_TYPES = {
   INFO: 'info'
 };
 
-// Show alert function
-export const showAlert = (message, type = ALERT_TYPES.INFO, duration = 5000) => {
-  // Create alert container
-  const alertContainer = document.createElement('div');
-  alertContainer.id = 'alert-container';
-  alertContainer.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    max-width: 500px;
-    width: 90%;
-    pointer-events: none;
-  `;
-  document.body.appendChild(alertContainer);
+// Global alert queue management
+let alertQueue = [];
+let alertContainer = null;
+let alertRoot = null;
+const MAX_ALERTS = 5; // Maximum concurrent alerts
+const ALERT_DEDUP_TIME = 2000; // Prevent same alert within 2 seconds
+const recentAlerts = new Map(); // Track recent alerts to prevent duplicates
 
-  // Create React root
-  const root = createRoot(alertContainer);
+// Create or get alert container
+const getOrCreateAlertContainer = () => {
+  if (!alertContainer || !document.body.contains(alertContainer)) {
+    // Remove any existing container first
+    const existing = document.getElementById('alert-container');
+    if (existing) {
+      existing.remove();
+    }
 
-  // Alert component
-  const Alert = () => {
-    const [isVisible, setIsVisible] = React.useState(true);
+    alertContainer = document.createElement('div');
+    alertContainer.id = 'alert-container';
+    alertContainer.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      max-width: 400px;
+      width: 90%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    `;
+    document.body.appendChild(alertContainer);
+    alertRoot = createRoot(alertContainer);
+  }
+  return alertContainer;
+};
 
-    React.useEffect(() => {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          root.unmount();
-          if (document.body.contains(alertContainer)) {
-            document.body.removeChild(alertContainer);
-          }
-        }, 300);
-      }, duration);
+// Check if alert should be shown (deduplication)
+const shouldShowAlert = (message, type) => {
+  const key = `${type}-${message}`;
+  const now = Date.now();
+  const lastShown = recentAlerts.get(key);
 
-      return () => clearTimeout(timer);
-    }, [duration]);
+  if (lastShown && (now - lastShown) < ALERT_DEDUP_TIME) {
+    return false; // Too soon, don't show duplicate
+  }
 
-    const handleClose = () => {
-      setIsVisible(false);
-      setTimeout(() => {
-        root.unmount();
-        if (document.body.contains(alertContainer)) {
-          document.body.removeChild(alertContainer);
-        }
-      }, 300);
-    };
+  recentAlerts.set(key, now);
+  // Clean old entries (older than 10 seconds)
+  for (const [k, v] of recentAlerts.entries()) {
+    if (now - v > 10000) {
+      recentAlerts.delete(k);
+    }
+  }
+  return true;
+};
 
-    // Auto-hide when clicking outside
-    React.useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (alertContainer && !alertContainer.contains(event.target)) {
-          handleClose();
-        }
-      };
+// Render all alerts in queue
+const renderAlerts = () => {
+  const container = getOrCreateAlertContainer();
+  const alertsToShow = alertQueue.slice(0, MAX_ALERTS);
 
-      const handleEscapeKey = (event) => {
-        if (event.key === 'Escape') {
-          handleClose();
-        }
-      };
-
-      // Enable pointer events for the alert content
-      alertContainer.style.pointerEvents = 'auto';
-      
-      document.addEventListener('click', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
-      
-      return () => {
-        document.removeEventListener('click', handleClickOutside);
-        document.removeEventListener('keydown', handleEscapeKey);
-      };
-    }, []);
-
-    const getAlertStyles = () => {
-      const baseStyles = {
-        padding: '12px 16px',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-        marginBottom: '12px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        maxWidth: '100%',
-        wordWrap: 'break-word',
-        pointerEvents: 'auto',
-        cursor: 'pointer',
-        backgroundColor: '#fff',
-        border: '1px solid #ccc'
-      };
-
-      switch (type) {
-        case ALERT_TYPES.SUCCESS:
-          return { ...baseStyles, borderColor: '#28a745', color: '#155724' };
-        case ALERT_TYPES.ERROR:
-          return { ...baseStyles, borderColor: '#dc3545', color: '#721c24' };
-        case ALERT_TYPES.WARNING:
-          return { ...baseStyles, borderColor: '#ffc107', color: '#856404' };
-        case ALERT_TYPES.INFO:
-        default:
-          return { ...baseStyles, borderColor: '#17a2b8', color: '#0c5460' };
-      }
-    };
-
+  const AlertsList = () => {
     return (
-      <div style={getAlertStyles()} onClick={handleClose}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-            {type === ALERT_TYPES.SUCCESS && 'Berhasil'}
-            {type === ALERT_TYPES.ERROR && 'Error'}
-            {type === ALERT_TYPES.WARNING && 'Peringatan'}
-            {type === ALERT_TYPES.INFO && 'Info'}
-          </div>
-          <div style={{ fontSize: '14px', lineHeight: '1.4' }}>{message}</div>
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleClose();
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '18px',
-            cursor: 'pointer',
-            color: 'inherit',
-            opacity: 0.7,
-            flexShrink: 0,
-            padding: '4px',
-            fontWeight: 'bold'
-          }}
-        >
-          ×
-        </button>
-      </div>
+      <>
+        {alertsToShow.map((alert) => (
+          <AlertItem key={alert.id} alert={alert} />
+        ))}
+      </>
     );
   };
 
-  root.render(React.createElement(Alert));
+  alertRoot.render(React.createElement(AlertsList));
+};
+
+// Individual Alert Component with smooth animations
+const AlertItem = ({ alert }) => {
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [isRemoving, setIsRemoving] = React.useState(false);
+
+  React.useEffect(() => {
+    // Trigger fade-in animation
+    requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+  }, []);
+
+  const handleClose = () => {
+    setIsRemoving(true);
+    setTimeout(() => {
+      removeAlert(alert.id);
+    }, 300); // Match animation duration
+  };
+
+  React.useEffect(() => {
+    // Auto-remove after duration
+    const timer = setTimeout(() => {
+      handleClose();
+    }, alert.duration);
+
+    return () => clearTimeout(timer);
+  }, [alert.duration]);
+
+  const getAlertStyles = () => {
+    const baseStyles = {
+      padding: '12px 16px',
+      borderRadius: '6px',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      maxWidth: '100%',
+      wordWrap: 'break-word',
+      pointerEvents: 'auto',
+      cursor: 'pointer',
+      backgroundColor: '#fff',
+      border: '1px solid #e5e7eb',
+      transform: isVisible && !isRemoving ? 'translateY(0)' : 'translateY(-20px)',
+      opacity: isVisible && !isRemoving ? 1 : 0,
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative'
+    };
+
+    // Simple gray style for all types
+    return {
+      ...baseStyles,
+      color: '#374151'
+    };
+  };
+
+  const getIcon = () => {
+    const iconStyle = { width: '16px', height: '16px', flexShrink: 0, opacity: 0.6 };
+    switch (alert.type) {
+      case ALERT_TYPES.SUCCESS:
+        return <svg style={iconStyle} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>;
+      case ALERT_TYPES.ERROR:
+        return <svg style={iconStyle} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>;
+      case ALERT_TYPES.WARNING:
+        return <svg style={iconStyle} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
+      case ALERT_TYPES.INFO:
+      default:
+        return <svg style={iconStyle} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
+    }
+  };
+
+  return (
+    <div style={getAlertStyles()} onClick={handleClose}>
+      {getIcon()}
+      <div style={{ flex: 1, minWidth: 0, fontSize: '14px', lineHeight: '1.5' }}>
+        {alert.message}
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClose();
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: '18px',
+          cursor: 'pointer',
+          color: '#9ca3af',
+          opacity: 0.7,
+          flexShrink: 0,
+          padding: '0',
+          width: '20px',
+          height: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '4px',
+          transition: 'opacity 0.2s',
+          lineHeight: '1'
+        }}
+        onMouseEnter={(e) => e.target.style.opacity = '1'}
+        onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+      >
+        ×
+      </button>
+    </div>
+  );
+};
+
+// Remove alert from queue
+const removeAlert = (id) => {
+  alertQueue = alertQueue.filter(alert => alert.id !== id);
+  renderAlerts();
+  
+  // Clean up container if no alerts left
+  if (alertQueue.length === 0 && alertContainer) {
+    setTimeout(() => {
+      if (alertQueue.length === 0 && alertContainer && document.body.contains(alertContainer)) {
+        alertContainer.remove();
+        alertContainer = null;
+        alertRoot = null;
+      }
+    }, 500);
+  }
+};
+
+// Show alert function
+export const showAlert = (message, type = ALERT_TYPES.INFO, duration = 4000) => {
+  // Deduplication check
+  if (!shouldShowAlert(message, type)) {
+    return;
+  }
+
+  // Create alert object
+  const alert = {
+    id: `alert-${Date.now()}-${Math.random()}`,
+    message,
+    type,
+    duration
+  };
+
+  // Add to queue
+  alertQueue.push(alert);
+  
+  // Render alerts
+  renderAlerts();
+
+  // Return alert ID for potential manual removal
+  return alert.id;
 };
 
 // Show confirm dialog function
 export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', type = CONFIRM_TYPES.WARNING, confirmText = 'Ya', cancelText = 'Tidak') => {
+  // Prevent multiple confirm dialogs
+  const existingConfirm = document.getElementById('confirm-container');
+  if (existingConfirm) {
+    return; // Already have a confirm dialog open
+  }
+
   // Create confirm container
   const confirmContainer = document.createElement('div');
   confirmContainer.id = 'confirm-container';
@@ -177,29 +268,43 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
     justify-content: center;
     z-index: 10000;
     padding: 20px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
   `;
   document.body.appendChild(confirmContainer);
+
+  // Fade in
+  requestAnimationFrame(() => {
+    confirmContainer.style.opacity = '1';
+  });
 
   // Create React root
   const root = createRoot(confirmContainer);
 
   // Confirm component
   const Confirm = () => {
+    const [isClosing, setIsClosing] = React.useState(false);
 
     const handleConfirm = () => {
-      root.unmount();
-      if (document.body.contains(confirmContainer)) {
-        document.body.removeChild(confirmContainer);
-      }
-      if (onConfirm) onConfirm();
+      setIsClosing(true);
+      setTimeout(() => {
+        root.unmount();
+        if (document.body.contains(confirmContainer)) {
+          confirmContainer.remove();
+        }
+        if (onConfirm) onConfirm();
+      }, 200);
     };
 
     const handleCancel = () => {
-      root.unmount();
-      if (document.body.contains(confirmContainer)) {
-        document.body.removeChild(confirmContainer);
-      }
-      if (onCancel) onCancel();
+      setIsClosing(true);
+      setTimeout(() => {
+        root.unmount();
+        if (document.body.contains(confirmContainer)) {
+          confirmContainer.remove();
+        }
+        if (onCancel) onCancel();
+      }, 200);
     };
 
     const handleBackdropClick = (e) => {
@@ -211,39 +316,64 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
     const getConfirmStyles = () => {
       return {
         background: 'white',
-        borderRadius: '4px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+        borderRadius: '12px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         maxWidth: '500px',
         width: '100%',
-        border: '1px solid #ccc',
-        overflow: 'hidden'
+        border: '1px solid #e5e7eb',
+        overflow: 'hidden',
+        transform: isClosing ? 'scale(0.95)' : 'scale(1)',
+        opacity: isClosing ? 0 : 1,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
       };
     };
 
     const getButtonStyles = (isPrimary = false) => {
       const baseStyles = {
-        padding: '8px 16px',
-        borderRadius: '4px',
+        padding: '10px 20px',
+        borderRadius: '8px',
         fontWeight: 500,
         fontSize: '14px',
         cursor: 'pointer',
-        border: '1px solid #ccc',
-        minWidth: '80px'
+        border: '1px solid',
+        minWidth: '90px',
+        transition: 'all 0.2s'
       };
 
       if (isPrimary) {
-        return { ...baseStyles, backgroundColor: '#007bff', color: 'white', borderColor: '#007bff' };
+        return { 
+          ...baseStyles, 
+          backgroundColor: '#3b82f6', 
+          color: 'white', 
+          borderColor: '#3b82f6' 
+        };
       } else {
-        return { ...baseStyles, backgroundColor: '#fff', color: '#333' };
+        return { 
+          ...baseStyles, 
+          backgroundColor: '#fff', 
+          color: '#374151',
+          borderColor: '#d1d5db'
+        };
       }
     };
 
+    React.useEffect(() => {
+      const handleEscapeKey = (event) => {
+        if (event.key === 'Escape') {
+          handleCancel();
+        }
+      };
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }, []);
+
     return (
-      <div style={getConfirmStyles()}>
+      <div style={getConfirmStyles()} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={{
-          padding: '24px 24px 16px 24px',
-          borderBottom: '1px solid #e5e7eb'
+          padding: '20px 24px',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
         }}>
           <h3 style={{
             margin: 0,
@@ -257,9 +387,10 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
 
         {/* Content */}
         <div style={{
-          padding: '16px 24px',
+          padding: '20px 24px',
           color: '#374151',
-          lineHeight: '1.6'
+          lineHeight: '1.6',
+          fontSize: '14px'
         }}>
           {message.split('\n').map((line, index) => (
             <div key={index} style={{ marginBottom: index < message.split('\n').length - 1 ? '8px' : 0 }}>
@@ -270,20 +401,34 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
 
         {/* Footer */}
         <div style={{
-          padding: '16px 24px 24px 24px',
+          padding: '16px 24px 20px 24px',
           display: 'flex',
           gap: '12px',
-          justifyContent: 'flex-end'
+          justifyContent: 'flex-end',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
         }}>
           <button
             onClick={handleCancel}
             style={getButtonStyles(false)}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f3f4f6';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#fff';
+            }}
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
             style={getButtonStyles(true)}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#2563eb';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#3b82f6';
+            }}
           >
             {confirmText}
           </button>
@@ -297,32 +442,22 @@ export const showConfirm = (message, onConfirm, onCancel, title = 'Konfirmasi', 
     if (e.target === confirmContainer) {
       root.unmount();
       if (document.body.contains(confirmContainer)) {
-        document.body.removeChild(confirmContainer);
+        confirmContainer.remove();
       }
       if (onCancel) onCancel();
     }
   });
 
-  // Add escape key handler
-  const handleEscapeKey = (event) => {
-    if (event.key === 'Escape') {
-      root.unmount();
-      if (document.body.contains(confirmContainer)) {
-        document.body.removeChild(confirmContainer);
-      }
-      if (onCancel) onCancel();
-      document.removeEventListener('keydown', handleEscapeKey);
-    }
-  };
-  
-  document.addEventListener('keydown', handleEscapeKey);
-
   root.render(React.createElement(Confirm));
 };
 
-// Show prompt dialog function
+// Show prompt dialog function (keeping existing implementation with minor improvements)
 export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeholder = 'Masukkan nilai...', defaultValue = '') => {
-  // Create prompt container
+  const existingPrompt = document.getElementById('prompt-container');
+  if (existingPrompt) {
+    return; // Already have a prompt dialog open
+  }
+
   const promptContainer = document.createElement('div');
   promptContainer.id = 'prompt-container';
   promptContainer.style.cssText = `
@@ -337,33 +472,44 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
     justify-content: center;
     z-index: 10000;
     padding: 20px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
   `;
   document.body.appendChild(promptContainer);
 
-  // Create React root
+  requestAnimationFrame(() => {
+    promptContainer.style.opacity = '1';
+  });
+
   const root = createRoot(promptContainer);
 
-  // Prompt component
   const Prompt = () => {
     const [inputValue, setInputValue] = React.useState(defaultValue);
+    const [isClosing, setIsClosing] = React.useState(false);
 
     const handleConfirm = () => {
       if (!inputValue.trim()) {
         return;
       }
-      root.unmount();
-      if (document.body.contains(promptContainer)) {
-        document.body.removeChild(promptContainer);
-      }
-      if (onConfirm) onConfirm(inputValue);
+      setIsClosing(true);
+      setTimeout(() => {
+        root.unmount();
+        if (document.body.contains(promptContainer)) {
+          promptContainer.remove();
+        }
+        if (onConfirm) onConfirm(inputValue);
+      }, 200);
     };
 
     const handleCancel = () => {
-      root.unmount();
-      if (document.body.contains(promptContainer)) {
-        document.body.removeChild(promptContainer);
-      }
-      if (onCancel) onCancel();
+      setIsClosing(true);
+      setTimeout(() => {
+        root.unmount();
+        if (document.body.contains(promptContainer)) {
+          promptContainer.remove();
+        }
+        if (onCancel) onCancel();
+      }, 200);
     };
 
     const handleKeyPress = (e) => {
@@ -377,39 +523,53 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
     const getPromptStyles = () => {
       return {
         background: 'white',
-        borderRadius: '4px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+        borderRadius: '12px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         maxWidth: '500px',
         width: '100%',
-        border: '1px solid #ccc',
-        overflow: 'hidden'
+        border: '1px solid #e5e7eb',
+        overflow: 'hidden',
+        transform: isClosing ? 'scale(0.95)' : 'scale(1)',
+        opacity: isClosing ? 0 : 1,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
       };
     };
 
     const getButtonStyles = (isPrimary = false) => {
       const baseStyles = {
-        padding: '8px 16px',
-        borderRadius: '4px',
+        padding: '10px 20px',
+        borderRadius: '8px',
         fontWeight: 500,
         fontSize: '14px',
         cursor: 'pointer',
-        border: '1px solid #ccc',
-        minWidth: '80px'
+        border: '1px solid',
+        minWidth: '90px',
+        transition: 'all 0.2s'
       };
 
       if (isPrimary) {
-        return { ...baseStyles, backgroundColor: '#007bff', color: 'white', borderColor: '#007bff' };
+        return { ...baseStyles, backgroundColor: '#3b82f6', color: 'white', borderColor: '#3b82f6' };
       } else {
-        return { ...baseStyles, backgroundColor: '#fff', color: '#333' };
+        return { ...baseStyles, backgroundColor: '#fff', color: '#374151', borderColor: '#d1d5db' };
       }
     };
 
+    React.useEffect(() => {
+      const handleEscapeKey = (event) => {
+        if (event.key === 'Escape') {
+          handleCancel();
+        }
+      };
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }, []);
+
     return (
-      <div style={getPromptStyles()}>
-        {/* Header */}
+      <div style={getPromptStyles()} onClick={(e) => e.stopPropagation()}>
         <div style={{
-          padding: '24px 24px 16px 24px',
-          borderBottom: '1px solid #e5e7eb'
+          padding: '20px 24px',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
         }}>
           <h3 style={{
             margin: 0,
@@ -421,11 +581,11 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
           </h3>
         </div>
 
-        {/* Content */}
         <div style={{
-          padding: '16px 24px',
+          padding: '20px 24px',
           color: '#374151',
-          lineHeight: '1.6'
+          lineHeight: '1.6',
+          fontSize: '14px'
         }}>
           <div style={{ marginBottom: '12px' }}>{message}</div>
           <input
@@ -449,16 +609,19 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
           />
         </div>
 
-        {/* Footer */}
         <div style={{
-          padding: '16px 24px 24px 24px',
+          padding: '16px 24px 20px 24px',
           display: 'flex',
           gap: '12px',
-          justifyContent: 'flex-end'
+          justifyContent: 'flex-end',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
         }}>
           <button
             onClick={handleCancel}
             style={getButtonStyles(false)}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
           >
             Batal
           </button>
@@ -470,6 +633,16 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
               opacity: inputValue.trim() ? 1 : 0.5,
               cursor: inputValue.trim() ? 'pointer' : 'not-allowed'
             }}
+            onMouseEnter={(e) => {
+              if (inputValue.trim()) {
+                e.target.style.backgroundColor = '#2563eb';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (inputValue.trim()) {
+                e.target.style.backgroundColor = '#3b82f6';
+              }
+            }}
           >
             OK
           </button>
@@ -478,36 +651,21 @@ export const showPrompt = (message, onConfirm, onCancel, title = 'Input', placeh
     );
   };
 
-  // Add click handler to backdrop
   promptContainer.addEventListener('click', (e) => {
     if (e.target === promptContainer) {
       root.unmount();
       if (document.body.contains(promptContainer)) {
-        document.body.removeChild(promptContainer);
+        promptContainer.remove();
       }
       if (onCancel) onCancel();
     }
   });
 
-  // Add escape key handler
-  const handleEscapeKey = (event) => {
-    if (event.key === 'Escape') {
-      root.unmount();
-      if (document.body.contains(promptContainer)) {
-        document.body.removeChild(promptContainer);
-      }
-      if (onCancel) onCancel();
-      document.removeEventListener('keydown', handleEscapeKey);
-    }
-  };
-  
-  document.addEventListener('keydown', handleEscapeKey);
-
   root.render(React.createElement(Prompt));
 };
 
 // Convenience functions
-export const showSuccessAlert = (message, duration) => showAlert(message, ALERT_TYPES.SUCCESS, duration);
-export const showErrorAlert = (message, duration) => showAlert(message, ALERT_TYPES.ERROR, duration);
-export const showWarningAlert = (message, duration) => showAlert(message, ALERT_TYPES.WARNING, duration);
-export const showInfoAlert = (message, duration) => showAlert(message, ALERT_TYPES.INFO, duration); 
+export const showSuccessAlert = (message, duration = 4000) => showAlert(message, ALERT_TYPES.SUCCESS, duration);
+export const showErrorAlert = (message, duration = 5000) => showAlert(message, ALERT_TYPES.ERROR, duration);
+export const showWarningAlert = (message, duration = 4000) => showAlert(message, ALERT_TYPES.WARNING, duration);
+export const showInfoAlert = (message, duration = 4000) => showAlert(message, ALERT_TYPES.INFO, duration);

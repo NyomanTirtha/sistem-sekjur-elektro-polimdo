@@ -375,66 +375,46 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         </div>
       </div>
 
-      {/* ✨ STATISTICS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-            </div>
+      {/* ✨ STATISTICS CARDS - With subtle icons and colors */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <FileText className="w-4 h-4 text-blue-500 opacity-70" />
+            <p className="text-xs text-gray-500">Total</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{stats.total}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Proses</p>
-              <p className="text-xl font-bold text-gray-900">{stats.proses}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Clock className="w-4 h-4 text-yellow-500 opacity-70" />
+            <p className="text-xs text-gray-500">Proses</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{stats.proses}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Menunggu</p>
-              <p className="text-xl font-bold text-gray-900">{stats.menunggu}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertCircle className="w-4 h-4 text-orange-500 opacity-70" />
+            <p className="text-xs text-gray-500">Menunggu</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{stats.menunggu}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Clock className="w-5 h-5 text-purple-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Dalam Proses</p>
-              <p className="text-xl font-bold text-gray-900">{stats.dalam_proses}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Clock className="w-4 h-4 text-purple-500 opacity-70" />
+            <p className="text-xs text-gray-500">Dalam Proses</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{stats.dalam_proses}</p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Selesai</p>
-              <p className="text-xl font-bold text-gray-900">{stats.selesai}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <CheckCircle className="w-4 h-4 text-green-500 opacity-70" />
+            <p className="text-xs text-gray-500">Selesai</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{stats.selesai}</p>
         </div>
       </div>
 

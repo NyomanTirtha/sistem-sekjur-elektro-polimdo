@@ -415,41 +415,29 @@ export default function DosenList({ authToken, currentUser }) {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Dosen</p>
-              <p className="text-2xl font-bold text-gray-900">{dosen.length}</p>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Users className="w-4 h-4 text-blue-500 opacity-70" />
+            <p className="text-xs text-gray-500">Total Dosen</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{dosen.length}</p>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <GraduationCap className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Program Studi</p>
-              <p className="text-2xl font-bold text-gray-900">{programStudi.length}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <GraduationCap className="w-4 h-4 text-green-500 opacity-70" />
+            <p className="text-xs text-gray-500">Program Studi</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{programStudi.length}</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Filter className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Hasil Filter</p>
-              <p className="text-2xl font-bold text-gray-900">{totalItems}</p>
-            </div>
+        <div className="bg-white p-3 rounded border border-gray-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Filter className="w-4 h-4 text-purple-500 opacity-70" />
+            <p className="text-xs text-gray-500">Hasil Filter</p>
           </div>
+          <p className="text-lg font-semibold text-gray-900">{totalItems}</p>
         </div>
       </div>
 

@@ -14,7 +14,15 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    // Format standar industri: bukti-pembayaran-sa-{nim}-{YYYYMMDD-HHmmss}-{random}.{ext}
+    const mahasiswaId = req.body.mahasiswaId || 'unknown';
+    const timestamp = new Date();
+    const dateStr = timestamp.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+    const timeStr = timestamp.toTimeString().slice(0, 8).replace(/:/g, ''); // HHmmss
+    const randomStr = Math.random().toString(36).substring(2, 8); // Random 6 karakter
+    const ext = file.originalname.split('.').pop(); // Ekstensi file
+    const filename = `bukti-pembayaran-sa-${mahasiswaId}-${dateStr}-${timeStr}-${randomStr}.${ext}`;
+    cb(null, filename);
   }
 });
 
