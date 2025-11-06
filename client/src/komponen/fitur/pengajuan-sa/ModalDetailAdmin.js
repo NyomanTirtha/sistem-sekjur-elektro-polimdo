@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XCircle, User, CreditCard, GraduationCap, FileText, Eye, CheckCircle, X } from 'lucide-react';
+import { XCircle, User, CreditCard, GraduationCap, FileText, Eye, CheckCircle, X, Calendar, BookOpen } from 'lucide-react';
 import { formatCurrency, getSemesterFromDate } from '../../../utilitas/helper/pengajuanSAUtils';
 import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
@@ -131,177 +131,246 @@ const ModalDetailSekjur = ({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 sm:p-8 space-y-6">
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="p-6 space-y-4">
           {/* Informasi Mahasiswa */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <User className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-blue-800">Informasi Mahasiswa</h3>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-3 border-b border-blue-200">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-900">Informasi Mahasiswa</h3>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-blue-700">Nama:</span>
-                <span className="text-blue-900 ml-2">{selectedDetail.mahasiswa?.nama || 'N/A'}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">NIM:</span>
-                <span className="text-blue-900 ml-2">{selectedDetail.mahasiswa?.nim || 'N/A'}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">Program Studi:</span>
-                <span className="text-blue-900 ml-2">{getProgramStudiName(selectedDetail.mahasiswa?.programStudiId)}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">Tanggal Pengajuan:</span>
-                <span className="text-blue-900 ml-2">
-                  {new Date(selectedDetail.tanggalPengajuan).toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">Semester:</span>
-                <span className="text-blue-900 ml-2">{getSemesterFromDate(selectedDetail.tanggalPengajuan)}</span>
+            <div className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Nama</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nama || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">NIM</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nim || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Program Studi</p>
+                    <p className="text-sm font-medium text-gray-900">{getProgramStudiName(selectedDetail.mahasiswa?.programStudiId) || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Tanggal Pengajuan</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedDetail.tanggalPengajuan).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Semester</p>
+                    <p className="text-sm font-medium text-gray-900">{getSemesterFromDate(selectedDetail.tanggalPengajuan) || 'N/A'}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Informasi Pembayaran */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <CreditCard className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-green-800">Informasi Pembayaran</h3>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-3 border-b border-green-200">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold text-green-900">Informasi Pembayaran</h3>
+              </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-green-700">Nominal Pembayaran:</span>
-                <span className="font-bold text-green-900 text-lg">{formatCurrency(selectedDetail.nominal || 0)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-green-700">Total SKS:</span>
-                <span className="font-medium text-green-900">
-                  {(() => {
-                    if (selectedDetail.totalSKS) {
-                      return selectedDetail.totalSKS;
-                    } else if (typeof selectedDetail.mataKuliah === 'object' && selectedDetail.mataKuliah.sks) {
-                      return selectedDetail.mataKuliah.sks;
-                    } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
-                      return selectedDetail.mataKuliahList.reduce((sum, mk) => sum + (mk.sks || 0), 0);
-                    }
-                    return 0;
-                  })()} SKS
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-green-700">Estimasi Biaya (300k/SKS):</span>
-                <span className="font-medium text-green-900">{formatCurrency(calculateEstimatedCost())}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-green-300">
-                <span className="text-green-700 font-medium">Selisih:</span>
-                <span className={`font-bold text-lg ${
-                  calculateDifference() >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatCurrency(calculateDifference())}
-                </span>
+            <div className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-xs text-gray-500 mb-1">Nominal Pembayaran</p>
+                    <p className="text-xl font-bold text-green-700">{formatCurrency(selectedDetail.nominal || 0)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-gray-500" />
+                    <span className="text-xs text-gray-600">Total SKS</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {(() => {
+                      if (selectedDetail.totalSKS) {
+                        return selectedDetail.totalSKS;
+                      } else if (typeof selectedDetail.mataKuliah === 'object' && selectedDetail.mataKuliah.sks) {
+                        return selectedDetail.mataKuliah.sks;
+                      } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
+                        return selectedDetail.mataKuliahList.reduce((sum, mk) => sum + (mk.sks || 0), 0);
+                      }
+                      return 0;
+                    })()} SKS
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    <span className="text-xs text-gray-600">Estimasi Biaya</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(calculateEstimatedCost())}</span>
+                </div>
+                <div className="md:col-span-2 pt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Selisih</span>
+                    <span className={`text-sm font-bold ${
+                      calculateDifference() >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {formatCurrency(calculateDifference())}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Mata Kuliah yang Dipilih */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <GraduationCap className="w-5 h-5 text-purple-600" />
-              <h3 className="font-semibold text-purple-800">
-                Daftar Mata Kuliah ({(() => {
-                  if (selectedDetail.jumlahMataKuliah) {
-                    return selectedDetail.jumlahMataKuliah;
-                  } else if (typeof selectedDetail.mataKuliah === 'object') {
-                    return 1;
-                  } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
-                    return selectedDetail.mataKuliahList.length;
-                  }
-                  return 0;
-                })()} mata kuliah)
-              </h3>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-5 py-3 border-b border-purple-200">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-purple-600" />
+                <h3 className="font-semibold text-purple-900">
+                  Daftar Mata Kuliah ({(() => {
+                    if (selectedDetail.jumlahMataKuliah) {
+                      return selectedDetail.jumlahMataKuliah;
+                    } else if (typeof selectedDetail.mataKuliah === 'object') {
+                      return 1;
+                    } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
+                      return selectedDetail.mataKuliahList.length;
+                    }
+                    return 0;
+                  })()} mata kuliah)
+                </h3>
+              </div>
             </div>
-            
-            {/* Tampilkan daftar mata kuliah jika ada mataKuliahList */}
-            {selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0 ? (
-              <div className="bg-white border border-purple-200 rounded px-3 py-2 space-y-2">
-                {selectedDetail.mataKuliahList.map((mk, index) => (
-                  <div key={mk.id || index} className="flex justify-between items-center p-2 bg-purple-50 rounded border border-purple-200">
-                    <span className="font-medium text-purple-900">{index + 1}. {mk.nama}</span>
-                    <span className="text-purple-700 text-sm">{mk.sks} SKS</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                <span className="font-medium text-gray-900">
-                  {typeof selectedDetail.mataKuliah === 'object' 
-                    ? selectedDetail.mataKuliah.nama 
-                    : selectedDetail.mataKuliah || 'Mata kuliah tidak tersedia'}
-                </span>
-              </div>
-            )}
+            <div className="p-5">
+              {selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedDetail.mataKuliahList.map((mk, index) => (
+                    <div key={mk.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">{mk.nama}</span>
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">
+                        {mk.sks} SKS
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-900">
+                    {typeof selectedDetail.mataKuliah === 'object' 
+                      ? selectedDetail.mataKuliah.nama 
+                      : selectedDetail.mataKuliah || 'Mata kuliah tidak tersedia'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Keterangan Pengajuan */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-5 h-5 text-gray-600" />
-              <h3 className="font-semibold text-gray-800">Keterangan Pengajuan</h3>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-800">Keterangan Pengajuan</h3>
+              </div>
             </div>
-            <div className="bg-white border border-gray-200 rounded p-3 min-h-[60px]">
-              <p className="text-gray-700 text-sm leading-relaxed">
-                {selectedDetail.keterangan || 'Tidak ada keterangan'}
-              </p>
+            <div className="p-5">
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[60px]">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {selectedDetail.keterangan || 'Tidak ada keterangan'}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Bukti Pembayaran */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-5 h-5 text-orange-600" />
-              <h3 className="font-semibold text-orange-800">Bukti Pembayaran</h3>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-white border border-orange-200 rounded">
-              <div>
-                <p className="font-medium text-orange-900">File: {selectedDetail.buktiPembayaran}</p>
-                <p className="text-orange-700 text-sm">Periksa bukti pembayaran untuk memverifikasi nominal dan keabsahan transaksi</p>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 px-5 py-3 border-b border-orange-200">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-orange-600" />
+                <h3 className="font-semibold text-orange-900">Bukti Pembayaran</h3>
               </div>
-              <button
-                onClick={() => window.open(`http://localhost:5000/uploads/${selectedDetail.buktiPembayaran}`, '_blank')}
-                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2 font-medium"
-              >
-                <Eye className="w-4 h-4" />
-                Lihat Bukti
-              </button>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{selectedDetail.buktiPembayaran || 'Tidak ada bukti'}</p>
+                    <p className="text-xs text-gray-500 mt-1">Periksa bukti pembayaran untuk memverifikasi nominal dan keabsahan transaksi</p>
+                  </div>
+                </div>
+                {selectedDetail.buktiPembayaran && (
+                  <button
+                    onClick={() => window.open(`http://localhost:5000/uploads/${selectedDetail.buktiPembayaran}`, '_blank')}
+                    className="ml-3 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2 font-medium text-sm flex-shrink-0 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Lihat
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Aksi Verifikasi */}
           {selectedDetail.status === 'PROSES_PENGAJUAN' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h3 className="font-semibold text-yellow-800 mb-3">Aksi Verifikasi</h3>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleVerifikasi}
-                  className="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2"
-                >
-                  Verifikasi Pembayaran
-                </button>
-                <button
-                  onClick={handleTolak}
-                  className="flex-1 bg-red-500 text-white py-3 px-4 rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2"
-                >
-                  <X className="w-5 h-5" />
-                  Tolak Pengajuan
-                </button>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 px-5 py-3 border-b border-yellow-200">
+                <h3 className="font-semibold text-yellow-900">Aksi Verifikasi</h3>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button
+                    onClick={handleVerifikasi}
+                    className="bg-green-500 text-white py-2.5 px-4 rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Verifikasi Pembayaran
+                  </button>
+                  <button
+                    onClick={handleTolak}
+                    className="bg-red-500 text-white py-2.5 px-4 rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Tolak Pengajuan
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -217,27 +217,30 @@ const TabelPengajuanSA = ({
   // ✅ NEW: Check if sekjur can input nilai untuk mata kuliah spesifik
   const canSekjurInputNilai = (item) => {
     if (userType !== 'sekjur') return false;
-    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
-    const currentStatus = item.status || statusPerRow[item.id];
-    // Sekjur bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika belum ada nilai)
-    if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
+    // Jika sudah ada nilai, tidak bisa diubah
     if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
       return false; // Sudah ada nilai untuk mata kuliah ini
     }
+    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
+    const currentStatus = item.status || statusPerRow[item.id];
+    // Sekjur bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika belum ada nilai)
+    // Catatan: Master status bisa SELESAI tapi detail ini belum dinilai, jadi masih bisa input
+    if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
     return true; // Sekjur bisa input nilai untuk semua mata kuliah yang belum dinilai
   };
 
   // ✅ NEW: Check if dosen can input nilai untuk mata kuliah yang ditugaskan kepadanya
   const canDosenInputNilai = (item) => {
     if (userType !== 'dosen') return false;
-    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
-    const currentStatus = item.status || statusPerRow[item.id];
-    // Dosen hanya bisa input nilai untuk status DALAM_PROSES_SA
-    if (currentStatus !== 'DALAM_PROSES_SA') return false;
     // Jika sudah ada nilai, tidak bisa diubah
     if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
       return false;
     }
+    // ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update
+    const currentStatus = item.status || statusPerRow[item.id];
+    // Dosen hanya bisa input nilai untuk status DALAM_PROSES_SA atau SELESAI (jika master sudah selesai tapi detail ini belum)
+    // Catatan: Master status bisa SELESAI jika detail lain sudah dinilai, tapi detail ini belum, jadi masih bisa input
+    if (currentStatus !== 'DALAM_PROSES_SA' && currentStatus !== 'SELESAI') return false;
     // Pastikan dosenId sesuai dengan dosen yang login
     const dosenId = item.dosenId || item.dosen?.nip;
     const currentUserId = currentUser?.username || currentUser?.nip;
@@ -255,6 +258,29 @@ const TabelPengajuanSA = ({
     if (nilai >= 55) return 'C';
     if (nilai >= 40) return 'D';
     return 'E';
+  };
+
+  // ✅ NEW: Fungsi untuk mendapatkan status efektif per detail
+  // Jika detail sudah ada nilai, tampilkan sebagai SELESAI meskipun master status masih DALAM_PROSES_SA
+  // Jika detail sudah di-assign dosen, tampilkan sebagai DALAM_PROSES_SA meskipun master status masih MENUNGGU_VERIFIKASI_KAPRODI
+  const getDetailStatus = (item) => {
+    // Jika detail sudah ada nilai, statusnya SELESAI untuk detail ini (prioritas tertinggi)
+    if (item.nilaiAkhir !== null && item.nilaiAkhir !== undefined) {
+      return 'SELESAI';
+    }
+    
+    // Jika detail sudah di-assign dosen (dosenId tidak null), statusnya DALAM_PROSES_SA untuk detail ini
+    // Kecuali jika master status sudah DITOLAK atau PROSES_PENGAJUAN
+    const masterStatus = item.status || statusPerRow[item.id];
+    const hasDosen = item.dosenId !== null && item.dosenId !== undefined && item.dosenId !== '';
+    const hasDosenObject = item.dosen !== null && item.dosen !== undefined;
+    
+    if ((hasDosen || hasDosenObject) && masterStatus !== 'DITOLAK' && masterStatus !== 'PROSES_PENGAJUAN') {
+      return 'DALAM_PROSES_SA';
+    }
+    
+    // Jika belum ada nilai dan belum ada dosen, gunakan status dari master atau statusPerRow
+    return masterStatus;
   };
 
   if (pengajuanList.length === 0) {
@@ -433,8 +459,8 @@ const TabelPengajuanSA = ({
 
                   {/* Status */}
                   <td className="px-3 py-3">
-                    {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
-                    <StatusBadge status={item.status || statusPerRow[item.id]} />
+                    {/* ✅ FIXED: Tampilkan status SELESAI untuk detail yang sudah ada nilai, meskipun master status masih DALAM_PROSES_SA */}
+                    <StatusBadge status={getDetailStatus(item)} />
                   </td>
 
                   {/* Dosen */}
@@ -589,9 +615,8 @@ const TabelPengajuanSA = ({
                     })()}
                   </td>
                   <td className="px-3 py-3">
-                    {/* ✅ FIXED: Prioritaskan item.status dari backend yang sudah ter-update */}
-                    {/* statusPerRow hanya untuk update sementara sebelum fetch selesai */}
-                    <StatusBadge status={item.status || statusPerRow[item.id]} />
+                    {/* ✅ FIXED: Tampilkan status SELESAI untuk detail yang sudah ada nilai, meskipun master status masih DALAM_PROSES_SA */}
+                    <StatusBadge status={getDetailStatus(item)} />
                   </td>
                   {/* Kolom Dosen: hanya tampil jika userType bukan dosen */}
                   {userType !== 'dosen' && (
@@ -653,55 +678,43 @@ const TabelPengajuanSA = ({
                     )}
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* ✅ ENHANCED: Aksi SEKJUR - Assign Dosen */}
+                    <div className="flex items-center gap-2 flex-wrap min-h-[32px]">
+                      {/* ✅ SIMPLIFIED: Form Assign Dosen - Kompak dan Inline */}
                       {userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (!item.dosenId || item.dosenId === '' || item.dosen == null) && !assignedRows[item.id] && (
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-                          <div className="flex items-center gap-2 mb-2">
-                            <GraduationCap className="w-4 h-4 text-blue-600" />
-                            <span className="text-xs font-semibold text-blue-800">Kelola Penugasan Pengajar</span>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex-1 min-w-[200px]">
-                              <select
-                                value={selectedDosenPerRow[item.id] || ''}
-                                onChange={(e) => setSelectedDosenPerRow({ ...selectedDosenPerRow, [item.id]: e.target.value })}
-                                className="w-full border border-blue-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all"
-                                disabled={assigningRows[item.id]}
-                              >
-                                <option value="">-- Pilih Dosen Pengajar --</option>
-                                {dosenList.map(dosen => (
-                                  <option key={dosen.nip} value={dosen.nip}>
-                                    {dosen.nama} {dosen.nip ? `(${dosen.nip})` : ''}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <button
-                              onClick={() => handleAssignDosen(item)}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:from-blue-700 hover:to-indigo-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-                              title="Verifikasi dan tugaskan dosen untuk SA"
-                              disabled={!selectedDosenPerRow[item.id] || assigningRows[item.id]}
-                            >
-                              {assigningRows[item.id] ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  <span>Menugaskan...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>Tugaskan Dosen</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          {!selectedDosenPerRow[item.id] && (
-                            <p className="text-xs text-blue-600 mt-2 italic">
-                              * Pilih dosen pengajar untuk melanjutkan proses verifikasi
-                            </p>
-                          )}
-                        </div>
+                        <>
+                          <select
+                            value={selectedDosenPerRow[item.id] || ''}
+                            onChange={(e) => setSelectedDosenPerRow({ ...selectedDosenPerRow, [item.id]: e.target.value })}
+                            className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                            disabled={assigningRows[item.id]}
+                            style={{ minWidth: '150px', maxWidth: '200px' }}
+                          >
+                            <option value="">Pilih Dosen</option>
+                            {dosenList.map(dosen => (
+                              <option key={dosen.nip} value={dosen.nip}>
+                                {dosen.nama} {dosen.nip ? `(${dosen.nip})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleAssignDosen(item)}
+                            className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            title="Tugaskan dosen"
+                            disabled={!selectedDosenPerRow[item.id] || assigningRows[item.id]}
+                          >
+                            {assigningRows[item.id] ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Tugaskan</span>
+                              </>
+                            )}
+                          </button>
+                        </>
                       )}
 
                       {/* ✅ ENHANCED: Aksi SEKJUR - Input Nilai */}
@@ -744,7 +757,7 @@ const TabelPengajuanSA = ({
                       {(userType !== 'kaprodi' || (item.status || statusPerRow[item.id]) !== 'MENUNGGU_VERIFIKASI_KAPRODI' || item.dosenId || assignedRows[item.id]) && (
                         <button
                           onClick={() => onLihatFormDetail(item)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 font-medium"
+                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 font-medium whitespace-nowrap"
                           title="Lihat detail pengajuan SA"
                         >
                           {(userType === 'kaprodi' && (item.status || statusPerRow[item.id]) === 'MENUNGGU_VERIFIKASI_KAPRODI' && (item.dosenId || assignedRows[item.id])) ? 'Lihat' : 'Detail'}

@@ -665,15 +665,43 @@ const assignDosenToMataKuliah = async (req, res) => {
     const allHaveDosen = allDetails.every(detail => detail.dosenId !== null);
 
     // Jika semua sudah ada dosen, update status ke DALAM_PROSES_SA
+    let updatedPengajuan = null;
     if (allHaveDosen) {
-      await prisma.pengajuanSA.update({
+      updatedPengajuan = await prisma.pengajuanSA.update({
         where: { id: pengajuanDetail.pengajuanSAId },
         data: { status: 'DALAM_PROSES_SA' }
       });
+      
+      // Ambil ulang detail dengan status master yang sudah ter-update
+      const updatedDetail = await prisma.pengajuanSADetail.findUnique({
+        where: { id: detailId },
+        include: {
+          pengajuanSA: {
+            include: { mahasiswa: true }
+          },
+          mataKuliah: true,
+          dosen: true
+        }
+      });
+      
+      console.log('Assigned dosen to mata kuliah (all have dosen):', updatedDetail);
+      res.json(updatedDetail);
+    } else {
+      // Ambil ulang detail dengan status master terbaru (meskipun belum semua punya dosen)
+      const updatedDetail = await prisma.pengajuanSADetail.findUnique({
+        where: { id: detailId },
+        include: {
+          pengajuanSA: {
+            include: { mahasiswa: true }
+          },
+          mataKuliah: true,
+          dosen: true
+        }
+      });
+      
+      console.log('Assigned dosen to mata kuliah (not all have dosen):', updatedDetail);
+      res.json(updatedDetail);
     }
-    
-    console.log('Assigned dosen to mata kuliah:', pengajuanDetail);
-    res.json(pengajuanDetail);
   } catch (error) {
     console.error('Error assigning dosen:', error);
     res.status(500).json({ error: error.message });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
-import logoLogin from '../../aset/gambar/xyz-logo.png';
+import logoLogin from '../../assets/gambar/xyz-logo.png';
 
 const useDocumentTitle = (title) => {
   useEffect(() => {

@@ -1,5 +1,6 @@
 // hooks/usePengajuanSA.js - FIXED DOSEN LOGIC
 import { useState, useEffect, useCallback } from 'react';
+import { calculateNominalPerDetail } from '../utilitas/helper/nominalCalculator';
 
 export const usePengajuanSA = (authToken, userType, currentUser) => {
   const [pengajuanList, setPengajuanList] = useState([]);
@@ -160,13 +161,16 @@ export const usePengajuanSA = (authToken, userType, currentUser) => {
               };
               filteredData.push(result);
             } else {
-              const totalSKS = pengajuan.details.reduce((sum, d) => sum + (d.mataKuliah?.sks || 0), 0);
-              const nominalPerSKS = pengajuan.nominal / totalSKS;
+              // ✅ UPDATED: Gunakan metode Standar + Selisih Proporsional
+              const nominalPerDetail = calculateNominalPerDetail(
+                parseFloat(pengajuan.nominal),
+                pengajuan.details
+              );
+              
               pengajuan.details.forEach((detail, index) => {
-                const nominalPerMataKuliah = (detail.mataKuliah?.sks || 0) * nominalPerSKS;
                 const result = {
                   ...detail,
-                  nominal: nominalPerMataKuliah,
+                  nominal: nominalPerDetail[index] || 0,
                   isGrouped: false
                 };
                 filteredData.push(result);
@@ -228,17 +232,16 @@ export const usePengajuanSA = (authToken, userType, currentUser) => {
               
               filteredData.push(result);
             } else {
-              // Hitung total SKS dan nominal per SKS
-              const totalSKS = pengajuan.details.reduce((sum, d) => sum + (d.mataKuliah?.sks || 0), 0);
-              const nominalPerSKS = pengajuan.nominal / totalSKS;
+              // ✅ UPDATED: Gunakan metode Standar + Selisih Proporsional
+              const nominalPerDetail = calculateNominalPerDetail(
+                parseFloat(pengajuan.nominal),
+                pengajuan.details
+              );
               
               pengajuan.details.forEach((detail, index) => {
-                // Hitung nominal per mata kuliah berdasarkan SKS
-                const nominalPerMataKuliah = (detail.mataKuliah?.sks || 0) * nominalPerSKS;
-                
                 const result = {
                   ...detail,
-                  nominal: nominalPerMataKuliah,
+                  nominal: nominalPerDetail[index] || 0,
                   isGrouped: false // ✅ SEPARATED UNTUK STATUS LANJUTAN
                 };
                 
