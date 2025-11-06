@@ -288,7 +288,7 @@ export const usePengajuanSA = (authToken, userType, currentUser) => {
         setDosenList(Array.isArray(data) ? data : []);
       }
     } catch (error) {
-      console.error('Error fetching dosen list:', error);
+      if (process.env.NODE_ENV === 'development') console.error('Error fetching dosen list:', error);
     }
   }, [authToken]);
 
@@ -306,7 +306,7 @@ export const usePengajuanSA = (authToken, userType, currentUser) => {
         setMataKuliahList(Array.isArray(data) ? data : []);
       }
     } catch (error) {
-      console.error('Error fetching mata kuliah list:', error);
+      if (process.env.NODE_ENV === 'development') console.error('Error fetching mata kuliah list:', error);
     }
   }, [authToken]);
 

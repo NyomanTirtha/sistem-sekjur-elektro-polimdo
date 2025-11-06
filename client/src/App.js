@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Users, GraduationCap, FileText, ClipboardList, Home, LogOut, BookOpen } from 'lucide-react';
 import MainLayout from './komponen/layout/MainLayouts';
-import MahasiswaList from './komponen/fitur/mahasiswa/DaftarMahasiswa';
-import DosenList from './komponen/fitur/dosen/DaftarDosen';
-import PengajuanSAList from './komponen/fitur/pengajuan-sa/DaftarPengajuanSA';
-import ProdiList from './komponen/fitur/program-studi/DaftarProgramStudi';
-import UsersList from './komponen/fitur/pengguna/DaftarPengguna';
-import TeachingPicker from './komponen/fitur/dosen/PilihPenugasan';
-import TeachingAssignmentManager from './komponen/fitur/penugasan-mengajar/KelolaPenugasan';
 import LoginPage from './halaman/masuk/HalamanMasuk';
+
+// Lazy load heavy components
+const MahasiswaList = lazy(() => import('./komponen/fitur/mahasiswa/DaftarMahasiswa'));
+const DosenList = lazy(() => import('./komponen/fitur/dosen/DaftarDosen'));
+const PengajuanSAList = lazy(() => import('./komponen/fitur/pengajuan-sa/DaftarPengajuanSA'));
+const ProdiList = lazy(() => import('./komponen/fitur/program-studi/DaftarProgramStudi'));
+const UsersList = lazy(() => import('./komponen/fitur/pengguna/DaftarPengguna'));
+const TeachingPicker = lazy(() => import('./komponen/fitur/dosen/PilihPenugasan'));
+const TeachingAssignmentManager = lazy(() => import('./komponen/fitur/penugasan-mengajar/KelolaPenugasan'));
 
 export default function App() {
   const [currentView, setCurrentView] = useState('login');
@@ -373,7 +375,11 @@ export default function App() {
       onLogout={handleLogout}
       authToken={authToken} // Pass token to child components if needed
     >
-      {ActiveComponent && <ActiveComponent authToken={authToken} currentUser={currentUser} userType={userType} />}
+      {ActiveComponent && (
+        <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="text-gray-500">Memuat...</div></div>}>
+          <ActiveComponent authToken={authToken} currentUser={currentUser} userType={userType} />
+        </Suspense>
+      )}
     </MainLayout>
   );
 }

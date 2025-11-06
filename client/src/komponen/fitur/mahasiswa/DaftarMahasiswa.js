@@ -371,27 +371,29 @@ export default function MahasiswaList({ authToken, currentUser }) {
     setEditData(null);
   };
 
-  // Filter and search functionality
-  const filteredMahasiswa = mahasiswa.filter(mhs => {
-    const matchesSearch = mhs.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         mhs.nim.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const prodiData = mhs.programStudi || programStudi.find(p => p.id === mhs.programStudiId);
-    const prodiName = prodiData?.nama || getProgramStudiName(mhs.programStudiId);
-    const matchesProdi = filterProdi === '' || prodiName === filterProdi;
-    
-    return matchesSearch && matchesProdi;
-  });
+  // Filter and search functionality - Optimized with useMemo
+  const filteredMahasiswa = React.useMemo(() => {
+    return mahasiswa.filter(mhs => {
+      const matchesSearch = mhs.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           mhs.nim.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const prodiData = mhs.programStudi || programStudi.find(p => p.id === mhs.programStudiId);
+      const prodiName = prodiData?.nama || getProgramStudiName(mhs.programStudiId);
+      const matchesProdi = filterProdi === '' || prodiName === filterProdi;
+      
+      return matchesSearch && matchesProdi;
+    });
+  }, [mahasiswa, searchTerm, filterProdi, programStudi]);
 
-  // Calculate pagination
-  const totalItems = filteredMahasiswa.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentMahasiswa = filteredMahasiswa.slice(startIndex, endIndex);
-
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
+  // Calculate pagination - Optimized with useMemo
+  const paginationData = React.useMemo(() => {
+    const totalItems = filteredMahasiswa.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentMahasiswa = filteredMahasiswa.slice(startIndex, endIndex);
+    
+    // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
     
@@ -419,17 +421,19 @@ export default function MahasiswaList({ authToken, currentUser }) {
       }
     }
     
-    return pages;
-  };
+    return { totalItems, totalPages, startIndex, endIndex, currentMahasiswa, pages };
+  }, [filteredMahasiswa, currentPage, itemsPerPage]);
 
-  const handlePageChange = (page) => {
+  const { totalItems, totalPages, startIndex, endIndex, currentMahasiswa, pages: pageNumbers } = paginationData;
+
+  const handlePageChange = React.useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleItemsPerPageChange = (newItemsPerPage) => {
+  const handleItemsPerPageChange = React.useCallback((newItemsPerPage) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Get unique program studi for filter
   const uniqueProdi = [...new Set(
@@ -666,7 +670,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
 
                       {/* Page Numbers */}
                       <div className="flex gap-1">
-                        {getPageNumbers().map(page => (
+                        {pageNumbers.map(page => (
                           <button
                             key={page}
                             onClick={() => handlePageChange(page)}

@@ -180,20 +180,7 @@ const Header = ({
     const userRole = currentUser.role || role;
     const normalizedRole = userRole?.toUpperCase();
 
-    // Debug: Log the current user data to see the structure
-    console.log('=== PROFILE DEBUG ===');
-    console.log('Current User:', currentUser);
-    console.log('User Role:', userRole);
-    console.log('Normalized Role:', normalizedRole);
-    console.log('Jurusan:', currentUser.jurusan);
-    console.log('JurusanId:', currentUser.jurusanId);
-    console.log('NIP:', currentUser.nip);
-    console.log('NIM:', currentUser.nim);
-    console.log('NoTelp:', currentUser.noTelp);
-    console.log('Alamat:', currentUser.alamat);
-    console.log('ProgramStudi:', currentUser.programStudi);
-    console.log('Prodi:', currentUser.prodi);
-    console.log('=====================');
+    // Debug logs removed for production performance
 
     // ✅ ADDED: SEKJUR role handling
     if (normalizedRole === 'SEKJUR') {

@@ -1,10 +1,10 @@
 // components/PengajuanSAList.js (Main Component - Updated with Report Button)
-import React, { useState, useEffect } from 'react';
-import { 
-  Upload, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
   FileText,
   CheckCircle,
@@ -53,7 +53,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
   const [selectedFormDetail, setSelectedFormDetail] = useState(null);
   const [showDetailAdmin, setShowDetailAdmin] = useState(false);
   const [selectedDetailAdmin, setSelectedDetailAdmin] = useState(null);
-  
+
   // ✨ NEW STATE FOR REPORT PAGE
   const [showLaporan, setShowLaporan] = useState(false);
 
@@ -74,18 +74,18 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
     setCurrentPage(1);
   }, [filterStatus, itemsPerPage]);
 
-  // ✨ PAGINATION CALCULATIONS
-  const totalItems = filteredPengajuan.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPengajuan = filteredPengajuan.slice(startIndex, endIndex);
+  // ✨ PAGINATION CALCULATIONS - Optimized with useMemo
+  const paginationData = useMemo(() => {
+    const totalItems = filteredPengajuan.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPengajuan = filteredPengajuan.slice(startIndex, endIndex);
 
-  // ✨ PAGINATION FUNCTIONS
-  const getPageNumbers = () => {
+    // Calculate page numbers
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -93,10 +93,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
     } else {
       const leftOffset = Math.floor(maxVisiblePages / 2);
       const rightOffset = maxVisiblePages - leftOffset - 1;
-      
+
       let start = Math.max(1, currentPage - leftOffset);
       let end = Math.min(totalPages, currentPage + rightOffset);
-      
+
       if (end - start + 1 < maxVisiblePages) {
         if (start === 1) {
           end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -104,38 +104,35 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
           start = Math.max(1, end - maxVisiblePages + 1);
         }
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
-    return pages;
-  };
 
-  const handlePageChange = (page) => {
+    return { totalItems, totalPages, startIndex, endIndex, currentPengajuan, pages };
+  }, [filteredPengajuan, currentPage, itemsPerPage]);
+
+  const { totalItems, totalPages, startIndex, endIndex, currentPengajuan, pages: pageNumbers } = paginationData;
+
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleItemsPerPageChange = (newItemsPerPage) => {
+  const handleItemsPerPageChange = useCallback((newItemsPerPage) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
-  };
+  }, []);
 
-  // ✨ STATISTICS CALCULATION
-  const getStatistics = () => {
-    const stats = {
-      total: pengajuanList.length,
-      proses: pengajuanList.filter(p => p.status === 'PROSES_PENGAJUAN').length,
-      menunggu: pengajuanList.filter(p => p.status === 'MENUNGGU_VERIFIKASI_KAPRODI').length,
-      dalam_proses: pengajuanList.filter(p => p.status === 'DALAM_PROSES_SA').length,
-      selesai: pengajuanList.filter(p => p.status === 'SELESAI').length,
-      ditolak: pengajuanList.filter(p => p.status === 'DITOLAK').length
-    };
-    return stats;
-  };
-
-  const stats = getStatistics();
+  // ✨ STATISTICS CALCULATION - Optimized with useMemo
+  const stats = useMemo(() => ({
+    total: pengajuanList.length,
+    proses: pengajuanList.filter(p => p.status === 'PROSES_PENGAJUAN').length,
+    menunggu: pengajuanList.filter(p => p.status === 'MENUNGGU_VERIFIKASI_KAPRODI').length,
+    dalam_proses: pengajuanList.filter(p => p.status === 'DALAM_PROSES_SA').length,
+    selesai: pengajuanList.filter(p => p.status === 'SELESAI').length,
+    ditolak: pengajuanList.filter(p => p.status === 'DITOLAK').length
+  }), [pengajuanList]);
 
   // Service untuk API calls
   const pengajuanSAService = new PengajuanSAService(authToken);
@@ -174,7 +171,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         async () => {
           try {
             await pengajuanSAService.updateStatus(pengajuanId, newStatus, dosenId, detailId);
-            
+
             if (actionType === 'Verifikasi Pembayaran') {
               showSuccessAlert('Pembayaran berhasil diverifikasi!\nPengajuan SA telah diteruskan ke Kaprodi untuk verifikasi dan penentuan dosen.');
             } else if (actionType === 'Verifikasi Kaprodi & Penugasan Dosen') {
@@ -182,10 +179,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
             } else {
               showSuccessAlert('Status berhasil diupdate!');
             }
-            
+
             fetchPengajuanSA();
           } catch (error) {
-            console.error('Error updating status:', error);
+            if (process.env.NODE_ENV === 'development') console.error('Error updating status:', error);
             showErrorAlert(error.message);
           }
         },
@@ -206,7 +203,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
       showSuccessAlert('Status berhasil diupdate!');
       fetchPengajuanSA();
     } catch (error) {
-      console.error('Error updating status:', error);
+      if (process.env.NODE_ENV === 'development') console.error('Error updating status:', error);
       showErrorAlert(error.message);
     }
   };
@@ -271,14 +268,12 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
 
   // Handler untuk modal form detail (kaprodi)
   const handleLihatFormDetail = (item) => {
-    console.log('Form detail data:', item);
     setSelectedFormDetail(item);
     setShowFormDetail(true);
   };
 
   // Handler untuk modal detail admin
   const handleLihatDetailAdmin = (item) => {
-    console.log('Admin detail data:', item);
     setSelectedDetailAdmin(item);
     setShowDetailAdmin(true);
   };
@@ -295,7 +290,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
       showSuccessAlert('Pengajuan SA berhasil ditolak!');
       fetchPengajuanSA();
     } catch (error) {
-      console.error('Error rejecting pengajuan:', error);
+      if (process.env.NODE_ENV === 'development') console.error('Error rejecting pengajuan:', error);
       showErrorAlert(error.message);
     }
   };
@@ -329,13 +324,13 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            {userType === 'mahasiswa' ? 'Pengajuan SA Saya' : 
-             userType === 'sekjur' ? 'Verifikasi Pembayaran SA' :
-             userType === 'kaprodi' ? 'Verifikasi & Penugasan SA' :
-             'SA yang Saya Ampu'}
+            {userType === 'mahasiswa' ? 'Pengajuan SA Saya' :
+              userType === 'sekjur' ? 'Verifikasi Pembayaran SA' :
+                userType === 'kaprodi' ? 'Verifikasi & Penugasan SA' :
+                  'SA yang Saya Ampu'}
           </h1>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           {/* Items per page selector */}
           <div>
@@ -499,11 +494,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
                 <button
                   onClick={() => handlePageChange(1)}
                   disabled={currentPage === 1}
-                  className={`p-2 rounded ${
-                    currentPage === 1
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`p-2 rounded ${currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                   title="Halaman pertama"
                 >
                   <ChevronsLeft className="w-4 h-4" />
@@ -513,11 +507,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`p-2 rounded ${
-                    currentPage === 1
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`p-2 rounded ${currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                   title="Halaman sebelumnya"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -525,15 +518,14 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
 
                 {/* Page Numbers */}
                 <div className="flex gap-1">
-                  {getPageNumbers().map(page => (
+                  {pageNumbers.map(page => (
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 text-sm rounded ${
-                        page === currentPage
-                          ? 'bg-blue-500 text-white'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                      className={`px-3 py-2 text-sm rounded ${page === currentPage
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
                     >
                       {page}
                     </button>
@@ -544,11 +536,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`p-2 rounded ${
-                    currentPage === totalPages
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`p-2 rounded ${currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                   title="Halaman selanjutnya"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -558,11 +549,10 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
                 <button
                   onClick={() => handlePageChange(totalPages)}
                   disabled={currentPage === totalPages}
-                  className={`p-2 rounded ${
-                    currentPage === totalPages
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`p-2 rounded ${currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                   title="Halaman terakhir"
                 >
                   <ChevronsRight className="w-4 h-4" />

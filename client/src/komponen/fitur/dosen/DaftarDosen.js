@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -255,26 +255,28 @@ export default function DosenList({ authToken, currentUser }) {
     setEditData(null);
   };
 
-  // Filter and search functionality
-  const filteredDosen = Array.isArray(dosen) ? dosen.filter(dsn => {
-    const matchesSearch = dsn.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         dsn.nip.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesProdi = filterProdi === '' || 
-                        (dsn.prodi && dsn.prodi.id === parseInt(filterProdi));
-    
-    return matchesSearch && matchesProdi;
-  }) : [];
+  // Filter and search functionality - Optimized with useMemo
+  const filteredDosen = useMemo(() => {
+    return Array.isArray(dosen) ? dosen.filter(dsn => {
+      const matchesSearch = dsn.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           dsn.nip.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesProdi = filterProdi === '' || 
+                          (dsn.prodi && dsn.prodi.id === parseInt(filterProdi));
+      
+      return matchesSearch && matchesProdi;
+    }) : [];
+  }, [dosen, searchTerm, filterProdi]);
 
-  // Calculate pagination
-  const totalItems = filteredDosen.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentDosen = filteredDosen.slice(startIndex, endIndex);
-
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
+  // Calculate pagination - Optimized with useMemo
+  const paginationData = useMemo(() => {
+    const totalItems = filteredDosen.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentDosen = filteredDosen.slice(startIndex, endIndex);
+    
+    // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
     
@@ -302,17 +304,19 @@ export default function DosenList({ authToken, currentUser }) {
       }
     }
     
-    return pages;
-  };
+    return { totalItems, totalPages, startIndex, endIndex, currentDosen, pages };
+  }, [filteredDosen, currentPage, itemsPerPage]);
 
-  const handlePageChange = (page) => {
+  const { totalItems, totalPages, startIndex, endIndex, currentDosen, pages: pageNumbers } = paginationData;
+
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleItemsPerPageChange = (newItemsPerPage) => {
+  const handleItemsPerPageChange = useCallback((newItemsPerPage) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Show loading if no auth token
   if (!authToken) {
@@ -560,7 +564,7 @@ export default function DosenList({ authToken, currentUser }) {
 
                       {/* Page Numbers */}
                       <div className="flex gap-1">
-                        {getPageNumbers().map(page => (
+                        {pageNumbers.map(page => (
                           <button
                             key={page}
                             onClick={() => handlePageChange(page)}

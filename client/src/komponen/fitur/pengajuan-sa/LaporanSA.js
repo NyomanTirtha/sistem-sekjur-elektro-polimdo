@@ -1,5 +1,5 @@
 // components/LaporanSA.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -19,21 +19,20 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
   const [selectedPeriod, setSelectedPeriod] = useState('all'); // all, thisMonth, lastMonth, thisYear
   const [selectedDosen, setSelectedDosen] = useState('all');
 
-  // State untuk data yang difilter
-  const [filteredData, setFilteredData] = useState([]);
+  // State untuk data yang difilter - removed, using useMemo instead
 
-  // Generate daftar tahun ajaran ganjil/genap dari data pengajuanList
-  const getTahunAjaranOptions = () => {
+  const [periodeDari, setPeriodeDari] = useState('');
+  const [periodeSampai, setPeriodeSampai] = useState('');
+
+  // Generate daftar tahun ajaran - Optimized with useMemo
+  const tahunAjaranOptions = useMemo(() => {
     const set = new Set();
     pengajuanList.forEach(item => {
       const periode = getSemesterFromDate(item.tanggalPengajuan);
       if (periode) set.add(periode);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  };
-  const tahunAjaranOptions = getTahunAjaranOptions();
-  const [periodeDari, setPeriodeDari] = useState('');
-  const [periodeSampai, setPeriodeSampai] = useState('');
+  }, [pengajuanList]);
 
   // Animation variants
   const containerVariants = {
@@ -104,8 +103,8 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
     { value: 'custom', label: 'Rentang Tanggal' }
   ];
 
-  // Filter data berdasarkan kriteria yang dipilih
-  useEffect(() => {
+  // Filter data berdasarkan kriteria yang dipilih - Optimized with useMemo
+  const filteredData = useMemo(() => {
     // Filter hanya data yang sudah selesai
     let filtered = pengajuanList.filter(item => {
       if (item.isGrouped) {
@@ -166,18 +165,18 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
     if (selectedDosen !== 'all') {
       transformedData = transformedData.filter(item => item.dosen_nip === selectedDosen);
     }
-    setFilteredData(transformedData);
-  }, [pengajuanList, periodeDari, periodeSampai, selectedDosen, dosenList]);
+    return transformedData;
+  }, [pengajuanList, periodeDari, periodeSampai, selectedDosen, tahunAjaranOptions]);
 
-  // Kalkulasi statistik per dosen - hanya yang selesai
-  const getDosenStatistics = () => {
-    const dosenStats = {};
+  // Kalkulasi statistik per dosen - Optimized with useMemo
+  const dosenStats = useMemo(() => {
+    const dosenStatsMap = {};
     
     filteredData.forEach(item => {
       if (item.dosen_nip && item.nilai) {
         const dosenNip = item.dosen_nip;
-        if (!dosenStats[dosenNip]) {
-          dosenStats[dosenNip] = {
+        if (!dosenStatsMap[dosenNip]) {
+          dosenStatsMap[dosenNip] = {
             nama: item.dosen_nama || 
                   dosenList.find(d => (d.nip === dosenNip || d.id === dosenNip))?.nama ||
                   dosenList.find(d => (d.nip === dosenNip || d.id === dosenNip))?.name ||
@@ -189,29 +188,29 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
           };
         }
         
-        dosenStats[dosenNip].total++;
+        dosenStatsMap[dosenNip].total++;
         if (item.nilai) {
-          dosenStats[dosenNip].total_nilai += parseFloat(item.nilai);
+          dosenStatsMap[dosenNip].total_nilai += parseFloat(item.nilai);
           if (parseFloat(item.nilai) >= 60) {
-            dosenStats[dosenNip].mahasiswa_lulus++;
+            dosenStatsMap[dosenNip].mahasiswa_lulus++;
           } else {
-            dosenStats[dosenNip].mahasiswa_tidak_lulus++;
+            dosenStatsMap[dosenNip].mahasiswa_tidak_lulus++;
           }
         }
       }
     });
 
     // Hitung rata-rata nilai per dosen
-    Object.values(dosenStats).forEach(dosen => {
+    Object.values(dosenStatsMap).forEach(dosen => {
       dosen.rata_rata_nilai = dosen.total > 0 ? (dosen.total_nilai / dosen.total).toFixed(2) : 0;
       dosen.tingkat_kelulusan = dosen.total > 0 ? ((dosen.mahasiswa_lulus / dosen.total) * 100).toFixed(1) : 0;
     });
 
-    return Object.values(dosenStats).sort((a, b) => b.total - a.total);
-  };
+    return Object.values(dosenStatsMap).sort((a, b) => b.total - a.total);
+  }, [filteredData, dosenList]);
 
-  // Kalkulasi tren per bulan - hanya yang selesai
-  const getMonthlyTrend = () => {
+  // Kalkulasi tren per bulan - Optimized with useMemo
+  const monthlyTrend = useMemo(() => {
     const monthlyData = {};
     
     filteredData.forEach(item => {
@@ -246,10 +245,7 @@ const LaporanSA = ({ authToken, currentUser, userType, pengajuanList, dosenList,
     });
 
     return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
-  };
-
-  const dosenStats = getDosenStatistics();
-  const monthlyTrend = getMonthlyTrend();
+  }, [filteredData]);
 
   // Handler untuk export data
   const handleExportCSV = () => {

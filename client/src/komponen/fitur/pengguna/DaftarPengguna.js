@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -315,26 +315,28 @@ const UsersList = ({ authToken, currentUser }) => {
     return roleInfo || { label: role, icon: User, color: 'text-gray-600' };
   };
 
-  // Filter users based on search and role
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = filterRole === 'ALL' || user.role === filterRole;
-    
-    return matchesSearch && matchesRole;
-  });
+  // Filter users based on search and role - Optimized with useMemo
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = 
+        user.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesRole = filterRole === 'ALL' || user.role === filterRole;
+      
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchTerm, filterRole]);
 
-  // Calculate pagination
-  const totalItems = filteredUsers.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentUsers = filteredUsers.slice(startIndex, endIndex);
-
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
+  // Calculate pagination - Optimized with useMemo
+  const paginationData = useMemo(() => {
+    const totalItems = filteredUsers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentUsers = filteredUsers.slice(startIndex, endIndex);
+    
+    // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
     
@@ -362,17 +364,19 @@ const UsersList = ({ authToken, currentUser }) => {
       }
     }
     
-    return pages;
-  };
+    return { totalItems, totalPages, startIndex, endIndex, currentUsers, pages };
+  }, [filteredUsers, currentPage, itemsPerPage]);
 
-  const handlePageChange = (page) => {
+  const { totalItems, totalPages, startIndex, endIndex, currentUsers, pages: pageNumbers } = paginationData;
+
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleItemsPerPageChange = (newItemsPerPage) => {
+  const handleItemsPerPageChange = useCallback((newItemsPerPage) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -757,7 +761,7 @@ const UsersList = ({ authToken, currentUser }) => {
 
                     {/* Page Numbers */}
                     <div className="flex gap-1">
-                      {getPageNumbers().map(page => (
+                      {pageNumbers.map(page => (
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}

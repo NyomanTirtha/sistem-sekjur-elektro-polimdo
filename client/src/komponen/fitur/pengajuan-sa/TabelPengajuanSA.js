@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, GraduationCap, Eye, Save, Edit3, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -87,7 +87,7 @@ const TabelPengajuanSA = ({
           showSuccessAlert(`Dosen "${selectedDosenName}" berhasil ditugaskan untuk mata kuliah "${mataKuliahName}"!`);
 
         } catch (error) {
-          console.error('Error assigning dosen:', error);
+          if (process.env.NODE_ENV === 'development') console.error('Error assigning dosen:', error);
           showErrorAlert('Gagal menugaskan dosen. Silakan coba lagi.');
         } finally {
           setAssigningRows(prev => ({ ...prev, [rowId]: false }));
@@ -152,7 +152,7 @@ const TabelPengajuanSA = ({
 
           showSuccessAlert(`Nilai ${nilai} berhasil diinput untuk mata kuliah "${mataKuliahName}"!\nMata kuliah ini telah selesai dinilai.`);
         } catch (error) {
-          console.error('Error updating nilai:', error);
+          if (process.env.NODE_ENV === 'development') console.error('Error updating nilai:', error);
 
           // Jika error 404 (data tidak ditemukan), refresh data otomatis
           if (error.message.includes('tidak ditemukan')) {
@@ -200,7 +200,7 @@ const TabelPengajuanSA = ({
           setShowTolakModal(false);
           setAlasanPenolakan('');
         } catch (error) {
-          console.error('Error rejecting pengajuan:', error);
+          if (process.env.NODE_ENV === 'development') console.error('Error rejecting pengajuan:', error);
           showErrorAlert(`Error: ${error.message}`);
         }
       },
@@ -980,4 +980,4 @@ const TabelPengajuanSA = ({
   );
 };
 
-export default TabelPengajuanSA;
+export default memo(TabelPengajuanSA);

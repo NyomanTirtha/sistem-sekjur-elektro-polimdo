@@ -5,13 +5,9 @@ class PengajuanSAService {
   }
 
   async updateStatus(pengajuanId, newStatus, dosenId = null, detailId = null) {
-    console.log('🔄 Updating status:', { pengajuanId, newStatus, dosenId, detailId }); // Debug log
-    
     let response;
     
     if (newStatus === 'MENUNGGU_VERIFIKASI_KAPRODI') {
-      // ✅ ADMIN VERIFIKASI - Endpoint khusus
-      console.log('📝 Admin verifikasi pembayaran...'); // Debug log
       response = await fetch(`${this.baseUrl}/pengajuan-sa/${pengajuanId}/verifikasi`, {
         method: 'PUT',
         headers: {
@@ -20,8 +16,6 @@ class PengajuanSAService {
         }
       });
     } else if (dosenId && detailId && newStatus === 'DALAM_PROSES_SA') {
-      // ✅ KAPRODI ASSIGN DOSEN - Endpoint per mata kuliah
-      console.log('👨‍🏫 Kaprodi assign dosen per mata kuliah...', { detailId, dosenId }); // Debug log
       response = await fetch(`${this.baseUrl}/pengajuan-sa/detail/${detailId}/assign-dosen`, {
         method: 'PUT',
         headers: {
@@ -33,8 +27,6 @@ class PengajuanSAService {
         })
       });
     } else {
-      // ✅ FALLBACK - Endpoint umum
-      console.log('🔄 General status update...'); // Debug log
       response = await fetch(`${this.baseUrl}/pengajuan-sa/${pengajuanId}/status`, {
         method: 'PUT',
         headers: {
@@ -48,22 +40,16 @@ class PengajuanSAService {
       });
     }
 
-    console.log('📡 Response status:', response.status); // Debug log
-
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Error:', errorData); // Debug log
+      if (process.env.NODE_ENV === 'development') console.error('API Error:', errorData);
       throw new Error(errorData.error || 'Failed to update status');
     }
 
-    const result = await response.json();
-    console.log('✅ Update successful:', result); // Debug log
-    return result;
+    return await response.json();
   }
 
   async updateNilai(id, nilai) {
-    console.log('📝 Updating nilai:', { id, nilai }); // Debug log
-    
     const response = await fetch(`${this.baseUrl}/pengajuan-sa/${id}/nilai`, {
       method: 'PUT',
       headers: {
@@ -77,9 +63,8 @@ class PengajuanSAService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ Nilai update error:', errorData); // Debug log
+      if (process.env.NODE_ENV === 'development') console.error('Nilai update error:', errorData);
       
-      // Handle specific error cases
       if (response.status === 404) {
         throw new Error('Data pengajuan SA tidak ditemukan. Silakan refresh halaman untuk melihat data terbaru.');
       } else if (response.status === 400) {
@@ -89,14 +74,10 @@ class PengajuanSAService {
       }
     }
 
-    const result = await response.json();
-    console.log('✅ Nilai update success:', result); // Debug log
-    return result;
+    return await response.json();
   }
 
   async updateNilaiDetail(detailId, nilai) {
-    console.log('📝 Updating nilai detail:', { detailId, nilai }); // Debug log
-    
     const response = await fetch(`${this.baseUrl}/pengajuan-sa/detail/${detailId}/nilai`, {
       method: 'PUT',
       headers: {
@@ -110,9 +91,8 @@ class PengajuanSAService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ Nilai detail update error:', errorData); // Debug log
+      if (process.env.NODE_ENV === 'development') console.error('Nilai detail update error:', errorData);
       
-      // Handle specific error cases
       if (response.status === 404) {
         throw new Error('Data mata kuliah tidak ditemukan. Silakan refresh halaman untuk melihat data terbaru.');
       } else if (response.status === 400) {
@@ -122,14 +102,10 @@ class PengajuanSAService {
       }
     }
 
-    const result = await response.json();
-    console.log('✅ Nilai detail update success:', result); // Debug log
-    return result;
+    return await response.json();
   }
 
   async tolakPengajuanSA(pengajuanId, keteranganReject) {
-    console.log('❌ Rejecting pengajuan SA:', { pengajuanId, keteranganReject }); // Debug log
-    
     const response = await fetch(`${this.baseUrl}/pengajuan-sa/${pengajuanId}/tolak`, {
       method: 'PUT',
       headers: {
@@ -143,13 +119,11 @@ class PengajuanSAService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ Reject pengajuan error:', errorData); // Debug log
+      if (process.env.NODE_ENV === 'development') console.error('Reject pengajuan error:', errorData);
       throw new Error(errorData.error || 'Terjadi kesalahan saat menolak pengajuan');
     }
 
-    const result = await response.json();
-    console.log('✅ Reject pengajuan success:', result); // Debug log
-    return result;
+    return await response.json();
   }
 }
 

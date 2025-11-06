@@ -34,33 +34,8 @@ export const usePasswordChange = (authToken, currentUser) => {
         userType: userType
       };
       
-      // Debug logs
-      console.log('🔐 Debug Request Body:', {
-        userId: requestBody.userId,
-        userType: requestBody.userType,
-        currentPasswordLength: requestBody.currentPassword?.length,
-        newPasswordLength: requestBody.newPassword?.length,
-        // JANGAN LOG PASSWORD ASLI untuk keamanan
-      });
-      
-      console.log('🔐 Current Password (first 3 chars):', passwordData.currentPassword?.substring(0, 3) + '***');
-      console.log('🔐 User Info:', {
-        username: currentUser.username,
-        role: currentUser.role,
-        hasNim: !!currentUser.nim,
-        hasNip: !!currentUser.nip,
-        id: currentUser.id
-      });
-
       // Get token from localStorage if not provided
       const token = authToken || localStorage.getItem('token');
-      console.log('🔍 Debug Token:', {
-        authToken: !!authToken,
-        localStorageToken: !!localStorage.getItem('token'),
-        finalToken: !!token,
-        tokenLength: token?.length,
-        tokenFirstChars: token ? token.substring(0, 10) + '...' : null
-      });
 
       if (!token) {
         throw new Error('Token autentikasi tidak ditemukan');
