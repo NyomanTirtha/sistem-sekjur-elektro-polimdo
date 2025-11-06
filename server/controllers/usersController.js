@@ -5,7 +5,48 @@ const prisma = new PrismaClient();
 // Mengambil semua users
 const getAllUsers = async (req, res) => {
   try {
+    let whereClause = {};
+
+    // Filter untuk SEKJUR: hanya melihat user dari jurusan mereka
+    if (req.user && req.user.role === 'SEKJUR' && req.user.jurusanId) {
+      // Ambil program studi di jurusan mereka
+      const programStudiInJurusan = await prisma.programStudi.findMany({
+        where: { jurusanId: req.user.jurusanId },
+        select: { id: true }
+      });
+      const prodiIds = programStudiInJurusan.map(p => p.id);
+
+      // Filter DOSEN berdasarkan prodiId
+      const dosenInJurusan = await prisma.dosen.findMany({
+        where: { prodiId: { in: prodiIds } },
+        select: { nip: true }
+      });
+      const dosenNips = dosenInJurusan.map(d => d.nip);
+
+      // Filter MAHASISWA berdasarkan programStudiId
+      const mahasiswaInJurusan = await prisma.mahasiswa.findMany({
+        where: { programStudiId: { in: prodiIds } },
+        select: { nim: true }
+      });
+      const mahasiswaNims = mahasiswaInJurusan.map(m => m.nim);
+
+      // Filter user:
+      // - SEKJUR: jurusanId yang sama
+      // - KAPRODI: programStudiId di jurusan mereka
+      // - DOSEN: username (NIP) ada di dosenInJurusan
+      // - MAHASISWA: username (NIM) ada di mahasiswaInJurusan
+      whereClause = {
+        OR: [
+          { role: 'SEKJUR', jurusanId: req.user.jurusanId },
+          { role: 'KAPRODI', programStudiId: { in: prodiIds } },
+          { role: 'DOSEN', username: { in: dosenNips } },
+          { role: 'MAHASISWA', username: { in: mahasiswaNims } }
+        ]
+      };
+    }
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         username: true,
@@ -18,6 +59,7 @@ const getAllUsers = async (req, res) => {
         id: 'asc'
       }
     });
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -56,8 +98,41 @@ const getUsersByRole = async (req, res) => {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
     
+    let whereClause = { role: role.toUpperCase() };
+
+    // Filter untuk SEKJUR: hanya melihat user dari jurusan mereka
+    if (req.user && req.user.role === 'SEKJUR' && req.user.jurusanId) {
+      const programStudiInJurusan = await prisma.programStudi.findMany({
+        where: { jurusanId: req.user.jurusanId },
+        select: { id: true }
+      });
+      const prodiIds = programStudiInJurusan.map(p => p.id);
+
+      if (role.toUpperCase() === 'SEKJUR') {
+        whereClause.jurusanId = req.user.jurusanId;
+      } else if (role.toUpperCase() === 'KAPRODI') {
+        whereClause.programStudiId = { in: prodiIds };
+      } else if (role.toUpperCase() === 'DOSEN') {
+        // Filter DOSEN berdasarkan prodiId
+        const dosenInJurusan = await prisma.dosen.findMany({
+          where: { prodiId: { in: prodiIds } },
+          select: { nip: true }
+        });
+        const dosenNips = dosenInJurusan.map(d => d.nip);
+        whereClause.username = { in: dosenNips };
+      } else if (role.toUpperCase() === 'MAHASISWA') {
+        // Filter MAHASISWA berdasarkan programStudiId
+        const mahasiswaInJurusan = await prisma.mahasiswa.findMany({
+          where: { programStudiId: { in: prodiIds } },
+          select: { nim: true }
+        });
+        const mahasiswaNims = mahasiswaInJurusan.map(m => m.nim);
+        whereClause.username = { in: mahasiswaNims };
+      }
+    }
+    
     const users = await prisma.user.findMany({
-      where: { role: role.toUpperCase() },
+      where: whereClause,
       select: {
         id: true,
         username: true,

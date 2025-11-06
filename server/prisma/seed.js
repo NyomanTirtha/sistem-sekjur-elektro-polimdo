@@ -50,13 +50,13 @@ async function main() {
         { 
           id: 3, 
           nama: 'D4 Teknik Konstruksi Bangunan Gedung', 
-          ketuaProdi: 'Ketua Prodi TKBG',
+          ketuaProdi: 'Dr. Ir. Budi Santoso, MT.',
           jurusanId: 2
         },
         { 
           id: 4, 
           nama: 'D4 Teknik Konstruksi Jalan dan Jembatan', 
-          ketuaProdi: 'Ketua Prodi TKJJ',
+          ketuaProdi: 'Ir. Ahmad Wijaya, ST., MT.',
           jurusanId: 2
         }
       ],
@@ -77,10 +77,28 @@ async function main() {
         // Sekretaris Jurusan Teknik Sipil
         { 
           username: 'sekjur_sipil', 
-          nama: 'Sekretaris Jurusan Teknik Sipil', 
+          nama: 'Pendekar Trio Lonan, ST., MT.', 
           password: hashedPassword, 
           role: 'SEKJUR',
           jurusanId: 2
+        },
+        
+        // Kaprodi Teknik Sipil
+        { 
+          username: '197201011998031007', 
+          nama: 'Dr. Ir. Budi Santoso, MT.', 
+          password: hashedPassword, 
+          role: 'KAPRODI',
+          jurusanId: null,
+          programStudiId: 3
+        },
+        { 
+          username: '197301011998031008', 
+          nama: 'Ir. Ahmad Wijaya, ST., MT.', 
+          password: hashedPassword, 
+          role: 'KAPRODI',
+          jurusanId: null,
+          programStudiId: 4
         },
         
         { 
@@ -118,14 +136,28 @@ async function main() {
         // Dosen Teknik Sipil
         { 
           username: '197501011998031005', 
-          nama: 'Dosen Teknik Sipil 1', 
+          nama: 'Ir. Siti Nurhaliza, ST., MT.', 
           password: hashedPassword, 
           role: 'DOSEN',
           jurusanId: null
         },
         { 
           username: '197601011998031006', 
-          nama: 'Dosen Teknik Sipil 2', 
+          nama: 'Drs. Muhammad Rizki, ST., M.Eng.', 
+          password: hashedPassword, 
+          role: 'DOSEN',
+          jurusanId: null
+        },
+        { 
+          username: '197701011998031009', 
+          nama: 'Ir. Dewi Sartika, ST., MT.', 
+          password: hashedPassword, 
+          role: 'DOSEN',
+          jurusanId: null
+        },
+        { 
+          username: '197801011998031010', 
+          nama: 'Drs. Agus Setiawan, ST., M.Sc.', 
           password: hashedPassword, 
           role: 'DOSEN',
           jurusanId: null
@@ -149,14 +181,28 @@ async function main() {
         // Mahasiswa Teknik Sipil
         { 
           username: '23025001', 
-          nama: 'MAHASISWA TKBG 1', 
+          nama: 'RUDI HERMAWAN', 
+          password: hashedPassword, 
+          role: 'MAHASISWA',
+          jurusanId: null
+        },
+        { 
+          username: '23025002', 
+          nama: 'SARI INDAH SARI', 
+          password: hashedPassword, 
+          role: 'MAHASISWA',
+          jurusanId: null
+        },
+        { 
+          username: '24025001', 
+          nama: 'ANDI PRASETYA', 
           password: hashedPassword, 
           role: 'MAHASISWA',
           jurusanId: null
         },
         { 
           username: '24025002', 
-          nama: 'MAHASISWA TKJJ 1', 
+          nama: 'LINA KARTIKA', 
           password: hashedPassword, 
           role: 'MAHASISWA',
           jurusanId: null
@@ -203,10 +249,27 @@ async function main() {
           alamat: 'Jl. Wolter Monginsidi No. 33, Manado',
           isKaprodi: false
         },
+        // Kaprodi Teknik Sipil
+        {
+          nip: '197201011998031007',
+          nama: 'Dr. Ir. Budi Santoso, MT.',
+          prodiId: 3,
+          noTelp: '081234567896',
+          alamat: 'Jl. Teknik Sipil No. 10, Manado',
+          isKaprodi: true
+        },
+        {
+          nip: '197301011998031008',
+          nama: 'Ir. Ahmad Wijaya, ST., MT.',
+          prodiId: 4,
+          noTelp: '081234567897',
+          alamat: 'Jl. Teknik Sipil No. 20, Manado',
+          isKaprodi: true
+        },
         // Dosen Teknik Sipil
         {
           nip: '197501011998031005',
-          nama: 'Dosen Teknik Sipil 1',
+          nama: 'Ir. Siti Nurhaliza, ST., MT.',
           prodiId: 3,
           noTelp: '081234567894',
           alamat: 'Jl. Teknik Sipil No. 1, Manado',
@@ -214,10 +277,26 @@ async function main() {
         },
         {
           nip: '197601011998031006',
-          nama: 'Dosen Teknik Sipil 2',
+          nama: 'Drs. Muhammad Rizki, ST., M.Eng.',
           prodiId: 4,
           noTelp: '081234567895',
           alamat: 'Jl. Teknik Sipil No. 2, Manado',
+          isKaprodi: false
+        },
+        {
+          nip: '197701011998031009',
+          nama: 'Ir. Dewi Sartika, ST., MT.',
+          prodiId: 3,
+          noTelp: '081234567898',
+          alamat: 'Jl. Teknik Sipil No. 3, Manado',
+          isKaprodi: false
+        },
+        {
+          nip: '197801011998031010',
+          nama: 'Drs. Agus Setiawan, ST., M.Sc.',
+          prodiId: 4,
+          noTelp: '081234567899',
+          alamat: 'Jl. Teknik Sipil No. 4, Manado',
           isKaprodi: false
         }
       ]
@@ -248,7 +327,7 @@ async function main() {
         // Mahasiswa Teknik Sipil
         { 
           nim: '23025001', 
-          nama: 'MAHASISWA TKBG 1', 
+          nama: 'RUDI HERMAWAN', 
           programStudiId: 3,
           angkatan: '2023', 
           semester: 3, 
@@ -256,13 +335,31 @@ async function main() {
           alamat: 'Jl. Teknik Sipil No. 100, Manado' 
         },
         { 
-          nim: '24025002', 
-          nama: 'MAHASISWA TKJJ 1', 
+          nim: '23025002', 
+          nama: 'SARI INDAH SARI', 
+          programStudiId: 3,
+          angkatan: '2023', 
+          semester: 3, 
+          noTelp: '082134567893', 
+          alamat: 'Jl. Teknik Sipil No. 101, Manado' 
+        },
+        { 
+          nim: '24025001', 
+          nama: 'ANDI PRASETYA', 
           programStudiId: 4,
           angkatan: '2024', 
           semester: 3, 
-          noTelp: '082134567893', 
+          noTelp: '082134567894', 
           alamat: 'Jl. Teknik Sipil No. 200, Manado' 
+        },
+        { 
+          nim: '24025002', 
+          nama: 'LINA KARTIKA', 
+          programStudiId: 4,
+          angkatan: '2024', 
+          semester: 3, 
+          noTelp: '082134567895', 
+          alamat: 'Jl. Teknik Sipil No. 201, Manado' 
         }
       ]
     });
