@@ -17,12 +17,20 @@ const getAllProdi = async (req, res) => {
       });
     }
 
+    // ✅ PERFORMANCE: Optimized query - hanya _count, tidak include full data
     const prodi = await prisma.programStudi.findMany({
       where: filter,
-      include: {
-        jurusan: true, // ✅ ADDED: Include relasi jurusan
-        dosen: true,
-        mahasiswa: true,
+      select: {
+        id: true,
+        nama: true,
+        ketuaProdi: true,
+        jurusanId: true,
+        jurusan: {
+          select: {
+            id: true,
+            nama: true
+          }
+        },
         _count: {
           select: {
             dosen: true,
@@ -30,6 +38,7 @@ const getAllProdi = async (req, res) => {
             mataKuliah: true
           }
         }
+        // ✅ PERFORMANCE: Tidak include full dosen/mahasiswa data untuk mengurangi response size
       },
       orderBy: {
         nama: 'asc'

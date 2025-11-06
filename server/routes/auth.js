@@ -7,20 +7,8 @@ const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// ✅ SECURITY: JWT Secret - Wajib dari environment variable (PRIORITY 1)
-let JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET === 'your-secret-key-change-in-production') {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ CRITICAL: JWT_SECRET tidak diset di production!');
-    console.error('Set JWT_SECRET di .env file dengan nilai random yang kuat (minimal 32 karakter)');
-    process.exit(1); // Exit jika secret tidak aman di production
-  } else {
-    // Development: gunakan default dengan warning
-    console.warn('⚠️  WARNING: JWT_SECRET tidak diset, menggunakan default (TIDAK AMAN untuk production!)');
-    console.warn('⚠️  Set JWT_SECRET di .env file dengan nilai random yang kuat');
-    JWT_SECRET = 'dev-secret-key-change-in-production-use-strong-random-value-min-32-chars';
-  }
-}
+// JWT Secret (sebaiknya disimpan di environment variable)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // ✅ ENHANCED Authentication middleware dengan context filtering
 const authenticateToken = async (req, res, next) => {
@@ -88,10 +76,7 @@ const authenticateToken = async (req, res, next) => {
     
     next();
   } catch (error) {
-    // ✅ SECURITY: Jangan expose error details di production (PRIORITY 1)
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Token verification error:', error);
-    }
+    console.error('Token verification error:', error);
     return res.status(403).json({
       success: false,
       message: 'Token tidak valid atau kadaluarsa'
@@ -208,18 +193,17 @@ const createMataKuliahFilter = (userContext) => {
   return null;
 };
 
-// ✅ SECURITY: Import rate limiter untuk login
-const { loginLimiter } = require('../middleware/security');
-
 // Login endpoint - UPDATED untuk mendukung relasi jurusan
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { username, password, role } = req.body;
 
-    // ✅ SECURITY: Hapus password logging (PRIORITY 1)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔑 Login attempt:', { username, role });
-    }
+    console.log('🔑 Login attempt:', { 
+      username, 
+      role,
+      passwordLength: password?.length,
+      passwordFirstChars: password?.substring(0, 3) + '***'
+    });
 
     // Validasi input
     if (!username || !password) {
@@ -235,16 +219,17 @@ router.post('/login', loginLimiter, async (req, res) => {
       include: { jurusan: true }
     });
 
-    // ✅ SECURITY: Hapus password info dari logging (PRIORITY 1)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('👤 User found:', user ? {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        jurusanId: user.jurusanId,
-        jurusanNama: user.jurusan?.nama
-      } : 'Not found');
-    }
+    console.log('👤 User found:', user ? {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      jurusanId: user.jurusanId,
+      jurusanNama: user.jurusan?.nama,
+      hasPassword: !!user.password,
+      passwordLength: user.password?.length,
+      passwordStartsWithHash: user.password?.startsWith('$2'),
+      passwordHash: user.password?.substring(0, 10) + '...'
+    } : 'Not found');
 
     if (!user) {
       return res.status(401).json({
@@ -253,22 +238,26 @@ router.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    // ✅ SECURITY: Verifikasi password - Hanya support bcrypt (PRIORITY 2)
+    // Verifikasi password
     let isPasswordValid = false;
     
-    if (!user.password.startsWith('$2')) {
-      // ✅ SECURITY: Plain text password tidak diperbolehkan lagi
-      return res.status(401).json({
-        success: false,
-        message: 'Akun perlu direset. Silakan hubungi administrator.'
-      });
-    }
-    
-    isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    // ✅ SECURITY: Logging minimal (PRIORITY 1)
-    if (process.env.NODE_ENV === 'development' && !isPasswordValid) {
-      console.log('🔒 Login failed: Invalid password');
+    if (user.password.startsWith('$2')) {
+      console.log('🔒 Comparing hashed password');
+      isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log('🔒 Password comparison result:', isPasswordValid);
+    } else {
+      console.log('⚠️ WARNING: Password stored as plain text!');
+      isPasswordValid = password === user.password;
+      
+      if (isPasswordValid) {
+        console.log('🔄 Hashing plain text password');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedPassword }
+        });
+        console.log('✅ Password hashed and updated');
+      }
     }
 
     if (!isPasswordValid) {

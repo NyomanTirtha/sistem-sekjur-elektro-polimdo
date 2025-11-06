@@ -19,81 +19,45 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userType, setUserType] = useState(null);
   const [authToken, setAuthToken] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Loading state saat check auth
 
-  // Check for existing authentication and active tab on app load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('userData');
-    const userType = localStorage.getItem('userType');
-    const savedActiveTab = localStorage.getItem('activeTab');
-
-    if (token && userData && userType) {
-      setIsAuthenticated(true);
-      setCurrentUser(JSON.parse(userData));
-      setUserType(userType);
-      setAuthToken(token);
-      setCurrentView('system');
-      window.authToken = token;
-
-      // Restore active tab if it exists and is valid for the user type
-      if (savedActiveTab) {
-        const availableMenuItems = menuItems.filter(item => 
-          item.allowedRoles.includes(userType)
-        );
-        if (availableMenuItems.some(item => item.id === savedActiveTab)) {
-          setActiveTab(savedActiveTab);
-        }
-      }
-    }
-  }, []);
-
-  // Function to verify token with backend
-  const verifyTokenWithBackend = async (token) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          const userData = result.data;
-          const mappedUserType = getRoleMapping(userData.role);
-          
-          // Store updated user data in localStorage
-          localStorage.setItem('userData', JSON.stringify(userData));
-          localStorage.setItem('userType', mappedUserType);
-          
-          setIsAuthenticated(true);
-          setCurrentUser(userData);
-          setUserType(mappedUserType);
-          setAuthToken(token);
-          setCurrentView('system');
-        } else {
-          handleLogout();
-        }
-      } else {
-        handleLogout();
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      handleLogout();
-    }
+  const roleMapping = {
+    'SEKJUR': 'sekjur',
+    'MAHASISWA': 'mahasiswa',
+    'DOSEN': 'dosen',
+    'KAPRODI': 'kaprodi'
   };
 
-  // Helper function to map backend roles to frontend userTypes  
-  const getRoleMapping = (backendRole) => {
-    const roleMapping = {
-      'SEKJUR': 'sekjur',
-      'MAHASISWA': 'mahasiswa', 
-      'DOSEN': 'dosen',
-      'KAPRODI': 'kaprodi'
-    };
-    return roleMapping[backendRole] || backendRole.toLowerCase();
+  const defaultTabMapping = {
+    'sekjur': 'prodi',
+    'dosen': 'mahasiswa',
+    'kaprodi': 'mahasiswa',
+    'mahasiswa': 'pengajuan-sa'
+  };
+
+  const getRoleMapping = (backendRole) => roleMapping[backendRole] || backendRole.toLowerCase();
+
+  const setAuthState = (userData, mappedUserType, token) => {
+    setIsAuthenticated(true);
+    setCurrentUser(userData);
+    setUserType(mappedUserType);
+    setAuthToken(token);
+    setCurrentView('system');
+    window.authToken = token;
+    localStorage.setItem('userData', JSON.stringify(userData));
+    localStorage.setItem('userType', mappedUserType);
+    localStorage.setItem('token', token);
+  };
+
+  const handleLogout = () => {
+    ['token', 'userData', 'userType', 'activeTab'].forEach(key => localStorage.removeItem(key));
+    window.authToken = null;
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setUserType(null);
+    setAuthToken(null);
+    setCurrentView('login');
+    setActiveTab('prodi');
   };
 
   // Define menu items with proper role-based access control
@@ -156,33 +120,121 @@ export default function App() {
     }
   ];
 
+  // Function to verify token with backend
+  const verifyTokenWithBackend = async (token) => {
+    try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch('http://localhost:5000/api/auth/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      // Handle 429 Too Many Requests - don't throw, just log and let it fail gracefully
+      if (response.status === 429) {
+        console.warn('Rate limit reached during token verification. Will retry on next page load.');
+        throw new Error('Rate limit reached');
+      }
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const userData = result.data;
+          const mappedUserType = getRoleMapping(userData.role);
+          setAuthState(userData, mappedUserType, token);
+        } else {
+          throw new Error('Token verification failed');
+        }
+      } else {
+        throw new Error('Token verification failed');
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('Token verification timeout - backend may not be running');
+      } else if (error.message === 'Rate limit reached') {
+        console.warn('Rate limit reached during token verification');
+      } else {
+        console.error('Token verification failed:', error);
+      }
+      throw error;
+    }
+  };
+
+  // Check for existing authentication and active tab on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('userData');
+        const userType = localStorage.getItem('userType');
+        const savedActiveTab = localStorage.getItem('activeTab');
+
+        // If no token, show login immediately without waiting
+        if (!token || !userData || !userType) {
+          handleLogout();
+          setIsCheckingAuth(false);
+          return;
+        }
+
+        // If token exists, verify with backend
+        try {
+          await verifyTokenWithBackend(token);
+          
+          // Restore active tab if it exists and is valid for the user type
+          const parsedUserType = userType; // userType from localStorage
+          if (savedActiveTab) {
+            const availableMenuItems = menuItems.filter(item =>
+              item.allowedRoles.includes(parsedUserType)
+            );
+            if (availableMenuItems.some(item => item.id === savedActiveTab)) {
+              setActiveTab(savedActiveTab);
+            }
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          // Token invalid or backend not reachable, clear everything and show login
+          handleLogout();
+        }
+      } catch (error) {
+        console.error('Error during auth check:', error);
+        // If anything goes wrong, clear auth and show login
+        handleLogout();
+      } finally {
+        // Always set checking to false, even if there's an error
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   // Filter menu items based on user role
   const getFilteredMenuItems = () => {
     if (!userType) return [];
-    
-    return menuItems.filter(item => 
+
+    return menuItems.filter(item =>
       item.allowedRoles.includes(userType)
     );
   };
 
-  // Get menu items for sidebar (without navigation items like Home and Logout)
   const getSidebarMenuItems = () => {
     const filtered = getFilteredMenuItems();
-    // Remove duplicates based on id to prevent duplicate menu items
-    const uniqueItems = filtered.filter((item, index, self) => 
-      index === self.findIndex((t) => t.id === item.id)
-    );
-    return uniqueItems.map(item => ({
-      id: item.id,
-      label: item.label,
-      icon: item.icon
-    }));
+    const uniqueItems = [...new Map(filtered.map(item => [item.id, item])).values()];
+    return uniqueItems.map(({ id, label, icon }) => ({ id, label, icon }));
   };
 
   // Add navigation items for MainLayout
   const getAllMenuItems = () => {
     const filteredItems = getFilteredMenuItems();
-    
+
     return [
       {
         id: 'landing',
@@ -206,65 +258,19 @@ export default function App() {
   // Handle successful login
   const handleLoginSuccess = (userData, loginUserType, authData) => {
     const mappedUserType = getRoleMapping(loginUserType);
-    
-    setIsAuthenticated(true);
-    setCurrentUser(userData);
-    setUserType(mappedUserType);
-    setAuthToken(authData.token);
-    setCurrentView('system');
-    
-    // Store token in memory for subsequent API calls
-    window.authToken = authData.token;
-    
-    // Store auth data in localStorage
-    localStorage.setItem('token', authData.token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    localStorage.setItem('userType', mappedUserType);
-    
+
+    setAuthState(userData, mappedUserType, authData.token);
+
     // Set default active tab based on user type and available menu items
-    const availableMenuItems = menuItems.filter(item => 
+    const availableMenuItems = menuItems.filter(item =>
       item.allowedRoles.includes(mappedUserType)
     );
-    
+
     if (availableMenuItems.length > 0) {
-      // Set default tab based on role priority
-      let defaultTab;
-      
-      switch(mappedUserType) {
-        case 'sekjur':
-          defaultTab = 'prodi';
-          break;
-        case 'dosen':
-        case 'kaprodi':
-          defaultTab = 'mahasiswa';
-          break;
-        case 'mahasiswa':
-          defaultTab = 'pengajuan-sa';
-          break;
-        default:
-          defaultTab = availableMenuItems[0].id;
-      }
-      
+      const defaultTab = defaultTabMapping[mappedUserType] || availableMenuItems[0].id;
       setActiveTab(defaultTab);
       localStorage.setItem('activeTab', defaultTab);
     }
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    // Clear all authentication data
-    window.authToken = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('activeTab');
-    
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setUserType(null);
-    setAuthToken(null);
-    setCurrentView('login'); 
-    setActiveTab('prodi');
   };
 
   // Handle entering system from landing page
@@ -273,31 +279,14 @@ export default function App() {
       setCurrentView('login');
       return;
     }
-    
+
     setCurrentView('system');
     const filteredItems = getFilteredMenuItems();
-    
+
     if (directMenu && filteredItems.find(item => item.id === directMenu)) {
       setActiveTab(directMenu);
     } else if (filteredItems.length > 0) {
-      // Set appropriate default based on user role
-      let defaultTab;
-      
-      switch(userType) {
-        case 'sekjur':
-          defaultTab = 'prodi';
-          break;
-        case 'dosen':
-        case 'kaprodi':
-          defaultTab = 'mahasiswa';
-          break;
-        case 'mahasiswa':
-          defaultTab = 'pengajuan-sa';
-          break;
-        default:
-          defaultTab = filteredItems[0].id;
-      }
-      
+      const defaultTab = defaultTabMapping[userType] || filteredItems[0].id;
       setActiveTab(defaultTab);
     }
   };
@@ -318,6 +307,27 @@ export default function App() {
     }
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
+            style={{ animation: 'spin 0.6s linear infinite' }}
+          ></div>
+          <div className="text-sm text-gray-500 font-medium">Memeriksa autentikasi...</div>
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
+
   // Show login page if not authenticated
   if (!isAuthenticated) {
     return (
@@ -333,7 +343,7 @@ export default function App() {
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Sistem Akademik</h1>
           <p className="text-gray-600 mb-2">Selamat datang, {currentUser?.nama || currentUser?.username}</p>
           <p className="text-sm text-gray-500 mb-4">Role: {currentUser?.role}</p>
-          
+
           {/* Show available features based on role */}
           <div className="mb-8">
             <p className="text-sm text-gray-600 mb-4">Fitur yang tersedia untuk Anda:</p>
@@ -350,7 +360,7 @@ export default function App() {
               })}
             </div>
           </div>
-          
+
           <button
             onClick={() => handleEnterSystem()}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -364,7 +374,7 @@ export default function App() {
 
   // Show main system
   return (
-    <MainLayout 
+    <MainLayout
       title={currentMenuItem?.label || 'Dashboard'}
       activeMenu={activeTab}
       onMenuChange={handleMenuChange}
@@ -379,7 +389,7 @@ export default function App() {
         <Suspense fallback={
           <div className="flex items-center justify-center p-8">
             <div className="flex flex-col items-center gap-3">
-              <div 
+              <div
                 className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
                 style={{ animation: 'spin 0.6s linear infinite' }}
               ></div>

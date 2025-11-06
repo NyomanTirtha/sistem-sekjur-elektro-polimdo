@@ -1,21 +1,35 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Mengambil semua mahasiswa
+// ✅ PERFORMANCE: Mengambil semua mahasiswa - Optimized query
 const getAllMahasiswa = async (req, res) => {
   try {
+    // ✅ PERFORMANCE: Hanya include data yang diperlukan, tidak include pengajuanSA (kurang digunakan di list)
     const mahasiswa = await prisma.mahasiswa.findMany({
-      include: {
-        programStudi: true,
-        pengajuanSA: true
+      select: {
+        nim: true,
+        nama: true,
+        programStudiId: true,
+        angkatan: true,
+        semester: true,
+        noTelp: true,
+        alamat: true,
+        programStudi: {
+          select: {
+            id: true,
+            nama: true,
+            jurusanId: true
+          }
+        }
+        // ✅ PERFORMANCE: Tidak include pengajuanSA untuk mengurangi data transfer
       },
       orderBy: {
-        nim: 'desc' // Mengurutkan berdasarkan NIM secara descending
+        nim: 'desc'
       }
     });
     res.json(mahasiswa);
   } catch (error) {
-    console.error('Error fetching mahasiswa:', error);
+    if (process.env.NODE_ENV === 'development') console.error('Error fetching mahasiswa:', error);
     res.status(500).json({ error: error.message });
   }
 };

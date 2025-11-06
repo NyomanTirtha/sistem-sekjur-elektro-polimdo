@@ -24,7 +24,10 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>Sistem Manajemen Studi Atas</title>
+    <!-- ✅ PERFORMANCE: Resource Hints untuk mempercepat koneksi -->
+    <link rel="preconnect" href="http://localhost:5000" />
+    <link rel="dns-prefetch" href="http://localhost:5000" />
     <style>
       /* Initial loading styles */
       #loading-overlay {
@@ -92,24 +95,34 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
     <script>
-      // Handle loading state
-      window.addEventListener('load', function() {
-        // Hide loading overlay
+      // ✅ PERFORMANCE: Hide loading overlay lebih cepat (tidak perlu menunggu semua resources)
+      // Hide overlay saat DOM ready, bukan saat semua resources loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          const loadingOverlay = document.getElementById('loading-overlay');
+          if (loadingOverlay) {
+            setTimeout(() => {
+              loadingOverlay.style.opacity = '0';
+              loadingOverlay.style.transition = 'opacity 0.3s ease-out';
+              setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+              }, 300);
+            }, 100);
+          }
+        });
+      } else {
+        // DOM already ready
         const loadingOverlay = document.getElementById('loading-overlay');
-        const root = document.getElementById('root');
-        
-        // Add loaded class to root
-        root.classList.add('loaded');
-        
-        // Fade out loading overlay
-        loadingOverlay.style.opacity = '0';
-        loadingOverlay.style.transition = 'opacity 0.5s ease-out';
-        
-        // Remove loading overlay after fade out
-        setTimeout(() => {
-          loadingOverlay.style.display = 'none';
-        }, 500);
-      });
+        if (loadingOverlay) {
+          setTimeout(() => {
+            loadingOverlay.style.opacity = '0';
+            loadingOverlay.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+              loadingOverlay.style.display = 'none';
+            }, 300);
+          }, 100);
+        }
+      }
 
       // Show loading overlay before page unload
       window.addEventListener('beforeunload', function() {

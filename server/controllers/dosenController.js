@@ -1,20 +1,36 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Mengambil semua dosen (kecuali kaprodi)
+// ✅ PERFORMANCE: Mengambil semua dosen - Optimized query
 const getAllDosen = async (req, res) => {
   try {
+    // ✅ PERFORMANCE: Hanya select field yang diperlukan
     const dosen = await prisma.dosen.findMany({
       where: {
-        isKaprodi: false // Hanya ambil dosen yang bukan kaprodi
+        isKaprodi: false
       },
-      include: {
-        prodi: true
+      select: {
+        nip: true,
+        nama: true,
+        prodiId: true,
+        noTelp: true,
+        alamat: true,
+        isKaprodi: true,
+        prodi: {
+          select: {
+            id: true,
+            nama: true,
+            jurusanId: true
+          }
+        }
+      },
+      orderBy: {
+        nama: 'asc'
       }
     });
     res.json(dosen);
   } catch (error) {
-    console.error('Error fetching dosen:', error);
+    if (process.env.NODE_ENV === 'development') console.error('Error fetching dosen:', error);
     res.status(500).json({ error: error.message });
   }
 };

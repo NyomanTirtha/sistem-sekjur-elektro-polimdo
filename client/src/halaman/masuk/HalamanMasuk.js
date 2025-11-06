@@ -4,13 +4,8 @@ import logoLogin from '../../assets/gambar/xyz-logo.png';
 
 const useDocumentTitle = (title) => {
   useEffect(() => {
-    // ✅ UPDATED: Title sekarang dinamis berdasarkan jurusan
     document.title = title ? `${title} - Sistem Sekretaris Jurusan` : 'Sistem Sekretaris Jurusan';
-
-    // Cleanup function untuk reset title saat component unmount
-    return () => {
-      document.title = 'Sistem Sekretaris Jurusan';
-    };
+    return () => { document.title = 'Sistem Sekretaris Jurusan'; };
   }, [title]);
 };
 
@@ -19,7 +14,7 @@ const LoginPage = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: 'SEKJUR' // ✅ CHANGED: Default role dari ADMIN ke SEKJUR
+    role: 'SEKJUR'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,6 +35,8 @@ const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
+    if (loading) return;
+
     setLoading(true);
     setError('');
 
@@ -56,44 +53,42 @@ const LoginPage = ({ onLoginSuccess }) => {
         })
       });
 
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After') || response.headers.get('X-RateLimit-Reset');
+        const seconds = retryAfter ? parseInt(retryAfter) : 0;
+        const waitTime = seconds < 60 ? `${seconds} detik` : `${Math.ceil(seconds / 60)} menit`;
+        setError(`Terlalu banyak percobaan login. Silakan tunggu ${waitTime} sebelum mencoba lagi.`);
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Terjadi kesalahan pada server' }));
+        setError(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        setLoading(false);
+        return;
+      }
+
       const result = await response.json();
 
       if (result.success) {
         const token = result.data.token;
+        const user = result.data.user;
         window.authToken = token;
 
-        // ✅ UPDATED: Enhanced userData dengan info jurusan
+        const userDataFields = ['jurusanId', 'jurusan', 'nip', 'nim', 'programStudi', 'prodi', 'angkatan', 'semester', 'noTelp', 'alamat'];
         const userData = {
-          id: result.data.user.id,
-          username: result.data.user.username,
-          nama: result.data.user.nama,
-          role: result.data.user.role,
-          // ✅ ADDED: Jurusan info untuk SEKJUR
-          ...(result.data.user.jurusanId && { jurusanId: result.data.user.jurusanId }),
-          ...(result.data.user.jurusan && { jurusan: result.data.user.jurusan }),
-          // Existing fields
-          ...(result.data.user.nip && { nip: result.data.user.nip }),
-          ...(result.data.user.nim && { nim: result.data.user.nim }),
-          ...(result.data.user.programStudi && { programStudi: result.data.user.programStudi }),
-          ...(result.data.user.prodi && { prodi: result.data.user.prodi }), // ✅ ADDED: Support prodi field untuk dosen
-          ...(result.data.user.isKaprodi !== undefined && { isKaprodi: result.data.user.isKaprodi }),
-          ...(result.data.user.angkatan && { angkatan: result.data.user.angkatan }),
-          ...(result.data.user.semester && { semester: result.data.user.semester }),
-          ...(result.data.user.noTelp && { noTelp: result.data.user.noTelp }),
-          ...(result.data.user.alamat && { alamat: result.data.user.alamat })
+          id: user.id,
+          username: user.username,
+          nama: user.nama,
+          role: user.role,
+          ...Object.fromEntries(userDataFields.filter(field => user[field] !== undefined).map(field => [field, user[field]])),
+          ...(user.isKaprodi !== undefined && { isKaprodi: user.isKaprodi })
         };
 
-        const userType = getRoleMapping(result.data.user.role);
-
-        localStorage.setItem('token', token);
-        localStorage.setItem('userData', JSON.stringify(userData));
-        localStorage.setItem('userType', userType);
-
-        console.log('✅ Login successful:', {
-          role: result.data.user.role,
-          jurusan: result.data.user.jurusan?.nama,
-          userType: userType,
-          hasJurusanAccess: !!result.data.user.jurusanId
+        const userType = getRoleMapping(user.role);
+        ['token', 'userData', 'userType'].forEach((key, idx) => {
+          localStorage.setItem(key, idx === 1 ? JSON.stringify(userData) : (idx === 0 ? token : userType));
         });
 
         if (onLoginSuccess) {
@@ -104,20 +99,21 @@ const LoginPage = ({ onLoginSuccess }) => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Tidak dapat terhubung ke server. Pastikan server berjalan di localhost:5000');
+      if (err.name === 'AbortError') {
+        setError('Request timeout. Pastikan server berjalan di localhost:5000');
+      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError('Tidak dapat terhubung ke server. Pastikan server berjalan di localhost:5000');
+      } else {
+        setError('Terjadi kesalahan saat login. Silakan coba lagi.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const getRoleMapping = (backendRole) => {
-    const roleMapping = {
-      'SEKJUR': 'sekjur',     // ✅ CHANGED: Admin -> Sekjur
-      'MAHASISWA': 'mahasiswa',
-      'DOSEN': 'dosen',
-      'KAPRODI': 'kaprodi'
-    };
-    return roleMapping[backendRole] || backendRole.toLowerCase();
+    const mapping = { 'SEKJUR': 'sekjur', 'MAHASISWA': 'mahasiswa', 'DOSEN': 'dosen', 'KAPRODI': 'kaprodi' };
+    return mapping[backendRole] || backendRole.toLowerCase();
   };
 
   const handleRoleChange = (newRole) => {
@@ -134,12 +130,9 @@ const LoginPage = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Main Login Container */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* Header Section */}
           <div className="bg-gray-800 px-8 py-8 text-center">
             <div>
-              {/* Logo Container */}
               <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
                 <div className="w-12 h-12 rounded flex items-center justify-center overflow-hidden">
                   <img
@@ -159,9 +152,7 @@ const LoginPage = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* Form Section */}
           <div className="px-8 py-8">
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-center">
@@ -172,11 +163,8 @@ const LoginPage = ({ onLoginSuccess }) => {
             )}
 
             <div className="space-y-6">
-              {/* Role Selection */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Pilih Role
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Pilih Role</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: 'SEKJUR', label: 'Sekretaris Jurusan' },
@@ -199,7 +187,6 @@ const LoginPage = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              {/* Username Input */}
               <div>
                 <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
                   {formData.role === 'MAHASISWA' ? 'NIM' :
@@ -234,11 +221,8 @@ const LoginPage = ({ onLoginSuccess }) => {
                 </p>
               </div>
 
-              {/* Password Input */}
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password
-                </label>
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
@@ -270,7 +254,6 @@ const LoginPage = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}
@@ -278,16 +261,7 @@ const LoginPage = ({ onLoginSuccess }) => {
               >
                 {loading ? (
                   <>
-                    <div
-                      className="h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"
-                      style={{ animation: 'spin 0.5s linear infinite' }}
-                    ></div>
-                    <style>{`
-                      @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                      }
-                    `}</style>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                     Memproses...
                   </>
                 ) : (
@@ -298,7 +272,6 @@ const LoginPage = ({ onLoginSuccess }) => {
           </div>
         </div>
 
-        {/* Copyright */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
             © 2025 Politeknik Negeri Manado. All rights reserved.
