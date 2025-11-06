@@ -18,15 +18,18 @@ model Jurusan {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  username   String    @unique
-  nama       String
-  password   String
-  role       UserRole
-  jurusanId  Int?      // Tambahkan field jurusanId untuk sekretaris jurusan
-  jurusan    Jurusan?  @relation(fields: [jurusanId], references: [id])
+  id             Int           @id @default(autoincrement())
+  username       String        @unique
+  nama           String
+  password       String
+  role           UserRole
+  jurusanId      Int?
+  programStudiId Int?
+  jurusan        Jurusan?      @relation(fields: [jurusanId], references: [id])
+  programStudi   ProgramStudi? @relation(fields: [programStudiId], references: [id])
 
   @@index([jurusanId])
+  @@index([programStudiId])
   @@map("users")
 }
 
@@ -34,11 +37,12 @@ model ProgramStudi {
   id         Int         @id @default(autoincrement())
   nama       String
   ketuaProdi String
-  jurusanId  Int         // Tambahkan relasi ke Jurusan
+  jurusanId  Int
   jurusan    Jurusan     @relation(fields: [jurusanId], references: [id])
   dosen      Dosen[]
   mahasiswa  Mahasiswa[]
-  mataKuliah MataKuliah[] // Tambahkan relasi mata kuliah ke prodi
+  mataKuliah MataKuliah[]
+  kaprodiUsers User[]
 
   @@index([jurusanId])
   @@map("program_studi")

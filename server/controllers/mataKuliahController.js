@@ -1,14 +1,26 @@
 // controllers/mataKuliahController.js
 
 const { PrismaClient } = require('@prisma/client');
+const { createMataKuliahFilter } = require('../routes/auth');
 const prisma = new PrismaClient();
 
-// Mengambil semua mata kuliah
 const getAllMataKuliah = async (req, res) => {
   try {
+    const filter = createMataKuliahFilter(req.userContext || {});
+    const where = filter || {};
+    
     const mataKuliah = await prisma.mataKuliah.findMany({
+      where,
+      include: {
+        programStudi: {
+          select: {
+            id: true,
+            nama: true
+          }
+        }
+      },
       orderBy: {
-        nama: 'asc' // Urutkan berdasarkan nama mata kuliah
+        nama: 'asc'
       }
     });
     res.json(mataKuliah);

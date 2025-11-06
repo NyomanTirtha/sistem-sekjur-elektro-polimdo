@@ -20,10 +20,9 @@ const getPendingApprovals = async (req, res) => {
       assignedBy: 'DOSEN'
     };
     
-    // Filter berdasarkan prodi kaprodi jika ada
-    if (req.user.prodiId) {
+    if (req.user.programStudiId) {
       where.mataKuliah = {
-        programStudiId: req.user.prodiId
+        programStudiId: req.user.programStudiId
       };
     }
     
@@ -54,10 +53,9 @@ const getAllAssignments = async (req, res) => {
     
     const where = {};
     
-    // Filter berdasarkan prodi kaprodi jika ada
-    if (req.user.prodiId) {
+    if (req.user.programStudiId) {
       where.mataKuliah = {
-        programStudiId: req.user.prodiId
+        programStudiId: req.user.programStudiId
       };
     }
     
@@ -96,6 +94,10 @@ const approveAssignment = async (req, res) => {
     
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Penugasan tidak ditemukan' });
+    }
+    
+    if (req.user.programStudiId && existing.mataKuliah.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mata kuliah ini' });
     }
     
     if (existing.status !== 'PENDING_APPROVAL') {
@@ -146,18 +148,21 @@ const rejectAssignment = async (req, res) => {
     const { rejectionReason } = req.body;
     
     const existing = await prisma.penugasanMengajar.findUnique({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
+      include: { mataKuliah: true }
     });
     
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Penugasan tidak ditemukan' });
     }
     
+    if (req.user.programStudiId && existing.mataKuliah.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mata kuliah ini' });
+    }
+    
     if (existing.status !== 'PENDING_APPROVAL') {
       return res.status(400).json({ success: false, message: 'Penugasan ini sudah tidak dalam status pending' });
     }
-    
-    // Update status ke REJECTED
     const updated = await prisma.penugasanMengajar.update({
       where: { id: existing.id },
       data: {
@@ -200,7 +205,10 @@ const reassignToDosen = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Penugasan tidak ditemukan' });
     }
     
-    // Cek dosen exists
+    if (req.user.programStudiId && existing.mataKuliah.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mata kuliah ini' });
+    }
+    
     const dosenExists = await prisma.dosen.findUnique({
       where: { nip: dosenId }
     });
@@ -272,9 +280,12 @@ const assignDirectly = async (req, res) => {
       return res.status(400).json({ success: false, message: 'mataKuliahId, dosenId, tahunAjaran wajib diisi' });
     }
     
-    // Cek mata kuliah exists
     const mk = await prisma.mataKuliah.findUnique({ where: { id: Number(mataKuliahId) } });
     if (!mk) return res.status(404).json({ success: false, message: 'Mata kuliah tidak ditemukan' });
+    
+    if (req.user.programStudiId && mk.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mata kuliah ini' });
+    }
     
     // Cek dosen exists
     const dosen = await prisma.dosen.findUnique({ where: { nip: dosenId } });
@@ -348,11 +359,16 @@ const cancelAssignment = async (req, res) => {
     const { id } = req.params;
     
     const existing = await prisma.penugasanMengajar.findUnique({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
+      include: { mataKuliah: true }
     });
     
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Penugasan tidak ditemukan' });
+    }
+    
+    if (req.user.programStudiId && existing.mataKuliah.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mata kuliah ini' });
     }
     
     const updated = await prisma.penugasanMengajar.update({

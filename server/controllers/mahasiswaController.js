@@ -1,11 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
+const { createMahasiswaFilter } = require('../routes/auth');
 const prisma = new PrismaClient();
 
-// ✅ PERFORMANCE: Mengambil semua mahasiswa - Optimized query
 const getAllMahasiswa = async (req, res) => {
   try {
-    // ✅ PERFORMANCE: Hanya include data yang diperlukan, tidak include pengajuanSA (kurang digunakan di list)
+    const filter = createMahasiswaFilter(req.userContext || {});
+    const where = filter || {};
+    
     const mahasiswa = await prisma.mahasiswa.findMany({
+      where,
       select: {
         nim: true,
         nama: true,
@@ -21,7 +24,6 @@ const getAllMahasiswa = async (req, res) => {
             jurusanId: true
           }
         }
-        // ✅ PERFORMANCE: Tidak include pengajuanSA untuk mengurangi data transfer
       },
       orderBy: {
         nim: 'desc'

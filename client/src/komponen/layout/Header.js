@@ -168,20 +168,6 @@ const Header = ({
 
             {showUserMenu && (
               <div ref={dropdownRef} className="absolute right-0 mt-2 w-64 bg-white rounded shadow-lg border border-gray-200 overflow-hidden z-50">
-                <div className="p-4 bg-gray-50 border-b border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-sm">{displayName}</h3>
-                      <p className="text-xs text-gray-600">{roleLabel}</p>
-                      {currentUser.role === 'SEKJUR' && currentUser.jurusan && (
-                        <p className="text-xs text-gray-500 mt-1">Jurusan {currentUser.jurusan.nama}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
                 <div className="p-2">
                   <button onClick={() => { setShowUserMenu(false); setShowProfile(true); }} className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                     <UserCircle className="w-5 h-5 text-gray-600" />

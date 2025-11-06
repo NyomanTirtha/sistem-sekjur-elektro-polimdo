@@ -11,7 +11,8 @@ const getAllUsers = async (req, res) => {
         username: true,
         nama: true,
         role: true,
-        // password tidak disertakan untuk keamanan
+        jurusanId: true,
+        programStudiId: true
       },
       orderBy: {
         id: 'asc'
@@ -50,8 +51,7 @@ const getUsersByRole = async (req, res) => {
   try {
     const { role } = req.params;
     
-    // Validasi role
-    const validRoles = ['ADMIN', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
+    const validRoles = ['SEKJUR', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
     if (!validRoles.includes(role.toUpperCase())) {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
@@ -63,7 +63,8 @@ const getUsersByRole = async (req, res) => {
         username: true,
         nama: true,
         role: true,
-        // password tidak disertakan untuk keamanan
+        jurusanId: true,
+        programStudiId: true
       },
       orderBy: {
         nama: 'asc'
@@ -75,23 +76,19 @@ const getUsersByRole = async (req, res) => {
   }
 };
 
-// Menambahkan user baru
 const createUser = async (req, res) => {
   try {
-    const { username, nama, password, role } = req.body;
+    const { username, nama, password, role, jurusanId, programStudiId } = req.body;
     
-    // Validasi input
     if (!username || !nama || !password || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
-    // Validasi role
-    const validRoles = ['ADMIN', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
+    const validRoles = ['SEKJUR', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
     if (!validRoles.includes(role.toUpperCase())) {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
     
-    // Cek apakah username sudah ada
     const existingUser = await prisma.user.findUnique({
       where: { username }
     });
@@ -99,23 +96,32 @@ const createUser = async (req, res) => {
       return res.status(409).json({ error: 'Username already exists' });
     }
     
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Buat user baru
+    const userData = {
+      username,
+      nama,
+      password: hashedPassword,
+      role: role.toUpperCase()
+    };
+    
+    if (role.toUpperCase() === 'SEKJUR' && jurusanId) {
+      userData.jurusanId = parseInt(jurusanId);
+    }
+    
+    if (role.toUpperCase() === 'KAPRODI' && programStudiId) {
+      userData.programStudiId = parseInt(programStudiId);
+    }
+    
     const user = await prisma.user.create({
-      data: {
-        username,
-        nama,
-        password: hashedPassword,
-        role: role.toUpperCase()
-      },
+      data: userData,
       select: {
         id: true,
         username: true,
         nama: true,
         role: true,
-        // password tidak dikembalikan
+        jurusanId: true,
+        programStudiId: true
       }
     });
     
@@ -128,13 +134,11 @@ const createUser = async (req, res) => {
   }
 };
 
-// Memperbarui user berdasarkan ID
 const updateUser = async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
-    const { nama, password, role } = req.body;
+    const { nama, password, role, jurusanId, programStudiId } = req.body;
     
-    // Cek apakah user ada
     const existingUser = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -142,29 +146,34 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    // Validasi input
     if (!nama || !role) {
       return res.status(400).json({ error: 'Nama and role are required' });
     }
     
-    // Validasi role
-    const validRoles = ['ADMIN', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
+    const validRoles = ['SEKJUR', 'KAPRODI', 'DOSEN', 'MAHASISWA'];
     if (!validRoles.includes(role.toUpperCase())) {
       return res.status(400).json({ error: 'Invalid role specified' });
     }
     
-    // Siapkan data untuk update
     const updateData = {
       nama,
       role: role.toUpperCase()
     };
     
-    // Hash password baru jika diberikan
     if (password && password.trim() !== '') {
       updateData.password = await bcrypt.hash(password, 10);
     }
     
-    // Update user
+    if (role.toUpperCase() === 'SEKJUR' && jurusanId !== undefined) {
+      updateData.jurusanId = jurusanId ? parseInt(jurusanId) : null;
+      updateData.programStudiId = null;
+    }
+    
+    if (role.toUpperCase() === 'KAPRODI' && programStudiId !== undefined) {
+      updateData.programStudiId = programStudiId ? parseInt(programStudiId) : null;
+      updateData.jurusanId = null;
+    }
+    
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
@@ -173,7 +182,8 @@ const updateUser = async (req, res) => {
         username: true,
         nama: true,
         role: true,
-        // password tidak dikembalikan
+        jurusanId: true,
+        programStudiId: true
       }
     });
     

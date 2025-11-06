@@ -1,15 +1,37 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { createMahasiswaFilter } = require('../routes/auth');
 
 // Mengambil semua pengajuan SA berdasarkan status
 const getAllPengajuanSA = async (req, res) => {
   try {
     const { status } = req.query;
     
+    const mahasiswaFilter = createMahasiswaFilter(req.userContext || {});
+    const whereClause = status ? { status } : {};
+    
+    // Filter berdasarkan mahasiswa untuk KAPRODI
+    if (Object.keys(mahasiswaFilter).length > 0 && req.user.role !== 'DOSEN') {
+      whereClause.mahasiswa = mahasiswaFilter;
+    }
+    
+    // Filter berdasarkan mata kuliah untuk DOSEN
+    if (req.user.role === 'DOSEN' && req.userContext && req.userContext.programStudiIds && req.userContext.programStudiIds.length > 0) {
+      whereClause.details = {
+        some: {
+          mataKuliah: {
+            programStudiId: {
+              in: req.userContext.programStudiIds
+            }
+          }
+        }
+      };
+    }
+    
     if (status === 'PROSES_PENGAJUAN' || status === 'DITOLAK') {
       // Tampil sebagai grouped (1 baris per pengajuan)
       const pengajuanSA = await prisma.pengajuanSA.findMany({
-        where: status ? { status } : {},
+        where: whereClause,
         include: {
           mahasiswa: true,
           details: {
@@ -52,10 +74,28 @@ const getAllPengajuanSA = async (req, res) => {
       res.json(transformedData);
     } else {
       // Tampil sebagai detailed (multiple baris per mata kuliah)
+      const detailWhereClause = {
+        ...(status ? {
+          pengajuanSA: { 
+            status,
+            ...(Object.keys(mahasiswaFilter).length > 0 && req.user.role !== 'DOSEN' ? { mahasiswa: mahasiswaFilter } : {})
+          }
+        } : (Object.keys(mahasiswaFilter).length > 0 && req.user.role !== 'DOSEN' ? {
+          pengajuanSA: { mahasiswa: mahasiswaFilter }
+        } : {}))
+      };
+
+      // Filter berdasarkan mata kuliah untuk DOSEN
+      if (req.user.role === 'DOSEN' && req.userContext && req.userContext.programStudiIds && req.userContext.programStudiIds.length > 0) {
+        detailWhereClause.mataKuliah = {
+          programStudiId: {
+            in: req.userContext.programStudiIds
+          }
+        };
+      }
+      
       const pengajuanDetails = await prisma.pengajuanSADetail.findMany({
-        where: status ? {
-          pengajuanSA: { status }
-        } : {},
+        where: detailWhereClause,
         include: {
           pengajuanSA: {
             include: { mahasiswa: true }
@@ -162,15 +202,26 @@ const getPengajuanSAByDosen = async (req, res) => {
   try {
     const dosenId = req.params.dosenId;
     
-    const pengajuanDetails = await prisma.pengajuanSADetail.findMany({
-      where: { 
-        dosenId: dosenId,
-        pengajuanSA: {
-          status: {
-            in: ['DALAM_PROSES_SA', 'SELESAI']
-          }
+    let whereClause = {
+      dosenId: dosenId,
+      pengajuanSA: {
+        status: {
+          in: ['DALAM_PROSES_SA', 'SELESAI']
         }
-      },
+      }
+    };
+
+    // Filter: Dosen hanya melihat pengajuan SA untuk mata kuliah dari prodinya
+    if (req.user.role === 'DOSEN' && req.userContext && req.userContext.programStudiIds && req.userContext.programStudiIds.length > 0) {
+      whereClause.mataKuliah = {
+        programStudiId: {
+          in: req.userContext.programStudiIds
+        }
+      };
+    }
+    
+    const pengajuanDetails = await prisma.pengajuanSADetail.findMany({
+      where: whereClause,
       include: {
         pengajuanSA: {
           include: {
@@ -235,6 +286,25 @@ const getPengajuanSAById = async (req, res) => {
 
     if (!pengajuanSA) {
       return res.status(404).json({ error: 'Pengajuan SA tidak ditemukan' });
+    }
+
+    // Validasi: Kaprodi hanya bisa melihat pengajuan SA mahasiswa dari prodinya
+    if (req.user.programStudiId && pengajuanSA.mahasiswa.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ 
+        error: 'Anda tidak memiliki izin untuk mengakses pengajuan SA dari program studi lain' 
+      });
+    }
+
+    // Validasi: Dosen hanya bisa melihat pengajuan SA untuk mata kuliah dari prodinya
+    if (req.user.role === 'DOSEN' && req.userContext && req.userContext.programStudiIds && req.userContext.programStudiIds.length > 0) {
+      const mataKuliahProdiIds = pengajuanSA.details.map(d => d.mataKuliah.programStudiId);
+      const hasAccess = mataKuliahProdiIds.some(prodiId => req.userContext.programStudiIds.includes(prodiId));
+      
+      if (!hasAccess) {
+        return res.status(403).json({ 
+          error: 'Anda tidak memiliki izin untuk mengakses pengajuan SA dari program studi lain' 
+        });
+      }
     }
 
     res.json(pengajuanSA);
@@ -499,6 +569,13 @@ const getSuggestedDosen = async (req, res) => {
     if (!mk) {
       return res.status(404).json({ error: 'Mata kuliah tidak ditemukan' });
     }
+
+    // Validasi: Kaprodi hanya bisa melihat saran dosen untuk mata kuliah dari prodinya
+    if (req.user.programStudiId && mk.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ 
+        error: 'Anda tidak memiliki izin untuk melihat saran dosen untuk mata kuliah dari program studi lain' 
+      });
+    }
     
     let semesterPengajuan = null;
     let tahunAjaran = null;
@@ -530,7 +607,16 @@ const getSuggestedDosen = async (req, res) => {
           status: 'ACTIVE'
         },
         include: {
-          dosen: true
+          dosen: {
+            select: {
+              nip: true,
+              nama: true,
+              prodiId: true,
+              noTelp: true,
+              alamat: true,
+              isKaprodi: true
+            }
+          }
         }
       });
       
@@ -590,10 +676,15 @@ const getSuggestedDosen = async (req, res) => {
       });
     }
     
+    // Filter: Hanya dosen dari prodi yang sama dengan MK
+    const filteredSuggestions = suggestions.filter(s => {
+      return s.dosen && s.dosen.prodiId === mk.programStudiId;
+    });
+
     // Sort by priority
-    suggestions.sort((a, b) => a.priority - b.priority);
+    filteredSuggestions.sort((a, b) => a.priority - b.priority);
     
-    res.json({ success: true, data: suggestions });
+    res.json({ success: true, data: filteredSuggestions });
   } catch (error) {
     console.error('Error getting suggested dosen:', error);
     res.status(500).json({ error: error.message });
@@ -631,11 +722,25 @@ const assignDosenToMataKuliah = async (req, res) => {
         mataKuliah: true
       }
     });
-    
+
     if (!existingDetail) {
       return res.status(404).json({ error: 'Detail pengajuan tidak ditemukan' });
     }
-    
+
+    // Validasi: Kaprodi hanya bisa assign dosen untuk mahasiswa dari prodinya
+    if (req.user.programStudiId && existingDetail.pengajuanSA.mahasiswa.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ 
+        error: 'Anda tidak memiliki izin untuk menugaskan dosen pada pengajuan SA mahasiswa dari program studi lain' 
+      });
+    }
+
+    // Validasi: Kaprodi hanya bisa assign dosen untuk mata kuliah dari prodinya
+    if (req.user.programStudiId && existingDetail.mataKuliah.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ 
+        error: 'Anda tidak memiliki izin untuk menugaskan dosen pada mata kuliah dari program studi lain' 
+      });
+    }
+
     // Validasi semester: Mahasiswa hanya bisa mengambil mata kuliah di semester DI BAWAH semester saat ini
     const semesterPengajuan = existingDetail.pengajuanSA.semesterPengajuan;
     const semesterKurikulum = existingDetail.mataKuliah.semester;
@@ -776,14 +881,27 @@ const assignAllDosenToMataKuliah = async (req, res) => {
       console.log('❌ Error: Pengajuan SA tidak ditemukan');
       return res.status(404).json({ error: 'Pengajuan SA tidak ditemukan' });
     }
+
+    // Validasi: Kaprodi hanya bisa assign dosen untuk mahasiswa dari prodinya
+    if (req.user.programStudiId && pengajuanExists.mahasiswa.programStudiId !== req.user.programStudiId) {
+      return res.status(403).json({ 
+        error: 'Anda tidak memiliki izin untuk menugaskan dosen pada pengajuan SA mahasiswa dari program studi lain' 
+      });
+    }
     
     // Validasi semester pengajuan vs semester kurikulum
     const semesterPengajuan = pengajuanExists.semesterPengajuan;
     
     // Validasi setiap MK - Mahasiswa hanya bisa mengambil mata kuliah di semester DI BAWAH semester saat ini
+    // Dan validasi: Kaprodi hanya bisa assign dosen untuk mata kuliah dari prodinya
     const validationErrors = [];
     for (const detail of pengajuanExists.details) {
       const semesterKurikulum = detail.mataKuliah.semester;
+      
+      // Validasi: Kaprodi hanya bisa assign dosen untuk mata kuliah dari prodinya
+      if (req.user.programStudiId && detail.mataKuliah.programStudiId !== req.user.programStudiId) {
+        validationErrors.push(`Anda tidak memiliki izin untuk menugaskan dosen pada mata kuliah "${detail.mataKuliah.nama}" dari program studi lain`);
+      }
       
       // Blokir jika semester mata kuliah >= semester mahasiswa saat ini
       if (semesterKurikulum >= semesterPengajuan) {
@@ -877,7 +995,16 @@ const inputNilaiSA = async (req, res) => {
         error: `Detail pengajuan SA dengan ID ${detailId} tidak ditemukan` 
       });
     }
-    
+
+    // Validasi: Dosen hanya bisa input nilai untuk mata kuliah dari prodinya
+    if (req.user.role === 'DOSEN' && req.userContext && req.userContext.programStudiIds && req.userContext.programStudiIds.length > 0) {
+      if (!req.userContext.programStudiIds.includes(existingDetail.mataKuliah.programStudiId)) {
+        return res.status(403).json({ 
+          error: 'Anda tidak memiliki izin untuk menginput nilai pada mata kuliah dari program studi lain' 
+        });
+      }
+    }
+
     if (existingDetail.nilaiAkhir !== null) {
       return res.status(400).json({ 
         error: `Mata kuliah ${existingDetail.mataKuliah.nama} sudah dinilai dengan nilai ${existingDetail.nilaiAkhir}` 

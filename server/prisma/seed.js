@@ -62,22 +62,21 @@ async function main() {
           jurusanId: 1
         },
         
-        // Ketua Prodi D4 Teknik Informatika
         { 
           username: '197101011999031004', 
           nama: 'Harson Kapoh,ST,.MT', 
           password: hashedPassword, 
           role: 'KAPRODI',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 1
         },
-        
-        // Ketua Prodi D4 Teknik Listrik
         { 
           username: '196901301993031003', 
           nama: 'I Gede Para Atmaja,ST.,MT', 
           password: hashedPassword, 
           role: 'KAPRODI',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 2
         },
         
         // Dosen

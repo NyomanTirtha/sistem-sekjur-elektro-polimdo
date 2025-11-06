@@ -25,11 +25,11 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Ambil data user lengkap dengan relasi jurusan
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
-        jurusan: true
+        jurusan: true,
+        programStudi: true
       }
     });
 
@@ -40,9 +40,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // ✅ FIXED: Untuk DOSEN dan KAPRODI, ambil data dosen untuk mendapatkan prodiId
     let dosenData = null;
-    if (user.role === 'DOSEN' || user.role === 'KAPRODI') {
+    if (user.role === 'DOSEN') {
       dosenData = await prisma.dosen.findUnique({
         where: { nip: user.username },
         include: {
@@ -104,12 +103,10 @@ const getUserContext = (user, dosenData = null, mahasiswaData = null) => {
       break;
       
     case 'KAPRODI':
-      // ✅ FIXED: Kaprodi hanya bisa akses data program studinya
-      if (dosenData && dosenData.prodiId) {
-        context.programStudiIds = [dosenData.prodiId];
-        // Ambil jurusanId dari prodi untuk filtering
-        if (dosenData.prodi && dosenData.prodi.jurusanId) {
-          context.jurusanId = dosenData.prodi.jurusanId;
+      if (user.programStudiId) {
+        context.programStudiIds = [user.programStudiId];
+        if (user.programStudi && user.programStudi.jurusanId) {
+          context.jurusanId = user.programStudi.jurusanId;
         }
       }
       context.canAccessAll = false;
@@ -167,10 +164,11 @@ const createProdiFilter = (userContext) => {
 };
 
 const createMahasiswaFilter = (userContext) => {
+  if (userContext.programStudiIds && userContext.programStudiIds.length > 0) {
+    return { programStudiId: { in: userContext.programStudiIds } };
+  }
   if (userContext.jurusanId) {
-    return {
-      programStudi: { jurusanId: userContext.jurusanId }
-    };
+    return { programStudi: { jurusanId: userContext.jurusanId } };
   }
   return null;
 };
@@ -185,10 +183,11 @@ const createDosenFilter = (userContext) => {
 };
 
 const createMataKuliahFilter = (userContext) => {
+  if (userContext.programStudiIds && userContext.programStudiIds.length > 0) {
+    return { programStudiId: { in: userContext.programStudiIds } };
+  }
   if (userContext.jurusanId) {
-    return {
-      programStudi: { jurusanId: userContext.jurusanId }
-    };
+    return { programStudi: { jurusanId: userContext.jurusanId } };
   }
   return null;
 };
@@ -286,14 +285,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // ✅ UPDATED: Prepare response data with jurusan info
     let userData = {
       id: user.id,
       username: user.username,
       nama: user.nama,
       role: user.role,
       jurusanId: user.jurusanId,
-      jurusan: user.jurusan
+      programStudiId: user.programStudiId,
+      jurusan: user.jurusan,
+      programStudi: user.programStudi
     };
 
     // ✅ UPDATED: Fetch additional data with proper include relations and debug logging
@@ -391,6 +391,12 @@ router.post('/login', async (req, res) => {
           isKaprodi: dosen.isKaprodi,
           noTelp: dosen.noTelp,
           alamat: dosen.alamat
+        };
+      } else if (user.role === 'KAPRODI' && user.programStudi) {
+        userData = {
+          ...userData,
+          programStudiId: user.programStudiId,
+          programStudi: user.programStudi
         };
         
         console.log('📊 Final userData for dosen:', {
@@ -705,17 +711,19 @@ router.get('/me', authenticateToken, async (req, res) => {
       jurusan: user.jurusan?.nama
     });
 
-    // ✅ UPDATED: Prepare response with jurusan and context info
     let userData = {
       id: user.id,
       username: user.username,
       nama: user.nama,
       role: user.role,
       jurusanId: user.jurusanId,
+      programStudiId: user.programStudiId,
       jurusan: user.jurusan,
+      programStudi: user.programStudi,
       permissions: {
         canAccessAll: req.userContext.canAccessAll,
-        jurusanId: req.userContext.jurusanId
+        jurusanId: req.userContext.jurusanId,
+        programStudiIds: req.userContext.programStudiIds
       }
     };
 
@@ -815,6 +823,12 @@ router.get('/me', authenticateToken, async (req, res) => {
             isKaprodi: dosenData.isKaprodi,
             noTelp: dosenData.noTelp,
             alamat: dosenData.alamat
+          };
+        } else if (user.role === 'KAPRODI' && user.programStudi) {
+          userData = {
+            ...userData,
+            programStudiId: user.programStudiId,
+            programStudi: user.programStudi
           };
           
           console.log('📊 /me endpoint - Final userData for dosen:', {

@@ -1,20 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-//PERFORMANCE: Mengambil semua dosen - Optimized query
+// ✅ PERFORMANCE: Mengambil semua dosen - Optimized query
 const getAllDosen = async (req, res) => {
   try {
-    //PERFORMANCE: Hanya select field yang diperlukan
-    const whereClause = {
-      isKaprodi: false
-    };
-
-    if (req.user && req.user.programStudiId) {
-      whereClause.prodiId = req.user.programStudiId;
-    }
-
+    // ✅ PERFORMANCE: Hanya select field yang diperlukan
     const dosen = await prisma.dosen.findMany({
-      where: whereClause,
+      where: {
+        isKaprodi: false
+      },
       select: {
         nip: true,
         nama: true,
@@ -64,11 +58,11 @@ const getDosenById = async (req, res) => {
 const createDosen = async (req, res) => {
   try {
     const { nama, nip, prodiId, noTelp, alamat } = req.body;
-
+    
     // Validasi input yang diperlukan
     if (!nama || !nip || !prodiId) {
-      return res.status(400).json({
-        error: 'Nama, NIP, dan Program Studi wajib diisi'
+      return res.status(400).json({ 
+        error: 'Nama, NIP, dan Program Studi wajib diisi' 
       });
     }
 
@@ -87,8 +81,8 @@ const createDosen = async (req, res) => {
     res.status(201).json(dosen);
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(400).json({
-        error: 'NIP sudah terdaftar, gunakan NIP yang berbeda'
+      return res.status(400).json({ 
+        error: 'NIP sudah terdaftar, gunakan NIP yang berbeda' 
       });
     }
     res.status(500).json({ error: error.message });
@@ -156,8 +150,8 @@ const deleteDosen = async (req, res) => {
       return res.status(404).json({ error: 'Dosen tidak ditemukan' });
     }
     if (error.code === 'P2003') {
-      return res.status(400).json({
-        error: 'Tidak dapat menghapus dosen karena masih memiliki data terkait'
+      return res.status(400).json({ 
+        error: 'Tidak dapat menghapus dosen karena masih memiliki data terkait' 
       });
     }
     res.status(500).json({ error: error.message });
