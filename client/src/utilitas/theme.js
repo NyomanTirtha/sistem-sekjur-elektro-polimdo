@@ -11,9 +11,14 @@ export const getJurusanName = (user) => {
     return user.jurusan.nama;
   }
   
-  // Untuk DOSEN/KAPRODI
+  // Untuk DOSEN/KAPRODI - cek dari prodi
   if (user.prodi?.jurusan?.nama) {
     return user.prodi.jurusan.nama;
+  }
+  
+  // Untuk KAPRODI - cek dari programStudi (fallback)
+  if (user.programStudi?.jurusan?.nama) {
+    return user.programStudi.jurusan.nama;
   }
   
   // Untuk MAHASISWA
@@ -51,6 +56,13 @@ export const getTheme = (user) => {
         hover: 'hover:bg-blue-800',
         active: 'bg-blue-900 text-white',
       },
+      header: {
+        accent: 'text-blue-700',     // Warna accent untuk subtitle
+        border: 'border-blue-200',    // Border subtle
+      },
+      avatar: {
+        border: 'border-blue-600',    // Border avatar
+      },
     };
   }
   
@@ -75,6 +87,107 @@ export const getTheme = (user) => {
         hover: 'hover:bg-amber-800',
         active: 'bg-amber-900 text-white',
       },
+      header: {
+        accent: 'text-amber-700',   // Warna accent untuk subtitle
+        border: 'border-amber-200',  // Border subtle
+      },
+      avatar: {
+        border: 'border-amber-600',  // Border avatar
+      },
+    };
+  }
+  
+  // Teknik Informatika - Hijau dongker
+  if (jurusanName && (jurusanName.toLowerCase().includes('informatika') || jurusanName.toLowerCase().includes('ti'))) {
+    return {
+      primary: {
+        bg: 'bg-emerald-900',         // Hijau dongker
+        hover: 'hover:bg-emerald-800',
+        text: 'text-emerald-900',
+        border: 'border-emerald-900',
+        light: 'bg-emerald-800',
+        dark: 'bg-emerald-950',
+      },
+      accent: {
+        bg: 'bg-emerald-800',
+        hover: 'hover:bg-emerald-700',
+        text: 'text-emerald-800',
+      },
+      sidebar: {
+        header: 'bg-emerald-900',
+        hover: 'hover:bg-emerald-800',
+        active: 'bg-emerald-900 text-white',
+      },
+      header: {
+        accent: 'text-emerald-700',
+        border: 'border-emerald-200',
+      },
+      avatar: {
+        border: 'border-emerald-600',
+      },
+    };
+  }
+  
+  // Teknik Mesin - Merah dongker
+  if (jurusanName && jurusanName.toLowerCase().includes('mesin')) {
+    return {
+      primary: {
+        bg: 'bg-red-900',             // Merah dongker
+        hover: 'hover:bg-red-800',
+        text: 'text-red-900',
+        border: 'border-red-900',
+        light: 'bg-red-800',
+        dark: 'bg-red-950',
+      },
+      accent: {
+        bg: 'bg-red-800',
+        hover: 'hover:bg-red-700',
+        text: 'text-red-800',
+      },
+      sidebar: {
+        header: 'bg-red-900',
+        hover: 'hover:bg-red-800',
+        active: 'bg-red-900 text-white',
+      },
+      header: {
+        accent: 'text-red-700',
+        border: 'border-red-200',
+      },
+      avatar: {
+        border: 'border-red-600',
+      },
+    };
+  }
+  
+  // Teknik Sipil - Cokelat dongker (sudah ada di atas)
+  // Teknik Arsitektur - Ungu dongker
+  if (jurusanName && jurusanName.toLowerCase().includes('arsitektur')) {
+    return {
+      primary: {
+        bg: 'bg-purple-900',          // Ungu dongker
+        hover: 'hover:bg-purple-800',
+        text: 'text-purple-900',
+        border: 'border-purple-900',
+        light: 'bg-purple-800',
+        dark: 'bg-purple-950',
+      },
+      accent: {
+        bg: 'bg-purple-800',
+        hover: 'hover:bg-purple-700',
+        text: 'text-purple-800',
+      },
+      sidebar: {
+        header: 'bg-purple-900',
+        hover: 'hover:bg-purple-800',
+        active: 'bg-purple-900 text-white',
+      },
+      header: {
+        accent: 'text-purple-700',
+        border: 'border-purple-200',
+      },
+      avatar: {
+        border: 'border-purple-600',
+      },
     };
   }
   
@@ -97,6 +210,13 @@ export const getTheme = (user) => {
       header: 'bg-gray-800',
       hover: 'hover:bg-gray-700',
       active: 'bg-gray-800 text-white',
+    },
+    header: {
+      accent: 'text-gray-600',
+      border: 'border-gray-200',
+    },
+    avatar: {
+      border: 'border-gray-500',
     },
   };
 };
@@ -131,5 +251,21 @@ export const getButtonPrimaryClass = (user) => {
 export const getButtonSecondaryClass = (user) => {
   const theme = getTheme(user);
   return `inline-flex items-center px-4 py-2 ${theme.accent.bg} text-white rounded-lg ${theme.accent.hover}`;
+};
+
+/**
+ * Mendapatkan class untuk header accent (subtitle, dll)
+ */
+export const getHeaderAccentClass = (user) => {
+  const theme = getTheme(user);
+  return theme.header?.accent || 'text-gray-600';
+};
+
+/**
+ * Mendapatkan class untuk avatar border
+ */
+export const getAvatarBorderClass = (user) => {
+  const theme = getTheme(user);
+  return theme.avatar?.border || 'border-gray-500';
 };
 

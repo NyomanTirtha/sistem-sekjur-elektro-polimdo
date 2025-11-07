@@ -112,7 +112,14 @@ export default function DosenList({ authToken, currentUser }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setProgramStudi(Array.isArray(data) ? data : []);
+      // Handle both formats: direct array or { success: true, data: [...] }
+      if (data && data.success && Array.isArray(data.data)) {
+        setProgramStudi(data.data);
+      } else if (Array.isArray(data)) {
+        setProgramStudi(data);
+      } else {
+        setProgramStudi([]);
+      }
     } catch (error) {
       console.error('Error fetching program studi:', error);
       setProgramStudi([]);
@@ -267,6 +274,11 @@ export default function DosenList({ authToken, currentUser }) {
       return matchesSearch && matchesProdi;
     }) : [];
   }, [dosen, searchTerm, filterProdi]);
+
+  // Calculate program studi count - show total available program studi
+  const prodiCount = useMemo(() => {
+    return programStudi.length;
+  }, [programStudi]);
 
   // Calculate pagination - Optimized with useMemo
   const paginationData = useMemo(() => {
@@ -433,7 +445,7 @@ export default function DosenList({ authToken, currentUser }) {
             <GraduationCap className="w-4 h-4 text-green-500 opacity-70" />
             <p className="text-xs text-gray-500">Program Studi</p>
           </div>
-          <p className="text-lg font-semibold text-gray-900">{programStudi.length}</p>
+          <p className="text-lg font-semibold text-gray-900">{prodiCount}</p>
         </div>
 
         <div className="bg-white p-3 rounded border border-gray-200">

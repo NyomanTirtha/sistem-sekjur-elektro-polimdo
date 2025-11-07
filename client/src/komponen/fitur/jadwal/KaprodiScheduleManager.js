@@ -121,7 +121,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     kapasitasMahasiswa: "",
   });
 
-  const daysOrder = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
+  const daysOrder = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT"];
 
   useEffect(() => {
     fetchInitialData();

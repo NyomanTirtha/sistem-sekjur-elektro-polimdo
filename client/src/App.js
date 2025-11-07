@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import MainLayout from "./komponen/layout/MainLayouts";
 import LoginPage from "./halaman/masuk/HalamanMasuk";
+import WelcomePopup from "./komponen/layout/WelcomePopup";
 
 // Lazy load heavy components
 const MahasiswaList = lazy(
@@ -621,48 +622,58 @@ export default function App() {
 
   // Show main system
   return (
-    <MainLayout
-      title={currentMenuItem?.label || "Dashboard"}
-      activeMenu={activeTab}
-      onMenuChange={handleMenuChange}
-      menuItems={getSidebarMenuItems()} // Only pass filtered sidebar items
-      expandedCategories={expandedCategories}
-      onCategoryToggle={handleCategoryToggle}
-      showBackToLanding={true}
-      currentUser={currentUser}
-      userType={userType}
-      onLogout={handleLogout}
-      authToken={authToken} // Pass token to child components if needed
-    >
-      {ActiveComponent && (
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center p-8">
-              <div className="flex flex-col items-center gap-3">
-                <div
-                  className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
-                  style={{ animation: "spin 0.6s linear infinite" }}
-                ></div>
-                <div className="text-sm text-gray-500 font-medium">
-                  Memuat...
+    <>
+      {/* Welcome Popup - muncul saat pertama kali login */}
+      {isAuthenticated && userType && currentUser && (
+        <WelcomePopup
+          userType={userType}
+          currentUser={currentUser}
+        />
+      )}
+      
+      <MainLayout
+        title={currentMenuItem?.label || "Dashboard"}
+        activeMenu={activeTab}
+        onMenuChange={handleMenuChange}
+        menuItems={getSidebarMenuItems()} // Only pass filtered sidebar items
+        expandedCategories={expandedCategories}
+        onCategoryToggle={handleCategoryToggle}
+        showBackToLanding={true}
+        currentUser={currentUser}
+        userType={userType}
+        onLogout={handleLogout}
+        authToken={authToken} // Pass token to child components if needed
+      >
+        {ActiveComponent && (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
+                    style={{ animation: "spin 0.6s linear infinite" }}
+                  ></div>
+                  <div className="text-sm text-gray-500 font-medium">
+                    Memuat...
+                  </div>
                 </div>
-              </div>
-              <style>{`
+                <style>{`
               @keyframes spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
               }
             `}</style>
-            </div>
-          }
-        >
-          <ActiveComponent
-            authToken={authToken}
-            currentUser={currentUser}
-            userType={userType}
-          />
-        </Suspense>
-      )}
-    </MainLayout>
+              </div>
+            }
+          >
+            <ActiveComponent
+              authToken={authToken}
+              currentUser={currentUser}
+              userType={userType}
+            />
+          </Suspense>
+        )}
+      </MainLayout>
+    </>
   );
 }

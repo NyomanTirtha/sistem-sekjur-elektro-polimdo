@@ -213,15 +213,24 @@ const UsersList = ({ authToken, currentUser }) => {
           const result = await response.json();
 
           if (response.ok) {
-            if (result.success) {
-              showSuccessAlert(`Akun berhasil ${isEditing ? 'diupdate' : 'dibuat'}!`);
+            // Handle both old format (direct user object) and new format (with success field)
+            if (result.success !== false) {
+              // Success case - either result.success === true or result is user object directly
+              showSuccessAlert(result.message || `Akun berhasil ${isEditing ? 'diupdate' : 'dibuat'}!`);
               resetForm();
-              fetchUsers();
+              // Refresh users list after a short delay to ensure backend has processed
+              setTimeout(() => {
+                fetchUsers();
+              }, 100);
             } else {
+              // Error case with success: false
               showErrorAlert(result.error || result.message || 'Terjadi kesalahan');
             }
           } else {
-            showErrorAlert(result.error || result.message || 'Terjadi kesalahan saat mengupdate akun');
+            // HTTP error status
+            const errorMessage = result.error || result.message || `Terjadi kesalahan saat ${action} akun`;
+            showErrorAlert(errorMessage);
+            // Don't refresh on error - keep form data so user can fix and retry
           }
         } catch (error) {
           console.error(`Error ${action} user:`, error);
@@ -565,15 +574,28 @@ const UsersList = ({ authToken, currentUser }) => {
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Role *
+                {editingUser && editingUser.role === 'MAHASISWA' && (
+                  <span className="ml-2 text-xs text-yellow-600 font-normal">
+                    (Role Mahasiswa tidak dapat diubah)
+                  </span>
+                )}
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {roles.map(role => {
                   const Icon = role.icon;
+                  // Disable role selection if editing MAHASISWA
+                  const isDisabled = editingUser && editingUser.role === 'MAHASISWA';
+                  const isSelected = formData.role === role.value;
+                  
                   return (
                     <label
                       key={role.value}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                        formData.role === role.value
+                      className={`flex items-center p-3 border rounded-lg transition-colors ${
+                        isDisabled
+                          ? 'cursor-not-allowed opacity-50 bg-gray-100'
+                          : 'cursor-pointer'
+                      } ${
+                        isSelected
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
@@ -582,8 +604,13 @@ const UsersList = ({ authToken, currentUser }) => {
                         type="radio"
                         name="role"
                         value={role.value}
-                        checked={formData.role === role.value}
-                        onChange={(e) => setFormData({...formData, role: e.target.value})}
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (!isDisabled) {
+                            setFormData({...formData, role: e.target.value});
+                          }
+                        }}
+                        disabled={isDisabled}
                         className="sr-only"
                       />
                       <Icon className={`w-5 h-5 mr-2 ${role.color}`} />
@@ -592,6 +619,11 @@ const UsersList = ({ authToken, currentUser }) => {
                   );
                 })}
               </div>
+              {editingUser && editingUser.role === 'MAHASISWA' && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                  <strong>Info:</strong> Role Mahasiswa tidak dapat diubah untuk menjaga integritas data akademik.
+                </div>
+              )}
               {formErrors.role && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>
               )}

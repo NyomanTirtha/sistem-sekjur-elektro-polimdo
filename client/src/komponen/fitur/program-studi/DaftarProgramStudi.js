@@ -241,7 +241,7 @@ const ProdiContent = ({ authToken, currentUser }) => {
             <p className="text-xs text-gray-500">Total Dosen</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">
-            {Array.isArray(prodi) ? prodi.reduce((total, p) => total + (p.dosen?.length || 0), 0) : 0}
+            {Array.isArray(prodi) ? prodi.reduce((total, p) => total + (p._count?.dosen || 0), 0) : 0}
           </p>
         </div>
 
@@ -251,7 +251,7 @@ const ProdiContent = ({ authToken, currentUser }) => {
             <p className="text-xs text-gray-500">Total Mahasiswa</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">
-            {Array.isArray(prodi) ? prodi.reduce((total, p) => total + (p.mahasiswa?.length || 0), 0) : 0}
+            {Array.isArray(prodi) ? prodi.reduce((total, p) => total + (p._count?.mahasiswa || 0), 0) : 0}
           </p>
         </div>
       </div>
@@ -290,8 +290,8 @@ const ProdiContent = ({ authToken, currentUser }) => {
                       <td className="p-3 text-sm text-gray-900">{index + 1}</td>
                       <td className="p-3 text-sm text-gray-900 truncate" title={prd.nama || '-'}>{prd.nama || '-'}</td>
                       <td className="p-3 text-sm text-gray-900 truncate" title={prd.ketuaProdi || '-'}>{prd.ketuaProdi || '-'}</td>
-                      <td className="p-3 text-sm text-gray-900">{prd.dosen?.length || 0}</td>
-                      <td className="p-3 text-sm text-gray-900">{prd.mahasiswa?.length || 0}</td>
+                      <td className="p-3 text-sm text-gray-900">{prd._count?.dosen || 0}</td>
+                      <td className="p-3 text-sm text-gray-900">{prd._count?.mahasiswa || 0}</td>
                       <td className="p-3">
                       <div className="flex space-x-2">
                         <button

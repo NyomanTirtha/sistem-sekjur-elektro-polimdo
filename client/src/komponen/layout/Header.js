@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, X, LogOut, Menu, ChevronDown, UserCircle, KeyRound, Shield, IdCard, Building, Building2, Calendar, GraduationCap, Phone, MapPin, Users } from 'lucide-react';
 import { usePasswordChange } from '../../kait/usePasswordChange';
+import { getTheme, getHeaderAccentClass, getAvatarBorderClass } from '../../utilitas/theme';
 
 const roleInfo = {
   SEKJUR: { label: 'Sekretaris Jurusan', getSubtitle: (u) => u.jurusan?.nama ? `Jurusan ${u.jurusan.nama}` : 'Sekretaris Jurusan' },
@@ -71,6 +72,11 @@ const Header = ({
   const displayName = currentUser.nama || currentUser.name || user;
   const roleLabel = roleConfig.label;
   const subtitle = roleConfig.getSubtitle(currentUser);
+  
+  // Get theme colors based on jurusan
+  const theme = getTheme(currentUser);
+  const headerAccentClass = getHeaderAccentClass(currentUser);
+  const avatarBorderClass = getAvatarBorderClass(currentUser);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -149,14 +155,14 @@ const Header = ({
           </button>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-            <p className="text-sm text-gray-600">{subtitle}</p>
+            <p className={`text-sm font-medium ${headerAccentClass}`}>{subtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
           <div className="relative mr-7">
             <button ref={toggleButtonRef} onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded">
-              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center border-2 ${avatarBorderClass}`}>
                 <User className="w-5 h-5 text-white" />
               </div>
               <div className="hidden md:block text-left">
@@ -193,10 +199,10 @@ const Header = ({
         showProfile && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowProfile(false)}>
             <div className="bg-white rounded shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 bg-gray-800 text-white border-b border-gray-200">
+              <div className={`p-6 ${theme.primary.bg} text-white border-b border-gray-200`}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center">
+                    <div className={`w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center border-2 ${avatarBorderClass}`}>
                       <User className="w-6 h-6 text-white" />
                     </div>
                     <div>

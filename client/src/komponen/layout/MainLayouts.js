@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import { getTheme } from "../../utilitas/theme";
 
 const roleLabels = {
   sekjur: "Sekretaris Jurusan",
@@ -23,6 +24,9 @@ const MainLayout = ({
   authToken,
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Get theme colors based on jurusan
+  const theme = getTheme(currentUser);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,7 +67,7 @@ const MainLayout = ({
                     <h1 className="text-2xl font-semibold text-gray-800 mb-2">
                       {title}
                     </h1>
-                    <div className="h-px bg-gray-200"></div>
+                    <div className={`h-px ${theme.primary.border || 'bg-gray-200'} opacity-30`}></div>
                   </div>
                   <div>{children}</div>
                 </div>

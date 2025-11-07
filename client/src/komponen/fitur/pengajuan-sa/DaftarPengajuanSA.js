@@ -23,7 +23,6 @@ import ModalFormDetail from './ModalFormDetail';
 import ModalDetailAdmin from './ModalDetailAdmin';
 import FilterStatus from './FilterStatus';
 import TabelPengajuanSA from './TabelPengajuanSA';
-import InfoCard from './InfoCard';
 import LaporanSA from './LaporanSA'; // ✨ NEW IMPORT
 
 // Services
@@ -468,6 +467,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         userType={userType}
       />
 
+
       {/* ✨ TABLE WITH PAGINATION INFO */}
       <div className="bg-white rounded-lg shadow-sm border">
         {/* Table Header Info */}
@@ -574,9 +574,6 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
           </div>
         )}
       </div>
-
-      {/* Info Card */}
-      <InfoCard userType={userType} />
     </div>
   );
 };

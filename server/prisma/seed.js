@@ -11,16 +11,63 @@ async function main() {
     console.log('Memulai proses seeding database...');
 
     // Hapus semua data yang ada (hati-hati di production!)
+    // Urutan penting: hapus data yang memiliki foreign key terlebih dahulu
     console.log('Membersihkan data lama...');
+    
+    // 1. Hapus data yang reference ke dosen/mahasiswa/mataKuliah
+    console.log('  - Menghapus detail pengajuan SA...');
     await prisma.pengajuanSADetail.deleteMany();
-    await prisma.pengajuanSA.deleteMany();
+    
+    console.log('  - Menghapus schedule items...');
+    await prisma.scheduleItem.deleteMany();
+    
+    console.log('  - Menghapus dosen schedule requests...');
+    await prisma.dosenScheduleRequest.deleteMany();
+    
+    console.log('  - Menghapus schedule revisions...');
+    await prisma.scheduleRevision.deleteMany();
+    
+    console.log('  - Menghapus prodi schedules...');
+    await prisma.prodiSchedule.deleteMany();
+    
+    console.log('  - Menghapus timetable periods...');
+    await prisma.timetablePeriod.deleteMany();
+    
+    console.log('  - Menghapus ruangan...');
+    await prisma.ruangan.deleteMany();
+    
+    console.log('  - Menghapus penugasan mengajar...');
     await prisma.penugasanMengajar.deleteMany();
+    
+    // 2. Hapus pengajuan SA (reference ke mahasiswa)
+    console.log('  - Menghapus pengajuan SA...');
+    await prisma.pengajuanSA.deleteMany();
+    
+    // 3. Hapus mahasiswa (reference ke programStudi)
+    console.log('  - Menghapus mahasiswa...');
     await prisma.mahasiswa.deleteMany();
+    
+    // 4. Hapus dosen (reference ke programStudi)
+    console.log('  - Menghapus dosen...');
     await prisma.dosen.deleteMany();
+    
+    // 5. Hapus mata kuliah (reference ke programStudi)
+    console.log('  - Menghapus mata kuliah...');
     await prisma.mataKuliah.deleteMany();
+    
+    // 6. Hapus program studi (reference ke jurusan)
+    console.log('  - Menghapus program studi...');
     await prisma.programStudi.deleteMany();
+    
+    // 7. Hapus user (reference ke jurusan/programStudi)
+    console.log('  - Menghapus user...');
     await prisma.user.deleteMany();
+    
+    // 8. Hapus jurusan (paling akhir)
+    console.log('  - Menghapus jurusan...');
     await prisma.jurusan.deleteMany();
+    
+    console.log('✅ Data lama berhasil dihapus!');
 
     // 1. Insert Jurusan
     console.log('Memasukkan data Jurusan...');
@@ -124,14 +171,16 @@ async function main() {
           nama: 'Maksy Sendiang, SST.,MIT', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 1  // D4 Teknik Informatika
         },
         { 
           username: '196602071989032001', 
           nama: 'Fitria Claudya Lahinta, S.S,T.,MT', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 2  // D4 Teknik Listrik
         },
         // Dosen Teknik Sipil
         { 
@@ -139,28 +188,32 @@ async function main() {
           nama: 'Ir. Siti Nurhaliza, ST., MT.', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
         { 
           username: '197601011998031006', 
           nama: 'Drs. Muhammad Rizki, ST., M.Eng.', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
         { 
           username: '197701011998031009', 
           nama: 'Ir. Dewi Sartika, ST., MT.', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
         { 
           username: '197801011998031010', 
           nama: 'Drs. Agus Setiawan, ST., M.Sc.', 
           password: hashedPassword, 
           role: 'DOSEN',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
         
         // Mahasiswa Teknik Elektro
@@ -169,14 +222,16 @@ async function main() {
           nama: 'RICHARD APOUW', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 1  // D4 Teknik Informatika
         },
         { 
           username: '24023052', 
           nama: 'ARIEL PAULUS KAPOH', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 2  // D4 Teknik Listrik
         },
         // Mahasiswa Teknik Sipil
         { 
@@ -184,28 +239,32 @@ async function main() {
           nama: 'RUDI HERMAWAN', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
         { 
           username: '23025002', 
           nama: 'SARI INDAH SARI', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
         { 
           username: '24025001', 
           nama: 'ANDI PRASETYA', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
         { 
           username: '24025002', 
           nama: 'LINA KARTIKA', 
           password: hashedPassword, 
           role: 'MAHASISWA',
-          jurusanId: null
+          jurusanId: null,
+          programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         }
       ]
     });
