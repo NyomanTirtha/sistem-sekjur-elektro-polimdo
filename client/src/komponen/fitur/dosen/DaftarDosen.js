@@ -20,6 +20,8 @@ import {
   Building
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from '../../umum/Loading';
+import { getTheme } from '../../../utilitas/theme';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -334,8 +336,7 @@ export default function DosenList({ authToken, currentUser }) {
   if (!authToken) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-gray-600">Memuat...</span>
+        <Loading message="Memuat..." size="md" />
       </div>
     );
   }
@@ -474,22 +475,21 @@ export default function DosenList({ authToken, currentUser }) {
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-3 text-gray-600">Memuat data...</span>
+              <Loading message="Memuat data..." size="md" />
             </div>
           ) : (
             <>
-              <table className="w-full border-collapse table-fixed">
+              <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Nama</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">NIP</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/4">Program Studi</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '50px' }}>No</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '25%' }}>Nama</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '180px' }}>NIP</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '20%' }}>Program Studi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '140px' }}>No. Telp</th>
                     <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
                     {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
+                      <th className="text-center p-3 text-sm font-semibold text-gray-700" style={{ width: '100px' }}>Aksi</th>
                     )}
                   </tr>
                 </thead>
@@ -500,11 +500,21 @@ export default function DosenList({ authToken, currentUser }) {
                     return (
                       <tr key={dsn.nip} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.nama}>{dsn.nama}</td>
-                        <td className="p-3 text-sm text-gray-900">{dsn.nip}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.prodi ? dsn.prodi.nama : '-'}>{dsn.prodi ? dsn.prodi.nama : '-'}</td>
-                        <td className="p-3 text-sm text-gray-900">{dsn.noTelp || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.alamat}>{dsn.alamat || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900">
+                          <div className="truncate" title={dsn.nama}>{dsn.nama}</div>
+                        </td>
+                        <td className="p-3 text-sm text-gray-900">
+                          <div className="truncate" title={dsn.nip}>{dsn.nip}</div>
+                        </td>
+                        <td className="p-3 text-sm text-gray-900">
+                          <div className="truncate" title={dsn.prodi ? dsn.prodi.nama : '-'}>{dsn.prodi ? dsn.prodi.nama : '-'}</div>
+                        </td>
+                        <td className="p-3 text-sm text-gray-900">
+                          <div className="truncate" title={dsn.noTelp || '-'}>{dsn.noTelp || '-'}</div>
+                        </td>
+                        <td className="p-3 text-sm text-gray-900">
+                          <div className="truncate" title={dsn.alamat || '-'}>{dsn.alamat || '-'}</div>
+                        </td>
                         {(canAddEdit() || canDelete()) && (
                           <td className="p-3 text-center">
                             <div className="flex justify-center space-x-2">
@@ -676,28 +686,33 @@ export default function DosenList({ authToken, currentUser }) {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-1">
-                      {editData ? 'Edit Data Dosen' : 'Tambah Dosen Baru'}
-                    </h2>
-                    <p className="text-sm text-blue-100">
-                      {editData ? 'Perbarui informasi dosen' : 'Lengkapi informasi dosen baru'}
-                    </p>
+              {(() => {
+                const theme = getTheme(currentUser);
+                return (
+                  <div className={`p-6 text-white ${theme.primary.bg} border-b ${theme.primary.border}`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h2 className="text-xl font-semibold mb-1">
+                          {editData ? 'Edit Data Dosen' : 'Tambah Dosen Baru'}
+                        </h2>
+                        <p className={`text-sm ${theme.header.accent || 'text-white/80'}`}>
+                          {editData ? 'Perbarui informasi dosen' : 'Lengkapi informasi dosen baru'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowModal(false);
+                          resetForm();
+                        }}
+                        className={`p-2 ${theme.primary.hover} rounded transition-colors text-white`}
+                        aria-label="Close modal"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
-                    aria-label="Close modal"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
@@ -813,13 +828,18 @@ export default function DosenList({ authToken, currentUser }) {
                 >
                   Batal
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                >
-                  {editData ? 'Perbarui Data' : 'Simpan Data'}
-                </button>
+                {(() => {
+                  const theme = getTheme(currentUser);
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className={`px-4 py-2 text-sm font-medium text-white ${theme.primary.bg} rounded ${theme.primary.hover} transition-colors`}
+                    >
+                      {editData ? 'Perbarui Data' : 'Simpan Data'}
+                    </button>
+                  );
+                })()}
               </div>
             </motion.div>
           </motion.div>

@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils';
+import Loading from '../../umum/Loading';
+import { getTheme } from '../../../utilitas/theme';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -447,8 +449,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
   if (!authToken) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-gray-600">Memuat...</span>
+        <Loading message="Memuat..." size="md" />
       </div>
     );
   }
@@ -770,28 +771,33 @@ export default function MahasiswaList({ authToken, currentUser }) {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-1">
-                      {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
-                    </h2>
-                    <p className="text-sm text-blue-100">
-                      {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
-                    </p>
+              {(() => {
+                const theme = getTheme(currentUser);
+                return (
+                  <div className={`p-6 text-white ${theme.primary.bg} border-b ${theme.primary.border}`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h2 className="text-xl font-semibold mb-1">
+                          {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
+                        </h2>
+                        <p className={`text-sm ${theme.header.accent || 'text-white/80'}`}>
+                          {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowModal(false);
+                          resetForm();
+                        }}
+                        className={`p-2 ${theme.primary.hover} rounded transition-colors text-white`}
+                        aria-label="Close modal"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
-                    aria-label="Close modal"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
@@ -946,13 +952,18 @@ export default function MahasiswaList({ authToken, currentUser }) {
                 >
                   Batal
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                >
-                  {editData ? 'Perbarui Data' : 'Simpan Data'}
-                </button>
+                {(() => {
+                  const theme = getTheme(currentUser);
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className={`px-4 py-2 text-sm font-medium text-white ${theme.primary.bg} rounded ${theme.primary.hover} transition-colors`}
+                    >
+                      {editData ? 'Perbarui Data' : 'Simpan Data'}
+                    </button>
+                  );
+                })()}
               </div>
             </motion.div>
           </motion.div>

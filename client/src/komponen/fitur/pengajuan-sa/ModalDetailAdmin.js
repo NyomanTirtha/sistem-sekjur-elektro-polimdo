@@ -6,18 +6,63 @@ import { XCircle, User, CreditCard, GraduationCap, FileText, Eye, CheckCircle, X
 import { formatCurrency, getSemesterFromDate } from '../../../utilitas/helper/pengajuanSAUtils';
 import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import { getTheme } from '../../../utilitas/theme';
 
 const ModalDetailSekjur = ({ 
   showModal, 
   setShowModal, 
   selectedDetail,
   onVerifikasi,
-  onTolak
+  onTolak,
+  currentUser = {}
 }) => {
   const [showTolakModal, setShowTolakModal] = useState(false);
   const [alasanPenolakan, setAlasanPenolakan] = useState('');
 
   if (!showModal || !selectedDetail) return null;
+
+  // Get theme colors based on jurusan
+  const theme = getTheme(currentUser);
+  
+  // Helper untuk mendapatkan warna light dari tema
+  const getLightBg = () => {
+    const jurusanName = currentUser?.jurusan?.nama || 
+                       currentUser?.prodi?.jurusan?.nama || 
+                       currentUser?.programStudi?.jurusan?.nama || '';
+    
+    if (jurusanName.toLowerCase().includes('elektro')) return 'bg-blue-50';
+    if (jurusanName.toLowerCase().includes('sipil')) return 'bg-amber-50';
+    if (jurusanName.toLowerCase().includes('informatika') || jurusanName.toLowerCase().includes('ti')) return 'bg-emerald-50';
+    if (jurusanName.toLowerCase().includes('mesin')) return 'bg-red-50';
+    if (jurusanName.toLowerCase().includes('arsitektur')) return 'bg-purple-50';
+    return 'bg-gray-50';
+  };
+
+  const getLightBorder = () => {
+    const jurusanName = currentUser?.jurusan?.nama || 
+                       currentUser?.prodi?.jurusan?.nama || 
+                       currentUser?.programStudi?.jurusan?.nama || '';
+    
+    if (jurusanName.toLowerCase().includes('elektro')) return 'border-blue-200';
+    if (jurusanName.toLowerCase().includes('sipil')) return 'border-amber-200';
+    if (jurusanName.toLowerCase().includes('informatika') || jurusanName.toLowerCase().includes('ti')) return 'border-emerald-200';
+    if (jurusanName.toLowerCase().includes('mesin')) return 'border-red-200';
+    if (jurusanName.toLowerCase().includes('arsitektur')) return 'border-purple-200';
+    return 'border-gray-200';
+  };
+
+  const getTextColor = () => {
+    const jurusanName = currentUser?.jurusan?.nama || 
+                       currentUser?.prodi?.jurusan?.nama || 
+                       currentUser?.programStudi?.jurusan?.nama || '';
+    
+    if (jurusanName.toLowerCase().includes('elektro')) return 'text-blue-700';
+    if (jurusanName.toLowerCase().includes('sipil')) return 'text-amber-700';
+    if (jurusanName.toLowerCase().includes('informatika') || jurusanName.toLowerCase().includes('ti')) return 'text-emerald-700';
+    if (jurusanName.toLowerCase().includes('mesin')) return 'text-red-700';
+    if (jurusanName.toLowerCase().includes('arsitektur')) return 'text-purple-700';
+    return 'text-gray-700';
+  };
 
   const handleVerifikasi = () => {
     onVerifikasi(selectedDetail.id);
@@ -90,15 +135,15 @@ const ModalDetailSekjur = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
+          <div className={`p-5 ${theme.primary.bg} text-white border-b ${theme.primary.border}`}>
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold mb-1">Detail Pengajuan SA</h2>
-                <p className="text-sm text-blue-100">Verifikasi Pembayaran - Sekretaris Jurusan</p>
+                <h2 className="text-lg font-semibold text-white mb-0.5">Detail Pengajuan SA</h2>
+                <p className="text-xs text-white/80">Verifikasi Pembayaran - Sekretaris Jurusan</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
                 aria-label="Close modal"
               >
                 <XCircle className="w-5 h-5" />
@@ -108,94 +153,62 @@ const ModalDetailSekjur = ({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-4">
           {/* Informasi Mahasiswa */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-3 border-b border-blue-200">
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900">Informasi Mahasiswa</h3>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Informasi Mahasiswa</h3>
             </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Nama</p>
-                    <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nama || 'N/A'}</p>
-                  </div>
+            <div className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Nama</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nama || 'N/A'}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">NIM</p>
-                    <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nim || 'N/A'}</p>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">NIM</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedDetail.mahasiswa?.nim || 'N/A'}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <GraduationCap className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Program Studi</p>
-                    <p className="text-sm font-medium text-gray-900">{getProgramStudiName(selectedDetail.mahasiswa?.programStudiId) || 'N/A'}</p>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Program Studi</p>
+                  <p className="text-sm font-medium text-gray-900">{getProgramStudiName(selectedDetail.mahasiswa?.programStudiId) || 'N/A'}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Tanggal Pengajuan</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {new Date(selectedDetail.tanggalPengajuan).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Tanggal Pengajuan</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(selectedDetail.tanggalPengajuan).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Semester</p>
-                    <p className="text-sm font-medium text-gray-900">{getSemesterFromDate(selectedDetail.tanggalPengajuan) || 'N/A'}</p>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Semester</p>
+                  <p className="text-sm font-medium text-gray-900">{getSemesterFromDate(selectedDetail.tanggalPengajuan) || 'N/A'}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Informasi Pembayaran */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-3 border-b border-green-200">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-green-600" />
-                <h3 className="font-semibold text-green-900">Informasi Pembayaran</h3>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Informasi Pembayaran</h3>
             </div>
-            <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-500 mb-1">Nominal Pembayaran</p>
-                    <p className="text-xl font-bold text-green-700">{formatCurrency(selectedDetail.nominal || 0)}</p>
-                  </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Nominal Pembayaran</p>
+                <div className={`p-2.5 ${getLightBg()} rounded border ${getLightBorder()}`}>
+                  <span className={`text-base font-semibold ${getTextColor()}`}>
+                    {formatCurrency(selectedDetail.nominal || 0)}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-gray-500" />
-                    <span className="text-xs text-gray-600">Total SKS</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">
+              </div>
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Total SKS</p>
+                  <p className="text-sm font-medium text-gray-900">
                     {(() => {
                       if (selectedDetail.totalSKS) {
                         return selectedDetail.totalSKS;
@@ -206,117 +219,91 @@ const ModalDetailSekjur = ({
                       }
                       return 0;
                     })()} SKS
-                  </span>
+                  </p>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-gray-500" />
-                    <span className="text-xs text-gray-600">Estimasi Biaya</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(calculateEstimatedCost())}</span>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Estimasi Biaya</p>
+                  <p className="text-sm font-medium text-gray-900">{formatCurrency(calculateEstimatedCost())}</p>
                 </div>
-                <div className="md:col-span-2 pt-2 border-t border-gray-200">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Selisih</span>
-                    <span className={`text-sm font-bold ${
-                      calculateDifference() >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {formatCurrency(calculateDifference())}
-                    </span>
-                  </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Selisih</p>
+                  <p className={`text-sm font-semibold ${
+                    calculateDifference() >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {formatCurrency(calculateDifference())}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Mata Kuliah yang Dipilih */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-5 py-3 border-b border-purple-200">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-purple-900">
-                  Daftar Mata Kuliah ({(() => {
-                    if (selectedDetail.jumlahMataKuliah) {
-                      return selectedDetail.jumlahMataKuliah;
-                    } else if (typeof selectedDetail.mataKuliah === 'object') {
-                      return 1;
-                    } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
-                      return selectedDetail.mataKuliahList.length;
-                    }
-                    return 0;
-                  })()} mata kuliah)
-                </h3>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>
+                Daftar Mata Kuliah ({(() => {
+                  if (selectedDetail.jumlahMataKuliah) {
+                    return selectedDetail.jumlahMataKuliah;
+                  } else if (typeof selectedDetail.mataKuliah === 'object') {
+                    return 1;
+                  } else if (selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0) {
+                    return selectedDetail.mataKuliahList.length;
+                  }
+                  return 0;
+                })()} mata kuliah)
+              </h3>
             </div>
-            <div className="p-5">
+            <div className="p-4">
               {selectedDetail.mataKuliahList && selectedDetail.mataKuliahList.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {selectedDetail.mataKuliahList.map((mk, index) => (
-                    <div key={mk.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold flex items-center justify-center">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm font-medium text-gray-900">{mk.nama}</span>
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">
+                    <div key={mk.id || index} className="flex items-center justify-between py-1.5">
+                      <span className="text-sm text-gray-900">{mk.nama}</span>
+                      <span className="text-xs text-gray-600 px-2 py-0.5 rounded border border-gray-200">
                         {mk.sks} SKS
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-900">
-                    {typeof selectedDetail.mataKuliah === 'object' 
-                      ? selectedDetail.mataKuliah.nama 
-                      : selectedDetail.mataKuliah || 'Mata kuliah tidak tersedia'}
-                  </span>
-                </div>
+                <p className="text-sm text-gray-900">
+                  {typeof selectedDetail.mataKuliah === 'object' 
+                    ? selectedDetail.mataKuliah.nama 
+                    : selectedDetail.mataKuliah || 'Mata kuliah tidak tersedia'}
+                </p>
               )}
             </div>
           </div>
 
           {/* Keterangan Pengajuan */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-600" />
-                <h3 className="font-semibold text-gray-800">Keterangan Pengajuan</h3>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Keterangan Pengajuan</h3>
             </div>
-            <div className="p-5">
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[60px]">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {selectedDetail.keterangan || 'Tidak ada keterangan'}
-                </p>
-              </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {selectedDetail.keterangan || 'Tidak ada keterangan'}
+              </p>
             </div>
           </div>
 
           {/* Bukti Pembayaran */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 px-5 py-3 border-b border-orange-200">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-orange-600" />
-                <h3 className="font-semibold text-orange-900">Bukti Pembayaran</h3>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Bukti Pembayaran</h3>
             </div>
-            <div className="p-5">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{selectedDetail.buktiPembayaran || 'Tidak ada bukti'}</p>
-                    <p className="text-xs text-gray-500 mt-1">Periksa bukti pembayaran untuk memverifikasi nominal dan keabsahan transaksi</p>
-                  </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{selectedDetail.buktiPembayaran || 'Tidak ada bukti'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Periksa bukti pembayaran untuk memverifikasi nominal dan keabsahan transaksi</p>
                 </div>
                 {selectedDetail.buktiPembayaran && (
                   <button
                     onClick={() => window.open(`http://localhost:5000/uploads/${selectedDetail.buktiPembayaran}`, '_blank')}
-                    className="ml-3 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2 font-medium text-sm flex-shrink-0 transition-colors"
+                    className={`${theme.primary.bg} text-white px-3 py-1.5 rounded text-xs font-medium ${theme.primary.hover} flex items-center gap-1.5 flex-shrink-0 transition-colors shadow-sm`}
                   >
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5" />
                     Lihat
                   </button>
                 )}
@@ -326,22 +313,22 @@ const ModalDetailSekjur = ({
 
           {/* Aksi Verifikasi */}
           {selectedDetail.status === 'PROSES_PENGAJUAN' && (
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 px-5 py-3 border-b border-yellow-200">
-                <h3 className="font-semibold text-yellow-900">Aksi Verifikasi</h3>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className={`px-4 py-2.5 ${getLightBg()} border-b ${getLightBorder()}`}>
+                <h3 className={`text-sm font-semibold ${getTextColor()}`}>Aksi Verifikasi</h3>
               </div>
-              <div className="p-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   <button
                     onClick={handleVerifikasi}
-                    className="bg-green-500 text-white py-2.5 px-4 rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2 transition-colors"
+                    className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm text-sm"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Verifikasi Pembayaran
                   </button>
                   <button
                     onClick={handleTolak}
-                    className="bg-red-500 text-white py-2.5 px-4 rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 transition-colors"
+                    className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm text-sm"
                   >
                     <X className="w-4 h-4" />
                     Tolak Pengajuan
@@ -354,16 +341,14 @@ const ModalDetailSekjur = ({
           </div>
 
           {/* Footer */}
-          <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex justify-end rounded-b-3xl">
-            <motion.button
+          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button
               onClick={() => setShowModal(false)}
-              className="px-6 py-3 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md rounded-xl transition-all duration-200 flex items-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
-              <XCircle className="w-4 h-4 mr-2" />
-              Tutup Detail
-            </motion.button>
+              <XCircle className="w-4 h-4" />
+              Tutup
+            </button>
           </div>
         </motion.div>
       </motion.div>

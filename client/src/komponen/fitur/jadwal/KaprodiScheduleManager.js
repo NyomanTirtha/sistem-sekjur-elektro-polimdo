@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Loading from "../../umum/Loading";
 import {
   Calendar,
   Plus,
@@ -863,10 +864,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data jadwal...</p>
-        </div>
+        <Loading message="Memuat data jadwal..." size="lg" />
       </div>
     );
   }
@@ -918,8 +916,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
         {loadingRequests ? (
           <div className="text-center py-6">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p className="text-xs text-gray-600">Memuat request...</p>
+            <Loading message="Memuat request..." size="sm" />
           </div>
         ) : dosenRequests.length === 0 ? (
           <div className="text-center py-6 text-gray-500">

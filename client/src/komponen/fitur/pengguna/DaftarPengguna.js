@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from '../../umum/Loading';
 
 const UsersList = ({ authToken, currentUser }) => {
   const [users, setUsers] = useState([]);
@@ -404,10 +405,7 @@ const UsersList = ({ authToken, currentUser }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <Users className="w-8 h-8 mx-auto mb-2 animate-spin" />
-          <p>Loading users...</p>
-        </div>
+        <Loading message="Memuat data pengguna..." size="md" />
       </div>
     );
   }

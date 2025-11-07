@@ -16,6 +16,7 @@ import axios from "axios";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from "../../umum/Loading";
 
 const TimetablePeriodManager = ({ authToken }) => {
   const [periods, setPeriods] = useState([]);
@@ -247,10 +248,7 @@ const TimetablePeriodManager = ({ authToken }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data periode timetable...</p>
-        </div>
+        <Loading message="Memuat data periode timetable..." size="lg" />
       </div>
     );
   }
@@ -640,10 +638,7 @@ const TimetablePeriodManager = ({ authToken }) => {
 
                 {loadingDetail ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">Memuat jadwal...</p>
-                    </div>
+                    <Loading message="Memuat jadwal..." size="sm" />
                   </div>
                 ) : periodSchedules.length > 0 ? (
                   <div className="space-y-3">

@@ -7,6 +7,7 @@ import { getSemesterFromDate, formatCurrency } from '../../../utilitas/helper/pe
 import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils';
 import PengajuanSAService from '../../../layanan/pengajuanSAService';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from '../../umum/Loading';
 
 const TabelPengajuanSA = ({
   pengajuanList,
@@ -713,7 +714,7 @@ const TabelPengajuanSA = ({
                         >
                           {isUpdating[item.id] ? (
                             <>
-                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <Loading size="sm" inline={true} message="" />
                               ...
                             </>
                           ) : (
@@ -767,7 +768,7 @@ const TabelPengajuanSA = ({
                           >
                             {assigningRows[item.id] ? (
                               <>
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <Loading size="sm" inline={true} message="" />
                                 <span>...</span>
                               </>
                             ) : (
@@ -803,7 +804,7 @@ const TabelPengajuanSA = ({
                           >
                             {isUpdating[item.id] ? (
                               <>
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <Loading size="sm" inline={true} message="" />
                                 ...
                               </>
                             ) : (

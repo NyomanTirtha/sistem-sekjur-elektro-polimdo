@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit, Trash2, Search, BookOpen, Users, GraduationCap, X, Building, User } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from '../../umum/Loading';
+import { getTheme } from '../../../utilitas/theme';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -261,16 +263,7 @@ const ProdiContent = ({ authToken, currentUser }) => {
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <div 
-                className="w-8 h-8 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
-                style={{ animation: 'spin 0.6s linear infinite' }}
-              ></div>
-              <style>{`
-                @keyframes spin {
-                  from { transform: rotate(0deg); }
-                  to { transform: rotate(360deg); }
-                }
-              `}</style>
+              <Loading message="Memuat data program studi..." size="md" />
             </div>
           ) : (
               <table className="w-full border-collapse table-fixed">
@@ -358,28 +351,33 @@ const ProdiContent = ({ authToken, currentUser }) => {
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="p-6 text-white bg-blue-600 border-b border-blue-700">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-1">
-                        {editData ? 'Edit Program Studi' : 'Tambah Program Studi Baru'}
-                      </h2>
-                      <p className="text-sm text-blue-100">
-                        {editData ? 'Perbarui informasi program studi' : 'Lengkapi informasi program studi baru'}
-                      </p>
+                {(() => {
+                  const theme = getTheme(currentUser);
+                  return (
+                    <div className={`p-6 text-white ${theme.primary.bg} border-b ${theme.primary.border}`}>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h2 className="text-xl font-semibold mb-1">
+                            {editData ? 'Edit Program Studi' : 'Tambah Program Studi Baru'}
+                          </h2>
+                          <p className={`text-sm ${theme.header.accent || 'text-white/80'}`}>
+                            {editData ? 'Perbarui informasi program studi' : 'Lengkapi informasi program studi baru'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowModal(false);
+                            resetForm();
+                          }}
+                          className={`p-2 ${theme.primary.hover} rounded transition-colors text-white`}
+                          aria-label="Close modal"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      className="p-2 hover:bg-blue-700 rounded transition-colors text-white"
-                      aria-label="Close modal"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
@@ -434,13 +432,18 @@ const ProdiContent = ({ authToken, currentUser }) => {
                   >
                     Batal
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                  >
-                    {editData ? 'Perbarui Data' : 'Simpan Data'}
-                  </button>
+                  {(() => {
+                    const theme = getTheme(currentUser);
+                    return (
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className={`px-4 py-2 text-sm font-medium text-white ${theme.primary.bg} rounded ${theme.primary.hover} transition-colors`}
+                      >
+                        {editData ? 'Perbarui Data' : 'Simpan Data'}
+                      </button>
+                    );
+                  })()}
                 </div>
               </motion.div>
             </motion.div>

@@ -17,6 +17,7 @@ import TimetableGridView from "./TimetableGridView";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import Loading from "../../umum/Loading";
 
 const SekjurScheduleReview = ({ authToken }) => {
   const [schedules, setSchedules] = useState([]);
@@ -274,10 +275,7 @@ const SekjurScheduleReview = ({ authToken }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data jadwal...</p>
-        </div>
+        <Loading message="Memuat data jadwal..." size="lg" />
       </div>
     );
   }

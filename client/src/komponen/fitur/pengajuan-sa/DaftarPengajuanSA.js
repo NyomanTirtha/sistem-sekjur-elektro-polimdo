@@ -27,6 +27,7 @@ import LaporanSA from './LaporanSA'; // ✨ NEW IMPORT
 
 // Services
 import PengajuanSAService from '../../../layanan/pengajuanSAService';
+import Loading from '../../umum/Loading';
 
 // Utils
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
@@ -323,8 +324,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-gray-600">Memuat data pengajuan SA...</span>
+        <Loading message="Memuat data pengajuan SA..." size="md" />
       </div>
     );
   }
@@ -449,6 +449,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         setShowModal={setShowFormDetail}
         selectedFormDetail={selectedFormDetail}
         userType={userType}
+        currentUser={currentUser}
       />
 
       {/* Modal Detail Admin */}
@@ -458,6 +459,7 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
         selectedDetail={selectedDetailAdmin}
         onVerifikasi={handleVerifikasiFromModal}
         onTolak={handleTolakFromModal}
+        currentUser={currentUser}
       />
 
       {/* Filter Status */}
