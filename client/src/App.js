@@ -83,7 +83,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    ["token", "userData", "userType", "activeTab"].forEach((key) =>
+    // Jangan hapus activeTab - biarkan tetap tersimpan untuk remember last tab
+    ["token", "userData", "userType"].forEach((key) =>
       localStorage.removeItem(key),
     );
     window.authToken = null;
@@ -92,7 +93,7 @@ export default function App() {
     setUserType(null);
     setAuthToken(null);
     setCurrentView("login");
-    setActiveTab("prodi");
+    // Jangan reset activeTab, biarkan tetap di state (akan di-restore saat login)
   };
 
   // Define menu items with proper role-based access control
@@ -279,12 +280,20 @@ export default function App() {
           await verifyTokenWithBackend(token);
 
           // Restore active tab if it exists and is valid for the user type
-          const parsedUserType = userType; // userType from localStorage
-          if (savedActiveTab) {
+          // userType sudah di-set oleh verifyTokenWithBackend melalui setAuthState
+          // Tapi kita perlu menggunakan userType dari localStorage karena state belum update
+          const parsedUserData = JSON.parse(userData);
+          const parsedUserType = getRoleMapping(parsedUserData.role);
+          
+          if (parsedUserType && savedActiveTab) {
             const availableMenuItems = menuItems.filter((item) =>
               item.allowedRoles.includes(parsedUserType),
             );
-            if (availableMenuItems.some((item) => item.id === savedActiveTab)) {
+            const isValidTab = availableMenuItems.some(
+              (item) => item.id === savedActiveTab
+            );
+            
+            if (isValidTab) {
               setActiveTab(savedActiveTab);
 
               // Find and expand the category containing this menu
@@ -294,6 +303,44 @@ export default function App() {
 
               if (category) {
                 // Expand only the category containing the active menu
+                const newExpandedCategories = { [category.id]: true };
+                setExpandedCategories(newExpandedCategories);
+                localStorage.setItem(
+                  "expandedCategories",
+                  JSON.stringify(newExpandedCategories),
+                );
+              }
+            } else {
+              // Tab tidak valid untuk user type ini, set ke default
+              const defaultTab = defaultTabMapping[parsedUserType];
+              if (defaultTab) {
+                setActiveTab(defaultTab);
+                localStorage.setItem("activeTab", defaultTab);
+                
+                const category = menuCategories.find((cat) =>
+                  cat.items.some((item) => item.id === defaultTab),
+                );
+                if (category) {
+                  const newExpandedCategories = { [category.id]: true };
+                  setExpandedCategories(newExpandedCategories);
+                  localStorage.setItem(
+                    "expandedCategories",
+                    JSON.stringify(newExpandedCategories),
+                  );
+                }
+              }
+            }
+          } else if (parsedUserType) {
+            // Tidak ada saved tab, set ke default
+            const defaultTab = defaultTabMapping[parsedUserType];
+            if (defaultTab) {
+              setActiveTab(defaultTab);
+              localStorage.setItem("activeTab", defaultTab);
+              
+              const category = menuCategories.find((cat) =>
+                cat.items.some((item) => item.id === defaultTab),
+              );
+              if (category) {
                 const newExpandedCategories = { [category.id]: true };
                 setExpandedCategories(newExpandedCategories);
                 localStorage.setItem(
@@ -424,33 +471,53 @@ export default function App() {
 
     setAuthState(userData, mappedUserType, authData.token);
 
-    // Set initial active tab and expand its category
-    const defaultTab = defaultTabMapping[mappedUserType];
-    if (defaultTab) {
-      const category = menuCategories.find((cat) =>
-        cat.items.some((item) => item.id === defaultTab),
-      );
+    // Cek apakah ada saved activeTab yang valid untuk user type ini
+    const savedActiveTab = localStorage.getItem("activeTab");
+    const availableMenuItems = menuItems.filter((item) =>
+      item.allowedRoles.includes(mappedUserType),
+    );
 
-      if (category) {
-        const newExpandedCategories = { [category.id]: true };
+    let tabToUse = null;
+    let categoryToExpand = null;
+
+    // Jika ada saved tab dan valid untuk user type ini, gunakan itu
+    if (savedActiveTab) {
+      const isValidTab = availableMenuItems.some(
+        (item) => item.id === savedActiveTab
+      );
+      if (isValidTab) {
+        tabToUse = savedActiveTab;
+        // Find category untuk tab ini
+        categoryToExpand = menuCategories.find((cat) =>
+          cat.items.some((item) => item.id === savedActiveTab),
+        );
+      }
+    }
+
+    // Jika tidak ada saved tab yang valid, gunakan default tab
+    if (!tabToUse && availableMenuItems.length > 0) {
+      tabToUse =
+        defaultTabMapping[mappedUserType] || availableMenuItems[0].id;
+      // Find category untuk default tab
+      categoryToExpand = menuCategories.find((cat) =>
+        cat.items.some((item) => item.id === tabToUse),
+      );
+    }
+
+    // Set active tab
+    if (tabToUse) {
+      setActiveTab(tabToUse);
+      localStorage.setItem("activeTab", tabToUse);
+
+      // Expand category yang sesuai
+      if (categoryToExpand) {
+        const newExpandedCategories = { [categoryToExpand.id]: true };
         setExpandedCategories(newExpandedCategories);
         localStorage.setItem(
           "expandedCategories",
           JSON.stringify(newExpandedCategories),
         );
       }
-    }
-
-    // Set default active tab based on user type and available menu items
-    const availableMenuItems = menuItems.filter((item) =>
-      item.allowedRoles.includes(mappedUserType),
-    );
-
-    if (availableMenuItems.length > 0) {
-      const defaultTab =
-        defaultTabMapping[mappedUserType] || availableMenuItems[0].id;
-      setActiveTab(defaultTab);
-      localStorage.setItem("activeTab", defaultTab);
     }
   };
 
