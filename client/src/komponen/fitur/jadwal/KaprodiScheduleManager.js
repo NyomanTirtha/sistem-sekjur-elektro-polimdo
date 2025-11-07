@@ -28,6 +28,24 @@ const JAM_ISTIRAHAT = {
   selesai: "13:00",
 };
 
+// Helper function untuk mendapatkan kode program studi
+const getProdiCode = (programStudiId) => {
+  const prodiCodes = {
+    1: 'ti',  // D4 Teknik Informatika
+    2: 'tl',  // D4 Teknik Listrik
+    3: 'tkbg', // D4 Teknik Konstruksi Bangunan Gedung
+    4: 'tkjj', // D4 Teknik Konstruksi Jalan dan Jembatan
+  };
+  return prodiCodes[programStudiId] || '';
+};
+
+// Helper function untuk generate format kelas (contoh: "1ti1" = semester 1, TI, kelas 1)
+const generateKelasFormat = (semester, programStudiId, kelasNumber = 1) => {
+  const prodiCode = getProdiCode(programStudiId);
+  if (!prodiCode) return '';
+  return `${semester}${prodiCode}${kelasNumber}`;
+};
+
 // Fungsi helper untuk memeriksa overlap waktu
 const isTimeOverlapping = (start1, end1, start2, end2) => {
   // Validasi input
@@ -109,6 +127,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
   const [createFormData, setCreateFormData] = useState({
     timetablePeriodId: "",
+    kelas: "",
   });
 
   const [itemFormData, setItemFormData] = useState({
@@ -118,7 +137,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     jamMulai: "",
     jamSelesai: "",
     ruanganId: "",
-    kelas: "",
     kapasitasMahasiswa: "",
   });
 
@@ -352,7 +370,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       if (response.data.success) {
         showSuccessAlert("Jadwal berhasil dibuat");
         setShowCreateModal(false);
-        setCreateFormData({ timetablePeriodId: "" });
+        setCreateFormData({ timetablePeriodId: "", kelas: "" });
         fetchMySchedules();
       }
     } catch (error) {
@@ -494,7 +512,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           jamMulai: "",
           jamSelesai: "",
           ruanganId: "",
-          kelas: "",
           kapasitasMahasiswa: "",
         });
         fetchScheduleItems(selectedSchedule.id);
@@ -656,7 +673,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         showSuccessAlert("Jadwal berhasil diperbarui");
         setShowEditScheduleModal(false);
         setEditingSchedule(null);
-        setCreateFormData({ timetablePeriodId: "" });
+        setCreateFormData({ timetablePeriodId: "", kelas: "" });
         fetchMySchedules();
       }
     } catch (error) {
@@ -674,7 +691,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       jamMulai: item.jamMulai,
       jamSelesai: item.jamSelesai,
       ruanganId: item.ruangan.id,
-      kelas: item.kelas || "",
       kapasitasMahasiswa: item.kapasitasMahasiswa || "",
     });
     setShowAddItemModal(true);
@@ -812,7 +828,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                           </div>
                           {item.kelas && (
                             <div className="mt-1 text-xs text-gray-500">
-                              Kelas: {item.kelas}
+                              Kelas: {(item.kelas || "").toUpperCase()}
                             </div>
                           )}
                         </div>
@@ -1001,8 +1017,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {schedule.timetablePeriod.semester}{" "}
-                    {schedule.timetablePeriod.tahunAkademik}
+                    {schedule.kelas || `${schedule.timetablePeriod.semester} ${schedule.timetablePeriod.tahunAkademik}`}
                   </h3>
                   <span
                     className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}
@@ -1205,7 +1220,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                   <div className="flex items-center gap-3">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">
-                        {selectedSchedule.timetablePeriod.semester} {selectedSchedule.timetablePeriod.tahunAkademik}
+                        {selectedSchedule.kelas || `${selectedSchedule.timetablePeriod.semester} ${selectedSchedule.timetablePeriod.tahunAkademik}`}
                       </h2>
                       <p className="text-sm text-blue-100">
                         Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedSchedule.status)}`}>
@@ -1300,7 +1315,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowCreateModal(false);
-                setCreateFormData({ timetablePeriodId: "" });
+                setCreateFormData({ timetablePeriodId: "", kelas: "" });
               }
             }}
           >
@@ -1319,13 +1334,13 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                   <div className="flex justify-between items-center">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Buat Jadwal Baru</h2>
-                      <p className="text-sm text-blue-100">Pilih periode untuk jadwal baru</p>
+                      <p className="text-sm text-blue-100">Pilih periode dan masukkan kelas untuk jadwal baru</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
                         setShowCreateModal(false);
-                        setCreateFormData({ timetablePeriodId: "" });
+                        setCreateFormData({ timetablePeriodId: "", kelas: "" });
                       }}
                       className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
                       aria-label="Close modal"
@@ -1336,7 +1351,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 bg-gray-50">
+                <div className="p-6 bg-gray-50 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Periode Timetable *
@@ -1360,6 +1375,29 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kelas *
+                    </label>
+                    <input
+                      type="text"
+                      value={createFormData.kelas}
+                      onChange={(e) => {
+                        const kelasValue = e.target.value.trim().toUpperCase();
+                        setCreateFormData({
+                          ...createFormData,
+                          kelas: kelasValue,
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      placeholder="Contoh: 1TI1, 2TL2"
+                      required
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Format: [Semester][Kode Prodi][Nomor Kelas]. Contoh: 1TI1 = Semester 1, Teknik Informatika, Kelas 1.
+                      Input akan otomatis menjadi huruf kapital.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Footer */}
@@ -1368,7 +1406,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false);
-                      setCreateFormData({ timetablePeriodId: "" });
+                      setCreateFormData({ timetablePeriodId: "", kelas: "" });
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
@@ -1410,7 +1448,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                   jamMulai: "",
                   jamSelesai: "",
                   ruanganId: "",
-                  kelas: "",
                   kapasitasMahasiswa: "",
                 });
               }
@@ -1450,7 +1487,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                           jamMulai: "",
                           jamSelesai: "",
                           ruanganId: "",
-                          kelas: "",
                           kapasitasMahasiswa: "",
                         });
                       }}
@@ -1471,12 +1507,17 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                       </label>
                       <select
                         value={itemFormData.mataKuliahId}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const selectedMataKuliahId = e.target.value;
+                          const selectedMataKuliah = availableCourses.find(
+                            (c) => c.id.toString() === selectedMataKuliahId
+                          );
+
                           setItemFormData({
                             ...itemFormData,
-                            mataKuliahId: e.target.value,
-                          })
-                        }
+                            mataKuliahId: selectedMataKuliahId,
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       >
@@ -1630,59 +1671,22 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                         )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Kelas
-                      </label>
-                      <input
-                        type="text"
-                        value={itemFormData.kelas}
-                        onChange={(e) => {
-                          const kelasValue = e.target.value.trim();
-
-                          // Auto-fill ruangan dan kapasitas berdasarkan kelas
-                          let matchedRoom = null;
-
-                          if (kelasValue.length > 0) {
-                            // Cari ruangan yang cocok dengan kelas yang diinput
-                            // Priority: 1. Exact match, 2. Ruangan mengandung kelas, 3. Kelas mengandung ruangan
-                            const kelasUpper = kelasValue.toUpperCase();
-
-                            // Coba exact match dulu
-                            matchedRoom = availableRooms.find((room) => {
-                              const roomName = room.nama.trim().toUpperCase();
-                              return roomName === kelasUpper;
-                            });
-
-                            // Jika tidak ada exact match, coba contains match
-                            if (!matchedRoom) {
-                              matchedRoom = availableRooms.find((room) => {
-                                const roomName = room.nama.trim().toUpperCase();
-                                // Hanya match jika kelas cukup panjang (minimal 3 karakter) untuk menghindari false positive
-                                return kelasUpper.length >= 3 &&
-                                  (roomName.includes(kelasUpper) || kelasUpper.includes(roomName));
-                              });
-                            }
-                          }
-
-                          setItemFormData({
-                            ...itemFormData,
-                            kelas: kelasValue,
-                            // Auto-fill ruangan jika ditemukan match
-                            ruanganId: matchedRoom ? matchedRoom.id.toString() : itemFormData.ruanganId,
-                            // Auto-fill kapasitas jika ruangan ditemukan
-                            kapasitasMahasiswa: matchedRoom
-                              ? matchedRoom.kapasitas.toString()
-                              : itemFormData.kapasitasMahasiswa,
-                          });
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Contoh: A101, B201"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Ruangan dan kapasitas akan otomatis terisi jika kelas cocok dengan nama ruangan
-                      </p>
-                    </div>
+                    {selectedSchedule && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Kelas
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedSchedule.kelas || ""}
+                          disabled
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Kelas sudah ditentukan saat membuat jadwal: <strong>{selectedSchedule.kelas}</strong>
+                        </p>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1739,7 +1743,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                         jamMulai: "",
                         jamSelesai: "",
                         ruanganId: "",
-                        kelas: "",
                         kapasitasMahasiswa: "",
                       });
                     }}
@@ -1776,7 +1779,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
               if (e.target === e.currentTarget) {
                 setShowEditScheduleModal(false);
                 setEditingSchedule(null);
-                setCreateFormData({ timetablePeriodId: "" });
+                setCreateFormData({ timetablePeriodId: "", kelas: "" });
               }
             }}
           >
@@ -1802,7 +1805,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                       onClick={() => {
                         setShowEditScheduleModal(false);
                         setEditingSchedule(null);
-                        setCreateFormData({ timetablePeriodId: "" });
+                        setCreateFormData({ timetablePeriodId: "", kelas: "" });
                       }}
                       className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
                       aria-label="Close modal"
@@ -1852,7 +1855,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     onClick={() => {
                       setShowEditScheduleModal(false);
                       setEditingSchedule(null);
-                      setCreateFormData({ timetablePeriodId: "" });
+                      setCreateFormData({ timetablePeriodId: "", kelas: "" });
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >

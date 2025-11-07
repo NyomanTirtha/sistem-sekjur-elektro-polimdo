@@ -1,4 +1,6 @@
 // utils/api.js
+import { isNetworkError, isOffline } from '../network/networkUtils';
+
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Helper function to get auth headers
@@ -11,13 +13,26 @@ const getAuthHeaders = () => {
   };
 };
 
-// Generic API call function
+// Generic API call function with network error handling
 const apiCall = async (endpoint, options = {}) => {
   try {
+    // Check if offline
+    if (isOffline()) {
+      const error = new Error('Tidak ada koneksi internet. Pastikan perangkat Anda terhubung ke internet.');
+      error.isNetworkError = true;
+      throw error;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: getAuthHeaders(),
+      signal: controller.signal,
       ...options
     });
+
+    clearTimeout(timeoutId);
 
     // Handle authentication errors
     if (response.status === 401 || response.status === 403) {
@@ -31,12 +46,28 @@ const apiCall = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      const error = new Error(data.message || `HTTP error! status: ${response.status}`);
+      error.status = response.status;
+      throw error;
     }
 
     return data;
   } catch (error) {
     console.error('API call failed:', error);
+    
+    // Handle network errors
+    if (error.name === 'AbortError') {
+      const networkError = new Error('Request timeout. Server tidak merespons. Pastikan server berjalan di localhost:5000');
+      networkError.isNetworkError = true;
+      networkError.isTimeout = true;
+      throw networkError;
+    }
+    
+    if (isNetworkError(error)) {
+      error.isNetworkError = true;
+      throw error;
+    }
+    
     throw error;
   }
 };

@@ -22,6 +22,11 @@ import {
 import MainLayout from "./komponen/layout/MainLayouts";
 import LoginPage from "./halaman/masuk/HalamanMasuk";
 import WelcomePopup from "./komponen/layout/WelcomePopup";
+import ErrorBoundary from "./komponen/error/ErrorBoundary";
+import NetworkError from "./komponen/error/NetworkError";
+import LoadingPage from "./komponen/error/LoadingPage";
+import NetworkStatus from "./komponen/error/NetworkStatus";
+import { setupOnlineListener, isOffline, isNetworkError } from "./utilitas/network/networkUtils";
 
 // Lazy load heavy components
 const MahasiswaList = lazy(
@@ -58,6 +63,8 @@ export default function App() {
   const [userType, setUserType] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Loading state saat check auth
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [networkError, setNetworkError] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState(() => {
     // Load expanded categories from localStorage
     const saved = localStorage.getItem("expandedCategories");
@@ -295,7 +302,7 @@ export default function App() {
           // Tapi kita perlu menggunakan userType dari localStorage karena state belum update
           const parsedUserData = JSON.parse(userData);
           const parsedUserType = getRoleMapping(parsedUserData.role);
-          
+
           if (parsedUserType && savedActiveTab) {
             const availableMenuItems = menuItems.filter((item) =>
               item.allowedRoles.includes(parsedUserType),
@@ -303,7 +310,7 @@ export default function App() {
             const isValidTab = availableMenuItems.some(
               (item) => item.id === savedActiveTab
             );
-            
+
             if (isValidTab) {
               setActiveTab(savedActiveTab);
 
@@ -327,7 +334,7 @@ export default function App() {
               if (defaultTab) {
                 setActiveTab(defaultTab);
                 localStorage.setItem("activeTab", defaultTab);
-                
+
                 const category = menuCategories.find((cat) =>
                   cat.items.some((item) => item.id === defaultTab),
                 );
@@ -347,7 +354,7 @@ export default function App() {
             if (defaultTab) {
               setActiveTab(defaultTab);
               localStorage.setItem("activeTab", defaultTab);
-              
+
               const category = menuCategories.find((cat) =>
                 cat.items.some((item) => item.id === defaultTab),
               );
@@ -363,13 +370,23 @@ export default function App() {
           }
         } catch (error) {
           console.error("Auth check failed:", error);
-          // Token invalid or backend not reachable, clear everything and show login
-          handleLogout();
+          // Check if it's a network error
+          if (isNetworkError(error) || error.isNetworkError || error.message?.includes('fetch') || error.message?.includes('Network')) {
+            setNetworkError(error);
+          } else {
+            // Token invalid or backend not reachable, clear everything and show login
+            handleLogout();
+          }
         }
       } catch (error) {
         console.error("Error during auth check:", error);
-        // If anything goes wrong, clear auth and show login
-        handleLogout();
+        // Check if it's a network error
+        if (error.isNetworkError || error.message?.includes('fetch') || error.message?.includes('Network')) {
+          setNetworkError(error);
+        } else {
+          // If anything goes wrong, clear auth and show login
+          handleLogout();
+        }
       } finally {
         // Always set checking to false, even if there's an error
         setIsCheckingAuth(false);
@@ -377,7 +394,19 @@ export default function App() {
     };
 
     checkAuth();
-  }, []);
+
+    // Setup online/offline listener
+    const cleanup = setupOnlineListener((online) => {
+      setIsOnline(online);
+      if (online && networkError) {
+        setNetworkError(null);
+      }
+    });
+
+    return () => {
+      cleanup();
+    };
+  }, [networkError]);
 
   // Filter menu items based on user role
   const getFilteredMenuItems = () => {
@@ -550,26 +579,21 @@ export default function App() {
     }
   };
 
-  // Show loading state while checking authentication
+  // Show loading page while checking auth
   if (isCheckingAuth) {
+    return <LoadingPage message="Memeriksa autentikasi..." />;
+  }
+
+  // Show network error if offline and authenticated
+  if (!isOnline && isAuthenticated && networkError) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
-            style={{ animation: "spin 0.6s linear infinite" }}
-          ></div>
-          <div className="text-sm text-gray-500 font-medium">
-            Memeriksa autentikasi...
-          </div>
-          <style>{`
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      </div>
+      <NetworkError
+        message={networkError.message || "Koneksi internet terputus. Pastikan perangkat Anda terhubung ke internet."}
+        onRetry={() => {
+          setNetworkError(null);
+          window.location.reload();
+        }}
+      />
     );
   }
 
@@ -640,7 +664,7 @@ export default function App() {
           currentUser={currentUser}
         />
       )}
-      
+
       <MainLayout
         title={currentMenuItem?.label || "Dashboard"}
         activeMenu={activeTab}
@@ -655,27 +679,7 @@ export default function App() {
         authToken={authToken} // Pass token to child components if needed
       >
         {ActiveComponent && (
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center p-8">
-                <div className="flex flex-col items-center gap-3">
-                  <div
-                    className="w-10 h-10 border-[3px] border-blue-200 border-t-blue-600 rounded-full"
-                    style={{ animation: "spin 0.6s linear infinite" }}
-                  ></div>
-                  <div className="text-sm text-gray-500 font-medium">
-                    Memuat...
-                  </div>
-                </div>
-                <style>{`
-              @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
-              </div>
-            }
-          >
+          <Suspense fallback={<LoadingPage message="Memuat halaman..." />}>
             <ActiveComponent
               authToken={authToken}
               currentUser={currentUser}
@@ -684,6 +688,7 @@ export default function App() {
           </Suspense>
         )}
       </MainLayout>
+      <NetworkStatus />
     </>
   );
 }

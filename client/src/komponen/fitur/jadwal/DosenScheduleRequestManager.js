@@ -38,8 +38,10 @@ const DosenScheduleRequestManager = ({ authToken }) => {
     preferredJamMulai: "",
     preferredJamSelesai: "",
     preferredRuanganId: "",
+    preferredKelas: "",
     alasanRequest: "",
   });
+  const [availableKelas, setAvailableKelas] = useState([]);
 
   const daysOrder = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
 
@@ -54,11 +56,29 @@ const DosenScheduleRequestManager = ({ authToken }) => {
         fetchMyRequests(),
         fetchAvailableCourses(),
         fetchAvailableRooms(),
+        fetchAvailableKelas(),
       ]);
     } catch (error) {
       console.error("Error fetching initial data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableKelas = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/prodi-schedules/kelas-list",
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+      );
+      if (response.data.success) {
+        setAvailableKelas(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching available kelas:", error);
+      setAvailableKelas([]);
     }
   };
 
@@ -129,6 +149,7 @@ const DosenScheduleRequestManager = ({ authToken }) => {
           preferredJamMulai: "",
           preferredJamSelesai: "",
           preferredRuanganId: "",
+          preferredKelas: "",
           alasanRequest: "",
         });
         fetchMyRequests();
@@ -380,6 +401,7 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                   preferredJamMulai: "",
                   preferredJamSelesai: "",
                   preferredRuanganId: "",
+                  preferredKelas: "",
                   alasanRequest: "",
                 });
               }
@@ -533,6 +555,33 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                       required
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kelas *
+                  </label>
+                  <select
+                    value={formData.preferredKelas}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        preferredKelas: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Pilih Kelas</option>
+                    {availableKelas.map((kelas) => (
+                      <option key={kelas} value={kelas}>
+                        {kelas}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Pilih kelas yang tersedia di program studi Anda. Jika kelas belum ada, silakan hubungi Kaprodi untuk membuat jadwal kelas terlebih dahulu.
+                  </p>
                 </div>
 
                 <div>

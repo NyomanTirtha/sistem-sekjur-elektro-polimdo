@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import ErrorBoundary from './ErrorBoundary';
+import ErrorBoundary from './komponen/error/ErrorBoundary';
 import reportWebVitals from './reportWebVitals';
 
 // ✅ PERFORMANCE: Hide loading overlay lebih cepat
@@ -26,7 +26,7 @@ root.render(
   </React.StrictMode>
 );
 
-// ✅ PERFORMANCE: Hide loading overlay setelah React render selesai
+
 // Use requestAnimationFrame untuk memastikan DOM sudah ter-render
 requestAnimationFrame(() => {
   setTimeout(() => {
