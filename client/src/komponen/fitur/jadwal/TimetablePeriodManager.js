@@ -428,11 +428,11 @@ const TimetablePeriodManager = ({ authToken }) => {
             >
               <form onSubmit={handleCreatePeriod}>
                 {/* Header */}
-                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div className="p-5 bg-gradient-to-r from-gray-600 to-gray-700 border-b border-gray-800">
                   <div className="flex justify-between items-center">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Buat Periode Timetable Baru</h2>
-                      <p className="text-sm text-blue-100">Tentukan semester dan tahun akademik</p>
+                      <p className="text-sm text-gray-200">Tentukan semester dan tahun akademik</p>
                     </div>
                     <button
                       type="button"
@@ -440,7 +440,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                         setShowCreateModal(false);
                         setFormData({ semester: "", tahunAkademik: "" });
                       }}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                       aria-label="Close modal"
                     >
                       <XCircle className="w-5 h-5" />
@@ -544,13 +544,13 @@ const TimetablePeriodManager = ({ authToken }) => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+              <div className="p-5 bg-gradient-to-r from-gray-600 to-gray-700 border-b border-gray-800">
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-xl font-semibold text-white mb-1">
                       Detail Periode: {selectedPeriod.semester} {selectedPeriod.tahunAkademik}
                     </h2>
-                    <p className="text-sm text-blue-100">
+                    <p className="text-sm text-gray-200">
                       Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedPeriod.status)}`}>
                         {getStatusLabel(selectedPeriod.status)}
                       </span>
@@ -562,7 +562,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                       setSelectedPeriod(null);
                       setPeriodSchedules([]);
                     }}
-                    className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                     aria-label="Close modal"
                   >
                     <XCircle className="w-5 h-5" />

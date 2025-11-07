@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Calendar,
   Plus,
@@ -21,6 +21,66 @@ import { getButtonPrimaryClass } from "../../../utilitas/theme";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Konstanta jam istirahat (dapat disesuaikan)
+const JAM_ISTIRAHAT = {
+  mulai: "12:00",
+  selesai: "13:00",
+};
+
+// Fungsi helper untuk memeriksa overlap waktu
+const isTimeOverlapping = (start1, end1, start2, end2) => {
+  // Validasi input
+  if (!start1 || !end1 || !start2 || !end2) return false;
+
+  try {
+    const s1 = new Date(`2024-01-01 ${start1}`);
+    const e1 = new Date(`2024-01-01 ${end1}`);
+    const s2 = new Date(`2024-01-01 ${start2}`);
+    const e2 = new Date(`2024-01-01 ${end2}`);
+
+    // Validasi date valid
+    if (isNaN(s1.getTime()) || isNaN(e1.getTime()) || isNaN(s2.getTime()) || isNaN(e2.getTime())) {
+      return false;
+    }
+
+    return s1 < e2 && s2 < e1;
+  } catch (error) {
+    console.error("Error in isTimeOverlapping:", error);
+    return false;
+  }
+};
+
+// Fungsi untuk memeriksa apakah waktu bertabrakan dengan jam istirahat
+const isOverlappingWithBreakTime = (jamMulai, jamSelesai) => {
+  return isTimeOverlapping(jamMulai, jamSelesai, JAM_ISTIRAHAT.mulai, JAM_ISTIRAHAT.selesai);
+};
+
+// Helper function untuk format date dengan validasi
+const formatDateSafe = (dateString, options = {}) => {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("id-ID", options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "N/A";
+  }
+};
+
+// Helper function untuk format time dengan validasi
+const formatTimeSafe = (dateString, options = {}) => {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleTimeString("id-ID", options);
+  } catch (error) {
+    console.error("Error formatting time:", error);
+    return "N/A";
+  }
+};
+
 const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   const [schedules, setSchedules] = useState([]);
   const [periods, setPeriods] = useState([]);
@@ -35,7 +95,8 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
-  
+  const [validationError, setValidationError] = useState("");
+
   // State untuk request dari dosen
   const [dosenRequests, setDosenRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -70,17 +131,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     fetchDosenRequests();
   }, [requestFilterStatus]);
 
-  // Debug useEffect to track availableRooms state
-  useEffect(() => {
-    console.log("🏢 Available rooms updated:", {
-      count: availableRooms.length,
-      rooms: availableRooms.map((r) => ({
-        id: r.id,
-        nama: r.nama,
-        isActive: r.isActive,
-      })),
-    });
-  }, [availableRooms]);
+  // Removed debug useEffect untuk optimasi performa
 
   const fetchInitialData = async () => {
     try {
@@ -107,14 +158,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       if (requestFilterStatus) {
         params.append("status", requestFilterStatus);
       }
-      
+
       const response = await axios.get(
         `http://localhost:5000/api/dosen-requests/for-my-prodi?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${authToken}` },
         },
       );
-      
+
       if (response.data.success) {
         setDosenRequests(response.data.data);
       }
@@ -131,7 +182,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     try {
       const response = await axios.post(
         `http://localhost:5000/api/dosen-requests/${requestId}/approve`,
-        { 
+        {
           notes: requestActionNotes || null,
           timetablePeriodId: requestSelectedPeriodId || null,
         },
@@ -309,8 +360,112 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     }
   };
 
+  // Validasi sebelum submit
+  const validateScheduleItem = () => {
+    setValidationError("");
+
+    // Validasi jam mulai dan selesai
+    if (!itemFormData.jamMulai || !itemFormData.jamSelesai) {
+      setValidationError("Jam mulai dan jam selesai harus diisi");
+      return false;
+    }
+
+    // Validasi jam selesai harus setelah jam mulai
+    try {
+      const jamMulai = new Date(`2024-01-01 ${itemFormData.jamMulai}`);
+      const jamSelesai = new Date(`2024-01-01 ${itemFormData.jamSelesai}`);
+
+      if (isNaN(jamMulai.getTime()) || isNaN(jamSelesai.getTime())) {
+        setValidationError("Format jam tidak valid");
+        return false;
+      }
+
+      if (jamSelesai <= jamMulai) {
+        setValidationError("Jam selesai harus setelah jam mulai");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error validating time:", error);
+      setValidationError("Format jam tidak valid");
+      return false;
+    }
+
+    // Validasi tidak boleh bertabrakan dengan jam istirahat
+    if (isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai)) {
+      setValidationError(
+        `Jadwal tidak boleh bertabrakan dengan jam istirahat (${JAM_ISTIRAHAT.mulai} - ${JAM_ISTIRAHAT.selesai})`
+      );
+      return false;
+    }
+
+    // Validasi konflik dengan jadwal lain di hari yang sama
+    if (selectedSchedule && itemFormData.hari) {
+      if (!Array.isArray(scheduleItems)) {
+        return true; // No conflicts if scheduleItems is not an array
+      }
+
+      const conflictingItems = scheduleItems.filter((item) => {
+        if (!item) return false;
+        if (editingItem && item.id === editingItem.id) return false; // Skip item yang sedang diedit
+
+        // Cek hari yang sama
+        if (!item.hari || item.hari !== itemFormData.hari) return false;
+
+        // Cek overlap waktu - validasi dulu
+        if (!item.jamMulai || !item.jamSelesai) return false;
+
+        const hasTimeOverlap = isTimeOverlapping(
+          item.jamMulai,
+          item.jamSelesai,
+          itemFormData.jamMulai,
+          itemFormData.jamSelesai
+        );
+
+        if (!hasTimeOverlap) return false;
+
+        // Cek konflik dosen
+        if (item.dosenId && item.dosenId === itemFormData.dosenId) {
+          return true;
+        }
+
+        // Cek konflik ruangan
+        if (item.ruanganId && item.ruanganId === itemFormData.ruanganId) {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (conflictingItems.length > 0) {
+        const conflicts = [];
+        conflictingItems.forEach((item) => {
+          if (!item) return;
+          const timeStr = item.jamMulai && item.jamSelesai ? `${item.jamMulai}-${item.jamSelesai}` : "waktu tidak valid";
+          if (item.dosenId === itemFormData.dosenId) {
+            conflicts.push(`Dosen sudah mengajar pada ${timeStr}`);
+          }
+          if (item.ruanganId === itemFormData.ruanganId) {
+            conflicts.push(`Ruangan sudah digunakan pada ${timeStr}`);
+          }
+        });
+        if (conflicts.length > 0) {
+          setValidationError(conflicts.join(". "));
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   const handleAddScheduleItem = async (e) => {
     e.preventDefault();
+
+    // Validasi sebelum submit
+    if (!validateScheduleItem()) {
+      return;
+    }
+
     try {
       const url = editingItem
         ? `http://localhost:5000/api/prodi-schedules/items/${editingItem.id}`
@@ -330,6 +485,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         );
         setShowAddItemModal(false);
         setEditingItem(null);
+        setValidationError("");
         setItemFormData({
           mataKuliahId: "",
           dosenId: "",
@@ -345,7 +501,9 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error saving schedule item:", error);
-      alert(error.response?.data?.message || "Gagal menyimpan item jadwal");
+      const errorMessage = error.response?.data?.message || "Gagal menyimpan item jadwal";
+      setValidationError(errorMessage);
+      alert(errorMessage);
     }
   };
 
@@ -441,7 +599,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       if (response.data.success) {
         const message =
           schedule?.status === "SUBMITTED" ||
-          schedule?.status === "UNDER_REVIEW"
+            schedule?.status === "UNDER_REVIEW"
             ? "Pengajuan jadwal berhasil dibatalkan"
             : "Jadwal berhasil dihapus";
         alert(message);
@@ -572,14 +730,103 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     }
   };
 
-  const groupItemsByDay = (items) => {
+  // Memoize groupItemsByDay untuk optimasi
+  const groupItemsByDay = useCallback((items) => {
+    if (!items || !Array.isArray(items)) {
+      const empty = {};
+      daysOrder.forEach((day) => {
+        empty[day] = [];
+      });
+      return empty;
+    }
+
     const grouped = {};
     daysOrder.forEach((day) => {
       grouped[day] = items
-        .filter((item) => item.hari === day)
-        .sort((a, b) => a.jamMulai.localeCompare(b.jamMulai));
+        .filter((item) => item && item.hari === day)
+        .sort((a, b) => {
+          if (!a || !a.jamMulai) return 1;
+          if (!b || !b.jamMulai) return -1;
+          return a.jamMulai.localeCompare(b.jamMulai);
+        });
     });
     return grouped;
+  }, []);
+
+  // Component untuk list items - dipisah untuk optimasi
+  const ScheduleItemsList = ({ scheduleItems, groupItemsByDay, openEditItemModal, handleDeleteScheduleItem }) => {
+    const groupedItems = useMemo(() => groupItemsByDay(scheduleItems), [scheduleItems, groupItemsByDay]);
+
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+          Daftar Item
+        </h4>
+        <div className="space-y-2">
+          {Object.entries(groupedItems).map(
+            ([day, items]) => (
+              <div key={day} className="border border-gray-200 rounded overflow-hidden">
+                <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-200">
+                  <h5 className="text-xs font-medium text-gray-700">{day}</h5>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {items.map((item) => (
+                    <div key={item.id} className="p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h6 className="text-sm font-medium text-gray-900 mb-1.5 truncate">
+                            {item.mataKuliah.nama}
+                          </h6>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                            <div className="flex items-center">
+                              <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{item.jamMulai} - {item.jamSelesai}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{item.ruangan.nama}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <User className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{item.dosen.nama}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Book className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span>{item.mataKuliah.sks} SKS</span>
+                            </div>
+                          </div>
+                          {item.kelas && (
+                            <div className="mt-1 text-xs text-gray-500">
+                              Kelas: {item.kelas}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => openEditItemModal(item)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteScheduleItem(item.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -614,125 +861,112 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       </div>
 
       {/* Section Request dari Dosen */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">
               Request Jadwal dari Dosen
-              {dosenRequests.filter((r) => r.status === "PENDING").length > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center px-2.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                  {dosenRequests.filter((r) => r.status === "PENDING").length} Pending
-                </span>
-              )}
             </h2>
-            <p className="text-sm text-gray-600">
-              Kelola request jadwal dari dosen di program studi Anda. Setelah disetujui, jadwal akan otomatis ditambahkan ke jadwal prodi Anda.
-            </p>
+            {dosenRequests.filter((r) => r.status === "PENDING").length > 0 && (
+              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                {dosenRequests.filter((r) => r.status === "PENDING").length}
+              </span>
+            )}
           </div>
-          <div>
-            <select
-              value={requestFilterStatus}
-              onChange={(e) => setRequestFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Status</option>
-              <option value="PENDING">Menunggu Persetujuan</option>
-              <option value="APPROVED">Disetujui</option>
-              <option value="REJECTED">Ditolak</option>
-            </select>
-          </div>
+          <select
+            value={requestFilterStatus}
+            onChange={(e) => setRequestFilterStatus(e.target.value)}
+            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Semua Status</option>
+            <option value="PENDING">Menunggu</option>
+            <option value="APPROVED">Disetujui</option>
+            <option value="REJECTED">Ditolak</option>
+          </select>
         </div>
 
         {loadingRequests ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p className="text-gray-600">Memuat request...</p>
+          <div className="text-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p className="text-xs text-gray-600">Memuat request...</p>
           </div>
         ) : dosenRequests.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-            <p>Tidak ada request dari dosen</p>
+          <div className="text-center py-6 text-gray-500">
+            <MessageSquare className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+            <p className="text-sm">Tidak ada request dari dosen</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {dosenRequests.map((request) => (
               <div
                 key={request.id}
-                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition-colors"
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">
                         {request.mataKuliah?.nama || "N/A"}
                       </h3>
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getRequestStatusColor(request.status)}`}
+                        className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${getRequestStatusColor(request.status)}`}
                       >
                         {getRequestStatusLabel(request.status)}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 mr-2" />
-                        {request.dosen?.nama || "N/A"}
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {request.preferredHari}, {request.preferredJamMulai} - {request.preferredJamSelesai}
-                      </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        <span className="truncate">{request.dosen?.nama || "N/A"}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{request.preferredHari}, {request.preferredJamMulai}-{request.preferredJamSelesai}</span>
+                      </span>
                       {request.preferredRuangan && (
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {request.preferredRuangan.nama}
-                        </div>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{request.preferredRuangan.nama}</span>
+                        </span>
                       )}
-                      <div className="flex items-center">
-                        <Book className="w-4 h-4 mr-2" />
-                        {request.mataKuliah?.sks || 0} SKS
-                      </div>
+                      <span className="flex items-center gap-1">
+                        <Book className="w-3 h-3" />
+                        <span>{request.mataKuliah?.sks || 0} SKS</span>
+                      </span>
                     </div>
                     {request.alasanRequest && (
-                      <div className="mb-2">
-                        <p className="text-sm font-medium text-gray-700 mb-1">
-                          Alasan Request:
-                        </p>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                          {request.alasanRequest}
+                      <div className="mb-1.5">
+                        <p className="text-xs text-gray-600 line-clamp-1">
+                          <span className="font-medium">Alasan:</span> {request.alasanRequest}
                         </p>
                       </div>
                     )}
                     {request.kaprodiNotes && (
-                      <div className="mb-2">
-                        <p className="text-sm font-medium text-gray-700 mb-1">
-                          Catatan Kaprodi:
-                        </p>
-                        <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                          {request.kaprodiNotes}
+                      <div className="mb-1.5">
+                        <p className="text-xs text-blue-700 line-clamp-1">
+                          <span className="font-medium">Catatan:</span> {request.kaprodiNotes}
                         </p>
                       </div>
                     )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Dikirim: {new Date(request.submittedAt).toLocaleString("id-ID")}
+                    <div className="text-xs text-gray-500">
+                      {formatDateSafe(request.submittedAt, { day: "numeric", month: "numeric", year: "numeric" })}, {formatTimeSafe(request.submittedAt, { hour: "2-digit", minute: "2-digit" })}
                       {request.processedAt && (
-                        <> • Diproses: {new Date(request.processedAt).toLocaleString("id-ID")}</>
+                        <> • {formatDateSafe(request.processedAt, { day: "numeric", month: "numeric", year: "numeric" })}, {formatTimeSafe(request.processedAt, { hour: "2-digit", minute: "2-digit" })}</>
                       )}
                     </div>
                   </div>
                   {request.status === "PENDING" && (
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setRequestActionNotes("");
-                          setRequestSelectedPeriodId("");
-                          setShowRequestDetailModal(true);
-                        }}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                      >
-                        Review
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setRequestActionNotes("");
+                        setRequestSelectedPeriodId("");
+                        setShowRequestDetailModal(true);
+                      }}
+                      className="px-2.5 py-1 text-xs border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 whitespace-nowrap flex-shrink-0"
+                    >
+                      Review
+                    </button>
                   )}
                 </div>
               </div>
@@ -774,16 +1008,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                 <div className="text-sm">
                   <span className="text-gray-600">Dibuat:</span>
                   <span className="font-medium ml-1">
-                    {new Date(schedule.createdAt).toLocaleDateString("id-ID")}
+                    {formatDateSafe(schedule.createdAt)}
                   </span>
                 </div>
                 {schedule.submittedAt && (
                   <div className="text-sm">
                     <span className="text-gray-600">Disubmit:</span>
                     <span className="font-medium ml-1">
-                      {new Date(schedule.submittedAt).toLocaleDateString(
-                        "id-ID",
-                      )}
+                      {formatDateSafe(schedule.submittedAt)}
                     </span>
                   </div>
                 )}
@@ -823,14 +1055,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
                   {(schedule.status === "SUBMITTED" ||
                     schedule.status === "UNDER_REVIEW") && (
-                    <button
-                      onClick={() => handleDeleteSchedule(schedule.id)}
-                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700 shadow-sm"
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      Batalkan Pengajuan
-                    </button>
-                  )}
+                      <button
+                        onClick={() => handleDeleteSchedule(schedule.id)}
+                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700 shadow-sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Batalkan Pengajuan
+                      </button>
+                    )}
 
                   {schedule.status === "REJECTED" && (
                     <button
@@ -844,14 +1076,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
                   {(schedule.status === "APPROVED" ||
                     schedule.status === "PUBLISHED") && (
-                    <button
-                      onClick={() => handleDeleteSchedule(schedule.id)}
-                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 shadow-sm"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Hapus Jadwal
-                    </button>
-                  )}
+                      <button
+                        onClick={() => handleDeleteSchedule(schedule.id)}
+                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 shadow-sm"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Hapus Jadwal
+                      </button>
+                    )}
                 </div>
 
                 {schedule.status === "DRAFT" && (
@@ -897,8 +1129,8 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
             </div>
             <div className="ml-3 flex-1">
               <p className="text-sm text-blue-800">
-                <strong>Peringatan:</strong> Ada {dosenRequests.filter((r) => r.status === "PENDING").length} request dari dosen yang menunggu persetujuan. 
-                Setelah disetujui, jadwal akan <strong>otomatis ditambahkan</strong> ke jadwal prodi Anda. 
+                <strong>Peringatan:</strong> Ada {dosenRequests.filter((r) => r.status === "PENDING").length} request dari dosen yang menunggu persetujuan.
+                Setelah disetujui, jadwal akan <strong>otomatis ditambahkan</strong> ke jadwal prodi Anda.
                 Pastikan untuk mereview request sebelum membuat jadwal manual.
               </p>
             </div>
@@ -994,105 +1226,43 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
               {/* Content */}
               <div className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-6">
-                {scheduleItems.length === 0 ? (
-                  <div className="text-center py-10">
-                    <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-500 mb-4">
-                      {["DRAFT", "REJECTED"].includes(selectedSchedule.status)
-                        ? "Belum ada jadwal. Klik 'Tambah' untuk menambahkan"
-                        : "Jadwal kosong"}
-                    </p>
-                    {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                      <button
-                        onClick={() => setShowAddItemModal(true)}
-                        className={`inline-flex items-center px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Tambah Mata Kuliah
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Grid View */}
-                    <TimetableGridView
-                      scheduleItems={scheduleItems}
-                      className="bg-white border border-gray-200 rounded p-3"
-                    />
-                    
-                    {/* List View untuk Edit/Delete - hanya DRAFT/REJECTED */}
-                    {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Daftar Item
-                        </h4>
-                        <div className="space-y-2">
-                          {Object.entries(groupItemsByDay(scheduleItems)).map(
-                            ([day, items]) => (
-                              <div key={day} className="border border-gray-200 rounded overflow-hidden">
-                                <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-200">
-                                  <h5 className="text-xs font-medium text-gray-700">{day}</h5>
-                                </div>
-                                <div className="divide-y divide-gray-100">
-                                  {items.map((item) => (
-                                    <div key={item.id} className="p-3 hover:bg-gray-50 transition-colors">
-                                      <div className="flex justify-between items-start gap-3">
-                                        <div className="flex-1 min-w-0">
-                                          <h6 className="text-sm font-medium text-gray-900 mb-1.5 truncate">
-                                            {item.mataKuliah.nama}
-                                          </h6>
-                                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
-                                            <div className="flex items-center">
-                                              <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-                                              <span className="truncate">{item.jamMulai} - {item.jamSelesai}</span>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                                              <span className="truncate">{item.ruangan.nama}</span>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <User className="w-3 h-3 mr-1 flex-shrink-0" />
-                                              <span className="truncate">{item.dosen.nama}</span>
-                                            </div>
-                                            <div className="flex items-center">
-                                              <Book className="w-3 h-3 mr-1 flex-shrink-0" />
-                                              <span>{item.mataKuliah.sks} SKS</span>
-                                            </div>
-                                          </div>
-                                          {item.kelas && (
-                                            <div className="mt-1 text-xs text-gray-500">
-                                              Kelas: {item.kelas}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-1.5">
-                                          <button
-                                            onClick={() => openEditItemModal(item)}
-                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                            title="Edit"
-                                          >
-                                            <Edit className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteScheduleItem(item.id)}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                            title="Hapus"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  {scheduleItems.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                      <p className="text-sm text-gray-500 mb-4">
+                        {["DRAFT", "REJECTED"].includes(selectedSchedule.status)
+                          ? "Belum ada jadwal. Klik 'Tambah' untuk menambahkan"
+                          : "Jadwal kosong"}
+                      </p>
+                      {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
+                        <button
+                          onClick={() => setShowAddItemModal(true)}
+                          className={`inline-flex items-center px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Tambah Mata Kuliah
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Grid View */}
+                      <TimetableGridView
+                        scheduleItems={scheduleItems}
+                        className="bg-white border border-gray-200 rounded p-3"
+                      />
+
+                      {/* List View untuk Edit/Delete - hanya DRAFT/REJECTED */}
+                      {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
+                        <ScheduleItemsList
+                          scheduleItems={scheduleItems}
+                          groupItemsByDay={groupItemsByDay}
+                          openEditItemModal={openEditItemModal}
+                          handleDeleteScheduleItem={handleDeleteScheduleItem}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -1257,6 +1427,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                       onClick={() => {
                         setShowAddItemModal(false);
                         setEditingItem(null);
+                        setValidationError("");
                         setItemFormData({
                           mataKuliahId: "",
                           dosenId: "",
@@ -1279,231 +1450,263 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-gray-50">
                   <div className="p-6 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mata Kuliah *
-                  </label>
-                  <select
-                    value={itemFormData.mataKuliahId}
-                    onChange={(e) =>
-                      setItemFormData({
-                        ...itemFormData,
-                        mataKuliahId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Mata Kuliah</option>
-                    {availableCourses.map((course) => (
-                      <option key={course.id} value={course.id}>
-                        {course.nama} ({course.sks} SKS)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dosen *
-                  </label>
-                  <select
-                    value={itemFormData.dosenId}
-                    onChange={(e) =>
-                      setItemFormData({
-                        ...itemFormData,
-                        dosenId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Dosen</option>
-                    {availableDosen.map((dosen) => (
-                      <option key={dosen.nip} value={dosen.nip}>
-                        {dosen.nama}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hari *
-                  </label>
-                  <select
-                    value={itemFormData.hari}
-                    onChange={(e) =>
-                      setItemFormData({ ...itemFormData, hari: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Hari</option>
-                    {daysOrder.map((day) => (
-                      <option key={day} value={day}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ruangan *
-                  </label>
-                  <select
-                    value={itemFormData.ruanganId}
-                    onChange={(e) => {
-                      const selectedRoomId = e.target.value;
-                      const selectedRoom = availableRooms.find(
-                        (room) => room.id === parseInt(selectedRoomId)
-                      );
-                      
-                      setItemFormData({
-                        ...itemFormData,
-                        ruanganId: selectedRoomId,
-                        // Auto-fill kapasitas dari ruangan yang dipilih
-                        kapasitasMahasiswa: selectedRoom
-                          ? selectedRoom.kapasitas.toString()
-                          : "",
-                      });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Ruangan</option>
-                    {availableRooms.length === 0 ? (
-                      <option value="" disabled>
-                        {loading
-                          ? "Memuat ruangan..."
-                          : "Tidak ada ruangan tersedia"}
-                      </option>
-                    ) : (
-                      availableRooms.map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.nama} (Kapasitas: {room.kapasitas})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Ruangan dapat dipilih manual atau otomatis terisi saat menginput kelas yang cocok
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Jam Mulai *
-                  </label>
-                  <input
-                    type="time"
-                    value={itemFormData.jamMulai}
-                    onChange={(e) =>
-                      setItemFormData({
-                        ...itemFormData,
-                        jamMulai: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Jam Selesai *
-                  </label>
-                  <input
-                    type="time"
-                    value={itemFormData.jamSelesai}
-                    onChange={(e) =>
-                      setItemFormData({
-                        ...itemFormData,
-                        jamSelesai: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kelas
-                  </label>
-                  <input
-                    type="text"
-                    value={itemFormData.kelas}
-                    onChange={(e) => {
-                      const kelasValue = e.target.value.trim();
-                      
-                      // Auto-fill ruangan dan kapasitas berdasarkan kelas
-                      let matchedRoom = null;
-                      
-                      if (kelasValue.length > 0) {
-                        // Cari ruangan yang cocok dengan kelas yang diinput
-                        // Priority: 1. Exact match, 2. Ruangan mengandung kelas, 3. Kelas mengandung ruangan
-                        const kelasUpper = kelasValue.toUpperCase();
-                        
-                        // Coba exact match dulu
-                        matchedRoom = availableRooms.find((room) => {
-                          const roomName = room.nama.trim().toUpperCase();
-                          return roomName === kelasUpper;
-                        });
-                        
-                        // Jika tidak ada exact match, coba contains match
-                        if (!matchedRoom) {
-                          matchedRoom = availableRooms.find((room) => {
-                            const roomName = room.nama.trim().toUpperCase();
-                            // Hanya match jika kelas cukup panjang (minimal 3 karakter) untuk menghindari false positive
-                            return kelasUpper.length >= 3 && 
-                                   (roomName.includes(kelasUpper) || kelasUpper.includes(roomName));
-                          });
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mata Kuliah *
+                      </label>
+                      <select
+                        value={itemFormData.mataKuliahId}
+                        onChange={(e) =>
+                          setItemFormData({
+                            ...itemFormData,
+                            mataKuliahId: e.target.value,
+                          })
                         }
-                      }
-                      
-                      setItemFormData({
-                        ...itemFormData,
-                        kelas: kelasValue,
-                        // Auto-fill ruangan jika ditemukan match
-                        ruanganId: matchedRoom ? matchedRoom.id.toString() : itemFormData.ruanganId,
-                        // Auto-fill kapasitas jika ruangan ditemukan
-                        kapasitasMahasiswa: matchedRoom 
-                          ? matchedRoom.kapasitas.toString() 
-                          : itemFormData.kapasitasMahasiswa,
-                      });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Contoh: A101, B201"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Ruangan dan kapasitas akan otomatis terisi jika kelas cocok dengan nama ruangan
-                  </p>
-                </div>
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Pilih Mata Kuliah</option>
+                        {availableCourses.map((course) => (
+                          <option key={course.id} value={course.id}>
+                            {course.nama} ({course.sks} SKS)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kapasitas Mahasiswa
-                  </label>
-                  <input
-                    type="number"
-                    value={itemFormData.kapasitasMahasiswa}
-                    onChange={(e) =>
-                      setItemFormData({
-                        ...itemFormData,
-                        kapasitasMahasiswa: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="1"
-                    placeholder="Otomatis terisi dari kelas atau ruangan"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Kapasitas otomatis terisi saat memilih kelas yang cocok dengan ruangan atau saat memilih ruangan. Dapat diubah manual jika diperlukan.
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dosen *
+                      </label>
+                      <select
+                        value={itemFormData.dosenId}
+                        onChange={(e) =>
+                          setItemFormData({
+                            ...itemFormData,
+                            dosenId: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Pilih Dosen</option>
+                        {availableDosen.map((dosen) => (
+                          <option key={dosen.nip} value={dosen.nip}>
+                            {dosen.nama}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Hari *
+                      </label>
+                      <select
+                        value={itemFormData.hari}
+                        onChange={(e) =>
+                          setItemFormData({ ...itemFormData, hari: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Pilih Hari</option>
+                        {daysOrder.map((day) => (
+                          <option key={day} value={day}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ruangan *
+                      </label>
+                      <select
+                        value={itemFormData.ruanganId}
+                        onChange={(e) => {
+                          const selectedRoomId = e.target.value;
+                          const selectedRoom = availableRooms.find(
+                            (room) => room.id === parseInt(selectedRoomId)
+                          );
+
+                          setItemFormData({
+                            ...itemFormData,
+                            ruanganId: selectedRoomId,
+                            // Auto-fill kapasitas dari ruangan yang dipilih
+                            kapasitasMahasiswa: selectedRoom
+                              ? selectedRoom.kapasitas.toString()
+                              : "",
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Pilih Ruangan</option>
+                        {availableRooms.length === 0 ? (
+                          <option value="" disabled>
+                            {loading
+                              ? "Memuat ruangan..."
+                              : "Tidak ada ruangan tersedia"}
+                          </option>
+                        ) : (
+                          availableRooms.map((room) => (
+                            <option key={room.id} value={room.id}>
+                              {room.nama} (Kapasitas: {room.kapasitas})
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Ruangan dapat dipilih manual atau otomatis terisi saat menginput kelas yang cocok
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Jam Mulai *
+                      </label>
+                      <input
+                        type="time"
+                        value={itemFormData.jamMulai}
+                        onChange={(e) => {
+                          setItemFormData({
+                            ...itemFormData,
+                            jamMulai: e.target.value,
+                          });
+                          // Clear validation error saat user mengubah input
+                          if (validationError) setValidationError("");
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      {itemFormData.jamMulai && itemFormData.jamSelesai &&
+                        isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai) && (
+                          <p className="mt-1 text-xs text-orange-600">
+                            ⚠️ Waktu ini bertabrakan dengan jam istirahat ({JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
+                          </p>
+                        )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Jam Selesai *
+                      </label>
+                      <input
+                        type="time"
+                        value={itemFormData.jamSelesai}
+                        onChange={(e) => {
+                          setItemFormData({
+                            ...itemFormData,
+                            jamSelesai: e.target.value,
+                          });
+                          // Clear validation error saat user mengubah input
+                          if (validationError) setValidationError("");
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      {itemFormData.jamMulai && itemFormData.jamSelesai &&
+                        isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai) && (
+                          <p className="mt-1 text-xs text-orange-600">
+                            ⚠️ Waktu ini bertabrakan dengan jam istirahat ({JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
+                          </p>
+                        )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kelas
+                      </label>
+                      <input
+                        type="text"
+                        value={itemFormData.kelas}
+                        onChange={(e) => {
+                          const kelasValue = e.target.value.trim();
+
+                          // Auto-fill ruangan dan kapasitas berdasarkan kelas
+                          let matchedRoom = null;
+
+                          if (kelasValue.length > 0) {
+                            // Cari ruangan yang cocok dengan kelas yang diinput
+                            // Priority: 1. Exact match, 2. Ruangan mengandung kelas, 3. Kelas mengandung ruangan
+                            const kelasUpper = kelasValue.toUpperCase();
+
+                            // Coba exact match dulu
+                            matchedRoom = availableRooms.find((room) => {
+                              const roomName = room.nama.trim().toUpperCase();
+                              return roomName === kelasUpper;
+                            });
+
+                            // Jika tidak ada exact match, coba contains match
+                            if (!matchedRoom) {
+                              matchedRoom = availableRooms.find((room) => {
+                                const roomName = room.nama.trim().toUpperCase();
+                                // Hanya match jika kelas cukup panjang (minimal 3 karakter) untuk menghindari false positive
+                                return kelasUpper.length >= 3 &&
+                                  (roomName.includes(kelasUpper) || kelasUpper.includes(roomName));
+                              });
+                            }
+                          }
+
+                          setItemFormData({
+                            ...itemFormData,
+                            kelas: kelasValue,
+                            // Auto-fill ruangan jika ditemukan match
+                            ruanganId: matchedRoom ? matchedRoom.id.toString() : itemFormData.ruanganId,
+                            // Auto-fill kapasitas jika ruangan ditemukan
+                            kapasitasMahasiswa: matchedRoom
+                              ? matchedRoom.kapasitas.toString()
+                              : itemFormData.kapasitasMahasiswa,
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Contoh: A101, B201"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Ruangan dan kapasitas akan otomatis terisi jika kelas cocok dengan nama ruangan
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kapasitas Mahasiswa
+                      </label>
+                      <input
+                        type="number"
+                        value={itemFormData.kapasitasMahasiswa}
+                        onChange={(e) =>
+                          setItemFormData({
+                            ...itemFormData,
+                            kapasitasMahasiswa: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min="1"
+                        placeholder="Otomatis terisi dari kelas atau ruangan"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Kapasitas otomatis terisi saat memilih kelas yang cocok dengan ruangan atau saat memilih ruangan. Dapat diubah manual jika diperlukan.
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Validation Error Message */}
+                  {validationError && (
+                    <div className="col-span-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-red-800">Validasi Gagal</p>
+                          <p className="text-sm text-red-700 mt-1">{validationError}</p>
+                          <p className="text-xs text-red-600 mt-2">
+                            <strong>Catatan:</strong> Jam istirahat: {JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer */}
@@ -1513,6 +1716,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     onClick={() => {
                       setShowAddItemModal(false);
                       setEditingItem(null);
+                      setValidationError("");
                       setItemFormData({
                         mataKuliahId: "",
                         dosenId: "",
@@ -1707,88 +1911,88 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
               {/* Content */}
               <div className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-6 space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Informasi Request
-                </h4>
-                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 text-gray-600 mr-2" />
-                    <span className="text-sm text-gray-700">
-                      <strong>Dosen:</strong> {selectedRequest.dosen?.nama || "N/A"}
-                    </span>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Informasi Request
+                    </h4>
+                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 text-gray-600 mr-2" />
+                        <span className="text-sm text-gray-700">
+                          <strong>Dosen:</strong> {selectedRequest.dosen?.nama || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Book className="w-4 h-4 text-gray-600 mr-2" />
+                        <span className="text-sm text-gray-700">
+                          <strong>Mata Kuliah:</strong> {selectedRequest.mataKuliah?.nama || "N/A"} ({selectedRequest.mataKuliah?.sks || 0} SKS)
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 text-gray-600 mr-2" />
+                        <span className="text-sm text-gray-700">
+                          <strong>Waktu:</strong> {selectedRequest.preferredHari}, {selectedRequest.preferredJamMulai} - {selectedRequest.preferredJamSelesai}
+                        </span>
+                      </div>
+                      {selectedRequest.preferredRuangan && (
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 text-gray-600 mr-2" />
+                          <span className="text-sm text-gray-700">
+                            <strong>Ruangan:</strong> {selectedRequest.preferredRuangan.nama} (Kapasitas: {selectedRequest.preferredRuangan.kapasitas})
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <Book className="w-4 h-4 text-gray-600 mr-2" />
-                    <span className="text-sm text-gray-700">
-                      <strong>Mata Kuliah:</strong> {selectedRequest.mataKuliah?.nama || "N/A"} ({selectedRequest.mataKuliah?.sks || 0} SKS)
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-gray-600 mr-2" />
-                    <span className="text-sm text-gray-700">
-                      <strong>Waktu:</strong> {selectedRequest.preferredHari}, {selectedRequest.preferredJamMulai} - {selectedRequest.preferredJamSelesai}
-                    </span>
-                  </div>
-                  {selectedRequest.preferredRuangan && (
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-600 mr-2" />
-                      <span className="text-sm text-gray-700">
-                        <strong>Ruangan:</strong> {selectedRequest.preferredRuangan.nama} (Kapasitas: {selectedRequest.preferredRuangan.kapasitas})
-                      </span>
+
+                  {selectedRequest.alasanRequest && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Alasan Request
+                      </h4>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          {selectedRequest.alasanRequest}
+                        </p>
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {selectedRequest.alasanRequest && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">
-                    Alasan Request
-                  </h4>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      {selectedRequest.alasanRequest}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Periode Jadwal (Opsional, akan menggunakan periode aktif jika dikosongkan)
+                    </label>
+                    <select
+                      value={requestSelectedPeriodId}
+                      onChange={(e) => setRequestSelectedPeriodId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Gunakan Periode Aktif</option>
+                      {periods
+                        .filter((p) => p.status === "ACTIVE")
+                        .map((period) => (
+                          <option key={period.id} value={period.id}>
+                            {period.semester} {period.tahunAkademik}
+                          </option>
+                        ))}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Jadwal akan otomatis ditambahkan ke jadwal prodi setelah disetujui
                     </p>
                   </div>
-                </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Periode Jadwal (Opsional, akan menggunakan periode aktif jika dikosongkan)
-                </label>
-                <select
-                  value={requestSelectedPeriodId}
-                  onChange={(e) => setRequestSelectedPeriodId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Gunakan Periode Aktif</option>
-                  {periods
-                    .filter((p) => p.status === "ACTIVE")
-                    .map((period) => (
-                      <option key={period.id} value={period.id}>
-                        {period.semester} {period.tahunAkademik}
-                      </option>
-                    ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Jadwal akan otomatis ditambahkan ke jadwal prodi setelah disetujui
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Catatan (Opsional untuk Approve, Wajib untuk Reject)
-                </label>
-                <textarea
-                  value={requestActionNotes}
-                  onChange={(e) => setRequestActionNotes(e.target.value)}
-                  placeholder="Tambahkan catatan jika diperlukan..."
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Catatan (Opsional untuk Approve, Wajib untuk Reject)
+                    </label>
+                    <textarea
+                      value={requestActionNotes}
+                      onChange={(e) => setRequestActionNotes(e.target.value)}
+                      placeholder="Tambahkan catatan jika diperlukan..."
+                      rows="3"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 

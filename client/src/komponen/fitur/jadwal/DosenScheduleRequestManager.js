@@ -12,6 +12,19 @@ import axios from "axios";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Helper function untuk format date dengan validasi
+const formatDateSafe = (dateString, options = {}) => {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("id-ID", options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "N/A";
+  }
+};
+
 const DosenScheduleRequestManager = ({ authToken }) => {
   const [myRequests, setMyRequests] = useState([]);
   const [availableCourses, setAvailableCourses] = useState([]);
@@ -85,8 +98,10 @@ const DosenScheduleRequestManager = ({ authToken }) => {
       const response = await axios.get("http://localhost:5000/api/ruangan", {
         headers: { Authorization: `Bearer ${authToken}` },
       });
-      if (response.data.success) {
-        setAvailableRooms(response.data.data.filter((room) => room.isActive));
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        setAvailableRooms(response.data.data.filter((room) => room && room.isActive));
+      } else {
+        setAvailableRooms([]);
       }
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -220,40 +235,19 @@ const DosenScheduleRequestManager = ({ authToken }) => {
         )}
       </div>
 
-      {/* Available Courses Info */}
-      {availableCourses.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">
-            Mata Kuliah yang Tersedia untuk Request
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {availableCourses.slice(0, 6).map((course) => (
-              <div key={course.id} className="text-sm text-blue-700">
-                • {course.nama} ({course.sks} SKS)
-              </div>
-            ))}
-            {availableCourses.length > 6 && (
-              <div className="text-sm text-blue-700">
-                ... dan {availableCourses.length - 6} lainnya
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* My Requests List */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold text-gray-900">
           Daftar Request Saya
         </h2>
 
         {myRequests.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <Send className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+            <Send className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+            <h3 className="text-sm font-medium text-gray-900 mb-1">
               Belum ada request
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-xs text-gray-600 mb-3">
               {availableCourses.length === 0
                 ? "Tidak ada mata kuliah yang tersedia untuk di-request saat ini"
                 : "Buat request pertama Anda untuk mengajar mata kuliah tertentu"}
@@ -261,32 +255,35 @@ const DosenScheduleRequestManager = ({ authToken }) => {
             {availableCourses.length > 0 && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
               >
-                <Send className="w-5 h-5 mr-2" />
+                <Send className="w-4 h-4 mr-1.5" />
                 Buat Request Baru
               </button>
             )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2">
             {myRequests.map((request) => (
               <div
                 key={request.id}
-                className="bg-white rounded-lg shadow-md border border-gray-200"
+                className="bg-white rounded-md border border-gray-200 p-3 hover:bg-gray-50 transition-colors"
               >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {request.mataKuliah.nama}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {request.mataKuliah.sks} SKS
-                      </p>
-                    </div>
+                <div className="flex items-start gap-3">
+                  {/* Nama Mata Kuliah - Fixed Width */}
+                  <div className="w-48 flex-shrink-0">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate" title={request.mataKuliah.nama}>
+                      {request.mataKuliah.nama}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {request.mataKuliah.sks} SKS
+                    </p>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex-shrink-0">
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(request.status)}`}
                     >
                       {getStatusIcon(request.status)}
                       <span className="ml-1">
@@ -295,65 +292,62 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                     </span>
                   </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
-                      {request.preferredHari}, {request.preferredJamMulai} -{" "}
-                      {request.preferredJamSelesai}
-                    </div>
-                    {request.preferredRuangan && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {request.preferredRuangan.nama}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      Alasan Request:
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {request.alasanRequest}
-                    </p>
-                  </div>
-
-                  {request.kaprodiNotes && (
-                    <div
-                      className={`mb-4 p-3 rounded-md ${
-                        request.status === "APPROVED"
-                          ? "bg-green-50 border border-green-200"
-                          : "bg-red-50 border border-red-200"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm ${
-                          request.status === "APPROVED"
-                            ? "text-green-800"
-                            : "text-red-800"
-                        }`}
-                      >
-                        <strong>Catatan Kaprodi:</strong> {request.kaprodiNotes}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>
-                      Disubmit:{" "}
-                      {new Date(request.submittedAt).toLocaleDateString(
-                        "id-ID",
+                  {/* Info Waktu & Ruangan */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{request.preferredHari}, {request.preferredJamMulai}-{request.preferredJamSelesai}</span>
+                      </span>
+                      {request.preferredRuangan && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{request.preferredRuangan.nama}</span>
+                        </span>
                       )}
-                    </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex-shrink-0">
                     {request.status === "PENDING" && (
                       <button
                         onClick={() => handleDeleteRequest(request.id)}
-                        className="text-red-600 hover:text-red-800 font-medium"
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
                       >
                         Hapus
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Alasan Request */}
+                {request.alasanRequest && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-600 line-clamp-1">
+                      <span className="font-medium">Alasan:</span> {request.alasanRequest}
+                    </p>
+                  </div>
+                )}
+
+                {/* Catatan Kaprodi */}
+                {request.kaprodiNotes && (
+                  <div className={`mt-2 pt-2 border-t border-gray-100`}>
+                    <p className={`text-xs line-clamp-1 ${
+                      request.status === "APPROVED"
+                        ? "text-green-700"
+                        : "text-red-700"
+                    }`}>
+                      <span className="font-medium">Catatan Kaprodi:</span> {request.kaprodiNotes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Footer - Date */}
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    Disubmit: {formatDateSafe(request.submittedAt, { day: "numeric", month: "numeric", year: "numeric" })}
+                  </p>
                 </div>
               </div>
             ))}

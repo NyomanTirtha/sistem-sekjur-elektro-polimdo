@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, memo } from "react";
 
-const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
+const TimetableGridView = memo(({ scheduleItems = [], className = "" }) => {
   // Definisi time slots sesuai dengan gambar
   const timeSlots = [
     { id: 1, start: "07:45", end: "08:35", type: "slot" },
@@ -24,10 +24,24 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
 
   const days = ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT"];
 
+  // Memoize time slots dan days untuk menghindari re-creation
+  const memoizedTimeSlots = useMemo(() => timeSlots, []);
+  const memoizedDays = useMemo(() => days, []);
+
   // Helper function untuk convert waktu ke menit
   const timeToMinutes = (time) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
+    if (!time || typeof time !== 'string') return 0;
+    try {
+      const parts = time.split(":");
+      if (parts.length !== 2) return 0;
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      if (isNaN(hours) || isNaN(minutes)) return 0;
+      return hours * 60 + minutes;
+    } catch (error) {
+      console.error("Error in timeToMinutes:", error);
+      return 0;
+    }
   };
 
   // Helper function untuk cek apakah waktu overlap dengan slot
@@ -39,9 +53,19 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
     return itemStartMin < slotEndMin && itemEndMin > slotStartMin;
   };
 
+  // Memoize schedule items untuk optimasi
+  const validScheduleItems = useMemo(() => {
+    if (!scheduleItems || !Array.isArray(scheduleItems)) return [];
+    return scheduleItems.filter(item => item && item.hari && item.jamMulai && item.jamSelesai);
+  }, [scheduleItems]);
+
   // Build grid structure - untuk setiap slot, cek item mana yang ada
   const getCellForSlot = (slot, day, slotIndex) => {
-    const item = scheduleItems.find((item) => {
+    if (validScheduleItems.length === 0) {
+      return null;
+    }
+    
+    const item = validScheduleItems.find((item) => {
       if (item.hari !== day) return false;
       return isTimeOverlappingSlot(
         item.jamMulai,
@@ -99,7 +123,7 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
             <th className="border border-gray-300 bg-gray-100 p-2 text-left font-semibold w-32">
               Waktu
             </th>
-            {days.map((day) => (
+            {memoizedDays.map((day) => (
               <th
                 key={day}
                 className="border border-gray-300 bg-gray-100 p-2 text-center font-semibold min-w-[150px]"
@@ -110,7 +134,7 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
           </tr>
         </thead>
         <tbody>
-          {timeSlots.map((slot, slotIndex) => {
+          {memoizedTimeSlots.map((slot, slotIndex) => {
             if (slot.type === "break") {
               return (
                 <tr key={slot.id}>
@@ -121,7 +145,7 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
                       {slot.start} - {slot.end}
                     </span>
                   </td>
-                  {days.map((day) => (
+                  {memoizedDays.map((day) => (
                     <td
                       key={day}
                       className="border border-gray-300 bg-gray-50"
@@ -145,7 +169,7 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
                   const cellsToRender = [];
                   let cellIndex = 0;
 
-                  days.forEach((day) => {
+                  memoizedDays.forEach((day) => {
                     const cellData = getCellForSlot(slot, day, slotIndex);
 
                     if (cellData) {
@@ -154,7 +178,7 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
                       cellIndex++;
                     } else {
                       // Check if there's an overlapping item (merged cell)
-                      const overlappingItem = scheduleItems.find((item) => {
+                      const overlappingItem = validScheduleItems.find((item) => {
                         if (item.hari !== day) return false;
                         return isTimeOverlappingSlot(
                           item.jamMulai,
@@ -227,6 +251,8 @@ const TimetableGridView = ({ scheduleItems = [], className = "" }) => {
       </table>
     </div>
   );
-};
+});
+
+TimetableGridView.displayName = 'TimetableGridView';
 
 export default TimetableGridView;

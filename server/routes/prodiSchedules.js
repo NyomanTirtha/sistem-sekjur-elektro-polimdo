@@ -659,6 +659,24 @@ router.post("/:id/items", async (req, res) => {
       });
     }
 
+    // Validate jam selesai harus setelah jam mulai
+    const jamMulaiTime = new Date(`2024-01-01 ${jamMulai}`);
+    const jamSelesaiTime = new Date(`2024-01-01 ${jamSelesai}`);
+    if (jamSelesaiTime <= jamMulaiTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Jam selesai harus setelah jam mulai",
+      });
+    }
+
+    // Validate tidak boleh bertabrakan dengan jam istirahat
+    if (isOverlappingWithBreakTime(jamMulai, jamSelesai)) {
+      return res.status(400).json({
+        success: false,
+        message: `Jadwal tidak boleh bertabrakan dengan jam istirahat (${JAM_ISTIRAHAT.mulai} - ${JAM_ISTIRAHAT.selesai})`,
+      });
+    }
+
     // Check for conflicts within this schedule
     const internalConflicts = await prisma.scheduleItem.findMany({
       where: {
@@ -844,6 +862,28 @@ router.put("/items/:itemId", async (req, res) => {
       updateData.kapasitasMahasiswa = kapasitasMahasiswa
         ? parseInt(kapasitasMahasiswa)
         : null;
+
+    // Validate jam selesai harus setelah jam mulai (jika diupdate)
+    if (jamMulai !== undefined || jamSelesai !== undefined) {
+      const checkJamMulai = jamMulai || scheduleItem.jamMulai;
+      const checkJamSelesai = jamSelesai || scheduleItem.jamSelesai;
+      const jamMulaiTime = new Date(`2024-01-01 ${checkJamMulai}`);
+      const jamSelesaiTime = new Date(`2024-01-01 ${checkJamSelesai}`);
+      if (jamSelesaiTime <= jamMulaiTime) {
+        return res.status(400).json({
+          success: false,
+          message: "Jam selesai harus setelah jam mulai",
+        });
+      }
+
+      // Validate tidak boleh bertabrakan dengan jam istirahat
+      if (isOverlappingWithBreakTime(checkJamMulai, checkJamSelesai)) {
+        return res.status(400).json({
+          success: false,
+          message: `Jadwal tidak boleh bertabrakan dengan jam istirahat (${JAM_ISTIRAHAT.mulai} - ${JAM_ISTIRAHAT.selesai})`,
+        });
+      }
+    }
 
     // Check conflicts if time/dosen/ruangan is being updated
     if (
@@ -1105,6 +1145,12 @@ async function checkInternalConflicts(scheduleId) {
   return conflicts;
 }
 
+// Konstanta jam istirahat
+const JAM_ISTIRAHAT = {
+  mulai: "12:00",
+  selesai: "13:00",
+};
+
 // Function to check if two time ranges overlap
 function checkTimeOverlap(start1, end1, start2, end2) {
   const s1 = new Date(`2024-01-01 ${start1}`);
@@ -1113,6 +1159,16 @@ function checkTimeOverlap(start1, end1, start2, end2) {
   const e2 = new Date(`2024-01-01 ${end2}`);
 
   return s1 < e2 && s2 < e1;
+}
+
+// Function to check if time overlaps with break time
+function isOverlappingWithBreakTime(jamMulai, jamSelesai) {
+  return checkTimeOverlap(
+    jamMulai,
+    jamSelesai,
+    JAM_ISTIRAHAT.mulai,
+    JAM_ISTIRAHAT.selesai
+  );
 }
 
 module.exports = router;
