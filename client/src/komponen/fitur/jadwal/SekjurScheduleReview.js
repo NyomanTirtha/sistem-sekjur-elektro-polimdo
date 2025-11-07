@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import TimetableGridView from "./TimetableGridView";
+import ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SekjurScheduleReview = ({ authToken }) => {
   const [schedules, setSchedules] = useState([]);
@@ -424,31 +426,60 @@ const SekjurScheduleReview = ({ authToken }) => {
       </div>
 
       {/* Detail Modal */}
-      {showDetailModal && selectedSchedule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Detail Jadwal: {selectedSchedule.prodi?.nama}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {selectedSchedule.timetablePeriod?.semester}{" "}
-                  {selectedSchedule.timetablePeriod?.tahunAkademik}
-                </p>
+      {typeof window !== 'undefined' && showDetailModal && selectedSchedule && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="detail-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowDetailModal(false);
+                setSelectedSchedule(null);
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-1">
+                      Detail Jadwal: {selectedSchedule.prodi?.nama}
+                    </h2>
+                    <p className="text-sm text-blue-100">
+                      {selectedSchedule.timetablePeriod?.semester}{" "}
+                      {selectedSchedule.timetablePeriod?.tahunAkademik}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedSchedule(null);
+                    }}
+                    className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                    aria-label="Close modal"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedSchedule(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
 
-            <div className="px-6 py-4 overflow-y-auto flex-1">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto bg-gray-50">
+                <div className="p-6">
               {selectedSchedule.scheduleItems &&
               selectedSchedule.scheduleItems.length > 0 ? (
                 <div className="space-y-4">
@@ -485,101 +516,143 @@ const SekjurScheduleReview = ({ authToken }) => {
                   />
                 </div>
               )}
-            </div>
+                </div>
+              </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedSchedule(null);
-                  setApproveNotes("");
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Tutup
-              </button>
-              {(selectedSchedule.status === "SUBMITTED" ||
-                selectedSchedule.status === "UNDER_REVIEW") && (
-                <>
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setShowRejectModal(true);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  >
-                    Tolak Jadwal
-                  </button>
-                  <button
-                    onClick={() => handleApprove(selectedSchedule.id)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  >
-                    Setujui Jadwal
-                  </button>
-                </>
-              )}
-              {selectedSchedule.status === "PUBLISHED" && (
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
                 <button
-                  onClick={() => handleUnpublish(selectedSchedule.id)}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedSchedule(null);
+                    setApproveNotes("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >
-                  Unpublish Jadwal
+                  Tutup
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
+                {(selectedSchedule.status === "SUBMITTED" ||
+                  selectedSchedule.status === "UNDER_REVIEW") && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        setShowRejectModal(true);
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      Tolak Jadwal
+                    </button>
+                    <button
+                      onClick={() => handleApprove(selectedSchedule.id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Setujui Jadwal
+                    </button>
+                  </>
+                )}
+                {selectedSchedule.status === "PUBLISHED" && (
+                  <button
+                    onClick={() => handleUnpublish(selectedSchedule.id)}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                  >
+                    Unpublish Jadwal
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
 
       {/* Reject Modal */}
-      {showRejectModal && selectedSchedule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Tolak Jadwal
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Jadwal: {selectedSchedule.prodi?.nama}
-              </p>
-            </div>
+      {typeof window !== 'undefined' && showRejectModal && selectedSchedule && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="reject-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowRejectModal(false);
+                setRejectNotes("");
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-red-600 to-red-700 border-b border-red-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-1">Tolak Jadwal</h2>
+                    <p className="text-sm text-red-100">Jadwal: {selectedSchedule.prodi?.nama}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowRejectModal(false);
+                      setRejectNotes("");
+                    }}
+                    className="p-2 hover:bg-red-800 rounded-lg transition-colors text-white"
+                    aria-label="Close modal"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
-            <div className="px-6 py-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Alasan Penolakan *
-              </label>
-              <textarea
-                value={rejectNotes}
-                onChange={(e) => setRejectNotes(e.target.value)}
-                placeholder="Jelaskan alasan penolakan dan apa yang perlu diperbaiki..."
-                rows="5"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Catatan ini akan dikirim ke Kaprodi untuk revisi
-              </p>
-            </div>
+              {/* Content */}
+              <div className="p-6 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Alasan Penolakan *
+                </label>
+                <textarea
+                  value={rejectNotes}
+                  onChange={(e) => setRejectNotes(e.target.value)}
+                  placeholder="Jelaskan alasan penolakan dan apa yang perlu diperbaiki..."
+                  rows="5"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Catatan ini akan dikirim ke Kaprodi untuk revisi
+                </p>
+              </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setRejectNotes("");
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleReject}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Tolak Jadwal
-              </button>
-            </div>
-          </div>
-        </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectNotes("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Tolak Jadwal
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );

@@ -18,23 +18,8 @@ import {
 import axios from "axios";
 import TimetableGridView from "./TimetableGridView";
 import { getButtonPrimaryClass } from "../../../utilitas/theme";
-
-// CSS untuk animasi modal sederhana
-const modalStyles = `
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  .modal-enter {
-    animation: slideUp 0.2s ease-out;
-  }
-`;
+import ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   const [schedules, setSchedules] = useState([]);
@@ -609,9 +594,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   }
 
   return (
-    <>
-      <style>{modalStyles}</style>
-      <div className="space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -942,53 +925,75 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         </div>
       )}
 
-      {/* Schedule Detail Modal - Minimalis */}
-      {selectedSchedule && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 transition-opacity duration-200 ease-out"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedSchedule(null);
-              setScheduleItems([]);
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-xl modal-enter">
-            {/* Header - Compact */}
-            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-gray-900">
-                  {selectedSchedule.timetablePeriod.semester} {selectedSchedule.timetablePeriod.tahunAkademik}
-                </h3>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedSchedule.status)}`}>
-                  {getStatusLabel(selectedSchedule.status)}
-                </span>
+      {/* Schedule Detail Modal */}
+      {typeof window !== 'undefined' && selectedSchedule && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="schedule-detail-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedSchedule(null);
+                setScheduleItems([]);
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-1">
+                        {selectedSchedule.timetablePeriod.semester} {selectedSchedule.timetablePeriod.tahunAkademik}
+                      </h2>
+                      <p className="text-sm text-blue-100">
+                        Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedSchedule.status)}`}>
+                          {getStatusLabel(selectedSchedule.status)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
+                      <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="inline-flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm transition-colors"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Tambah
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedSchedule(null);
+                        setScheduleItems([]);
+                      }}
+                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      aria-label="Close modal"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                  <button
-                    onClick={() => setShowAddItemModal(true)}
-                    className={`inline-flex items-center px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Tambah
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setSelectedSchedule(null);
-                    setScheduleItems([]);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 p-1 transition-colors"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
 
-            {/* Content - Simplified */}
-            <div className="overflow-y-auto max-h-[calc(90vh-60px)]">
-              <div className="p-4">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto bg-gray-50">
+                <div className="p-6">
                 {scheduleItems.length === 0 ? (
                   <div className="text-center py-10">
                     <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-3" />
@@ -1088,140 +1093,192 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     )}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Schedule Modal - Minimalis */}
-      {showCreateModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 transition-opacity duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowCreateModal(false);
-              setCreateFormData({ timetablePeriodId: "" });
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg max-w-md w-full shadow-xl modal-enter">
-            <form onSubmit={handleCreateSchedule}>
-              <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-base font-semibold text-gray-900">
-                  Buat Jadwal Baru
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCreateFormData({ timetablePeriodId: "" });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="px-4 py-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Periode Timetable *
-                  </label>
-                  <select
-                    value={createFormData.timetablePeriodId}
-                    onChange={(e) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        timetablePeriodId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Periode</option>
-                    {periods.map((period) => (
-                      <option key={period.id} value={period.id}>
-                        {period.semester} {period.tahunAkademik}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
-
-              <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCreateFormData({ timetablePeriodId: "" });
-                  }}
-                  className="px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className={`px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
-                >
-                  Buat
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
 
-      {/* Add/Edit Schedule Item Modal - Minimalis */}
-      {showAddItemModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 transition-opacity duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowAddItemModal(false);
-              setEditingItem(null);
-              setItemFormData({
-                mataKuliahId: "",
-                dosenId: "",
-                hari: "",
-                jamMulai: "",
-                jamSelesai: "",
-                ruanganId: "",
-                kelas: "",
-                kapasitasMahasiswa: "",
-              });
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl modal-enter">
-            <form onSubmit={handleAddScheduleItem}>
-              <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-                <h3 className="text-base font-semibold text-gray-900">
-                  {editingItem ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddItemModal(false);
-                    setEditingItem(null);
-                    setItemFormData({
-                      mataKuliahId: "",
-                      dosenId: "",
-                      hari: "",
-                      jamMulai: "",
-                      jamSelesai: "",
-                      ruanganId: "",
-                      kelas: "",
-                      kapasitasMahasiswa: "",
-                    });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Create Schedule Modal */}
+      {typeof window !== 'undefined' && showCreateModal && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="create-schedule-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCreateModal(false);
+                setCreateFormData({ timetablePeriodId: "" });
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <form onSubmit={handleCreateSchedule}>
+                {/* Header */}
+                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-1">Buat Jadwal Baru</h2>
+                      <p className="text-sm text-blue-100">Pilih periode untuk jadwal baru</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setCreateFormData({ timetablePeriodId: "" });
+                      }}
+                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      aria-label="Close modal"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
 
-              <div className="px-4 py-4 grid grid-cols-2 gap-4">
+                {/* Content */}
+                <div className="p-6 bg-gray-50">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Periode Timetable *
+                    </label>
+                    <select
+                      value={createFormData.timetablePeriodId}
+                      onChange={(e) =>
+                        setCreateFormData({
+                          ...createFormData,
+                          timetablePeriodId: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      required
+                    >
+                      <option value="">Pilih Periode</option>
+                      {periods.map((period) => (
+                        <option key={period.id} value={period.id}>
+                          {period.semester} {period.tahunAkademik}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreateFormData({ timetablePeriodId: "" });
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
+                  >
+                    Buat
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Add/Edit Schedule Item Modal */}
+      {typeof window !== 'undefined' && showAddItemModal && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="add-item-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddItemModal(false);
+                setEditingItem(null);
+                setItemFormData({
+                  mataKuliahId: "",
+                  dosenId: "",
+                  hari: "",
+                  jamMulai: "",
+                  jamSelesai: "",
+                  ruanganId: "",
+                  kelas: "",
+                  kapasitasMahasiswa: "",
+                });
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <form onSubmit={handleAddScheduleItem}>
+                {/* Header */}
+                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-1">
+                        {editingItem ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
+                      </h2>
+                      <p className="text-sm text-blue-100">
+                        {editingItem ? "Ubah informasi mata kuliah dalam jadwal" : "Tambahkan mata kuliah ke jadwal"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddItemModal(false);
+                        setEditingItem(null);
+                        setItemFormData({
+                          mataKuliahId: "",
+                          dosenId: "",
+                          hari: "",
+                          jamMulai: "",
+                          jamSelesai: "",
+                          ruanganId: "",
+                          kelas: "",
+                          kapasitasMahasiswa: "",
+                        });
+                      }}
+                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      aria-label="Close modal"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto bg-gray-50">
+                  <div className="p-6 grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Mata Kuliah *
@@ -1446,9 +1503,11 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     Kapasitas otomatis terisi saat memilih kelas yang cocok dengan ruangan atau saat memilih ruangan. Dapat diubah manual jika diperlukan.
                   </p>
                 </div>
-              </div>
+                  </div>
+                </div>
 
-                <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -1465,146 +1524,189 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                         kapasitasMahasiswa: "",
                       });
                     }}
-                    className="px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className={`px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
+                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
                   >
                     {editingItem ? "Update" : "Tambah"}
                   </button>
                 </div>
-            </form>
-          </div>
-        </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
 
-      {/* Edit Schedule Modal - Minimalis */}
-      {showEditScheduleModal && editingSchedule && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 transition-opacity duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowEditScheduleModal(false);
-              setEditingSchedule(null);
-              setCreateFormData({ timetablePeriodId: "" });
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg max-w-md w-full shadow-xl modal-enter">
-            <form onSubmit={handleUpdateSchedule}>
-              <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-base font-semibold text-gray-900">
-                  Edit Periode Jadwal
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditScheduleModal(false);
-                    setEditingSchedule(null);
-                    setCreateFormData({ timetablePeriodId: "" });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Edit Schedule Modal */}
+      {typeof window !== 'undefined' && showEditScheduleModal && editingSchedule && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="edit-schedule-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowEditScheduleModal(false);
+                setEditingSchedule(null);
+                setCreateFormData({ timetablePeriodId: "" });
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <form onSubmit={handleUpdateSchedule}>
+                {/* Header */}
+                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white mb-1">Edit Periode Jadwal</h2>
+                      <p className="text-sm text-blue-100">Ubah periode untuk jadwal ini</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditScheduleModal(false);
+                        setEditingSchedule(null);
+                        setCreateFormData({ timetablePeriodId: "" });
+                      }}
+                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      aria-label="Close modal"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
 
-              <div className="px-4 py-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Periode Timetable *
-                  </label>
-                  <select
-                    value={createFormData.timetablePeriodId}
-                    onChange={(e) =>
-                      setCreateFormData({
-                        ...createFormData,
-                        timetablePeriodId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                {/* Content */}
+                <div className="p-6 bg-gray-50">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Periode Timetable *
+                    </label>
+                    <select
+                      value={createFormData.timetablePeriodId}
+                      onChange={(e) =>
+                        setCreateFormData({
+                          ...createFormData,
+                          timetablePeriodId: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      required
+                    >
+                      <option value="">Pilih Periode</option>
+                      {periods
+                        .filter(
+                          (p) =>
+                            p.status === "ACTIVE" ||
+                            p.id === editingSchedule.timetablePeriodId,
+                        )
+                        .map((period) => (
+                          <option key={period.id} value={period.id}>
+                            {period.semester} {period.tahunAkademik}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditScheduleModal(false);
+                      setEditingSchedule(null);
+                      setCreateFormData({ timetablePeriodId: "" });
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    <option value="">Pilih Periode</option>
-                    {periods
-                      .filter(
-                        (p) =>
-                          p.status === "ACTIVE" ||
-                          p.id === editingSchedule.timetablePeriodId,
-                      )
-                      .map((period) => (
-                        <option key={period.id} value={period.id}>
-                          {period.semester} {period.tahunAkademik}
-                        </option>
-                      ))}
-                  </select>
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
+                  >
+                    Simpan
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Request Detail Modal untuk Approve/Reject */}
+      {typeof window !== 'undefined' && showRequestDetailModal && selectedRequest && ReactDOM.createPortal(
+        <AnimatePresence>
+          <motion.div
+            key="request-detail-modal"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            style={{ zIndex: 9999 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowRequestDetailModal(false);
+                setSelectedRequest(null);
+                setRequestActionNotes("");
+                setRequestSelectedPeriodId("");
+              }
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+              style={{ zIndex: 10000 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-1">Detail Request</h2>
+                    <p className="text-sm text-blue-100">{selectedRequest.mataKuliah?.nama || "N/A"}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowRequestDetailModal(false);
+                      setSelectedRequest(null);
+                      setRequestActionNotes("");
+                      setRequestSelectedPeriodId("");
+                    }}
+                    className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                    aria-label="Close modal"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditScheduleModal(false);
-                    setEditingSchedule(null);
-                    setCreateFormData({ timetablePeriodId: "" });
-                  }}
-                  className="px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className={`px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Request Detail Modal untuk Approve/Reject - Minimalis */}
-      {showRequestDetailModal && selectedRequest && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 transition-opacity duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowRequestDetailModal(false);
-              setSelectedRequest(null);
-              setRequestActionNotes("");
-              setRequestSelectedPeriodId("");
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl modal-enter">
-            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">
-                  Detail Request
-                </h3>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {selectedRequest.mataKuliah?.nama || "N/A"}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowRequestDetailModal(false);
-                  setSelectedRequest(null);
-                  setRequestActionNotes("");
-                  setRequestSelectedPeriodId("");
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="px-4 py-4 space-y-4">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto bg-gray-50">
+                <div className="p-6 space-y-4">
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
                   Informasi Request
@@ -1687,40 +1789,43 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
+                </div>
+              </div>
 
-              <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2 sticky bottom-0 bg-white">
-              <button
-                onClick={() => {
-                  setShowRequestDetailModal(false);
-                  setSelectedRequest(null);
-                  setRequestActionNotes("");
-                  setRequestSelectedPeriodId("");
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => handleRejectRequest(selectedRequest.id)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                <XCircle className="w-4 h-4 inline mr-2" />
-                Tolak
-              </button>
-              <button
-                onClick={() => handleApproveRequest(selectedRequest.id)}
-                className={`px-4 py-2 rounded-md text-white ${getButtonPrimaryClass(currentUser)}`}
-              >
-                <CheckCircle className="w-4 h-4 inline mr-2" />
-                Setujui
-              </button>
-            </div>
-          </div>
-        </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowRequestDetailModal(false);
+                    setSelectedRequest(null);
+                    setRequestActionNotes("");
+                    setRequestSelectedPeriodId("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => handleRejectRequest(selectedRequest.id)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  <XCircle className="w-4 h-4 inline mr-2" />
+                  Tolak
+                </button>
+                <button
+                  onClick={() => handleApproveRequest(selectedRequest.id)}
+                  className={`px-4 py-2 rounded-md text-white ${getButtonPrimaryClass(currentUser)}`}
+                >
+                  <CheckCircle className="w-4 h-4 inline mr-2" />
+                  Setujui
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
-      </div>
-    </>
+    </div>
   );
 };
 
