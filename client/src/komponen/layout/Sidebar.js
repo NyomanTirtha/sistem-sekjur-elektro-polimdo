@@ -6,6 +6,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import polimdoLogo from "../../assets/gambar/xyz-logo.png";
+import { getSidebarHeaderClass, getActiveMenuClass, getTheme } from "../../utilitas/theme";
 
 const Sidebar = ({
   activeMenu = "prodi",
@@ -15,6 +16,7 @@ const Sidebar = ({
   menuItems = [],
   expandedCategories = {},
   onCategoryToggle,
+  currentUser = null,
 }) => {
   const toggleCategory = (categoryId) => {
     if (onCategoryToggle) {
@@ -34,12 +36,17 @@ const Sidebar = ({
     </div>
   );
 
+  const theme = getTheme(currentUser);
+  const sidebarHeaderClass = getSidebarHeaderClass(currentUser);
+  const activeMenuClass = getActiveMenuClass(currentUser);
+  const hoverClass = theme.sidebar.hover;
+
   return (
     <div
       className={`bg-white border-r border-gray-200 h-full flex flex-col ${isCollapsed ? "w-16" : "w-64"}`}
     >
       <div
-        className={`p-4 flex-shrink-0 bg-gray-800 ${isCollapsed ? "px-3" : "px-4"}`}
+        className={`p-4 flex-shrink-0 ${sidebarHeaderClass} ${isCollapsed ? "px-3" : "px-4"}`}
       >
         <div className="flex items-center justify-between">
           <div
@@ -60,7 +67,7 @@ const Sidebar = ({
           {!isCollapsed && (
             <button
               onClick={onToggleCollapse}
-              className="p-1 hover:bg-gray-700 rounded flex-shrink-0"
+              className={`p-1 ${hoverClass} rounded flex-shrink-0`}
             >
               <ChevronLeft className="w-4 h-4 text-white" />
             </button>
@@ -69,7 +76,7 @@ const Sidebar = ({
         {isCollapsed && (
           <button
             onClick={onToggleCollapse}
-            className="w-full mt-3 p-1 hover:bg-gray-700 rounded flex justify-center"
+            className={`w-full mt-3 p-1 ${hoverClass} rounded flex justify-center`}
           >
             <ChevronRight className="w-4 h-4 text-white" />
           </button>
@@ -78,15 +85,45 @@ const Sidebar = ({
 
       <nav className="flex-1 py-4 px-3 overflow-y-auto bg-white">
         {isCategories ? (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {menuItems.map((category) => {
               const CategoryIcon = category.icon;
               const isExpanded = expandedCategories[category.id] === true;
+              const hasMultipleItems = category.items && category.items.length > 1;
 
+              // Jika hanya ada 1 item, render sebagai flat menu item (tanpa kategori)
+              if (!hasMultipleItems && category.items && category.items.length === 1) {
+                const item = category.items[0];
+                const Icon = item.icon;
+                const isActive = activeMenu === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onMenuChange?.(item.id)}
+                    className={`w-full flex items-center px-3 py-2 text-left rounded transition-colors ${
+                      isActive
+                        ? activeMenuClass
+                        : "text-gray-700 hover:bg-gray-100"
+                    } ${isCollapsed ? "justify-center" : ""}`}
+                    title={isCollapsed ? item.label : ""}
+                  >
+                    <Icon
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        isActive ? "text-white" : "text-gray-600"
+                      }`}
+                    />
+                    {!isCollapsed && (
+                      <span className="ml-3 text-sm">{item.label}</span>
+                    )}
+                  </button>
+                );
+              }
+
+              // Jika ada 2 atau lebih item, render sebagai kategori dengan collapse
               return (
                 <div key={category.id} className="space-y-1">
-                  {/* Category Header */}
-                  {!isCollapsed && (
+                  {/* Category Header - hanya muncul jika ada 2+ items */}
+                  {!isCollapsed && hasMultipleItems && (
                     <button
                       onClick={() => toggleCategory(category.id)}
                       className="w-full flex items-center justify-between px-3 py-2 text-left rounded hover:bg-gray-100 group"
@@ -106,27 +143,27 @@ const Sidebar = ({
                   )}
 
                   {/* Category Items */}
-                  {(isExpanded || isCollapsed) && (
-                    <div className={`space-y-1 ${!isCollapsed ? "pl-2" : ""}`}>
+                  {(isExpanded || isCollapsed || !hasMultipleItems) && (
+                    <div className={`space-y-1 ${!isCollapsed && hasMultipleItems ? "pl-2" : ""}`}>
                       {category.items.map((item) => {
                         const Icon = item.icon;
                         const isActive = activeMenu === item.id;
                         return (
-                          <button
-                            key={item.id}
-                            onClick={() => onMenuChange?.(item.id)}
-                            className={`w-full flex items-center px-3 py-2 text-left rounded transition-colors ${
-                              isActive
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-700 hover:bg-gray-100"
-                            } ${isCollapsed ? "justify-center" : ""}`}
-                            title={isCollapsed ? item.label : ""}
-                          >
-                            <Icon
-                              className={`w-5 h-5 flex-shrink-0 ${
-                                isActive ? "text-white" : "text-gray-600"
-                              }`}
-                            />
+                            <button
+                              key={item.id}
+                              onClick={() => onMenuChange?.(item.id)}
+                              className={`w-full flex items-center px-3 py-2 text-left rounded transition-colors ${
+                                isActive
+                                  ? activeMenuClass
+                                  : "text-gray-700 hover:bg-gray-100"
+                              } ${isCollapsed ? "justify-center" : ""}`}
+                              title={isCollapsed ? item.label : ""}
+                            >
+                              <Icon
+                                className={`w-5 h-5 flex-shrink-0 ${
+                                  isActive ? "text-white" : "text-gray-600"
+                                }`}
+                              />
                             {!isCollapsed && (
                               <span className="ml-3 text-sm">{item.label}</span>
                             )}
@@ -146,21 +183,21 @@ const Sidebar = ({
               const Icon = item.icon;
               const isActive = activeMenu === item.id;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => onMenuChange?.(item.id)}
-                  className={`w-full flex items-center px-3 py-2 text-left rounded ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-700 hover:bg-gray-100"
-                  } ${isCollapsed ? "justify-center" : ""}`}
-                  title={isCollapsed ? item.label : ""}
-                >
-                  <Icon
-                    className={`w-5 h-5 flex-shrink-0 ${
-                      isActive ? "text-white" : "text-gray-600"
-                    }`}
-                  />
+                  <button
+                    key={item.id}
+                    onClick={() => onMenuChange?.(item.id)}
+                    className={`w-full flex items-center px-3 py-2 text-left rounded ${
+                      isActive
+                        ? activeMenuClass
+                        : "text-gray-700 hover:bg-gray-100"
+                    } ${isCollapsed ? "justify-center" : ""}`}
+                    title={isCollapsed ? item.label : ""}
+                  >
+                    <Icon
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        isActive ? "text-white" : "text-gray-600"
+                      }`}
+                    />
                   {!isCollapsed && (
                     <span className="ml-3 text-sm">{item.label}</span>
                   )}

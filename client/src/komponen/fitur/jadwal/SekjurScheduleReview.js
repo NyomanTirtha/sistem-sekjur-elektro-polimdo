@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import axios from "axios";
+import TimetableGridView from "./TimetableGridView";
 
 const SekjurScheduleReview = ({ authToken }) => {
   const [schedules, setSchedules] = useState([]);
@@ -137,6 +138,37 @@ const SekjurScheduleReview = ({ authToken }) => {
       console.error("Error rejecting schedule:", error);
       alert(
         error.response?.data?.message || "Gagal menolak jadwal"
+      );
+    }
+  };
+
+  const handleUnpublish = async (scheduleId) => {
+    if (
+      !window.confirm(
+        "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      if (response.data.success) {
+        alert("Jadwal berhasil di-unpublish!");
+        setShowDetailModal(false);
+        fetchSchedules();
+      }
+    } catch (error) {
+      console.error("Error unpublishing schedule:", error);
+      alert(
+        error.response?.data?.message || "Gagal melakukan unpublish jadwal"
       );
     }
   };
@@ -266,6 +298,7 @@ const SekjurScheduleReview = ({ authToken }) => {
               <option value="SUBMITTED">Menunggu Review</option>
               <option value="UNDER_REVIEW">Sedang Direview</option>
               <option value="APPROVED">Disetujui</option>
+              <option value="PUBLISHED">Published</option>
               <option value="REJECTED">Ditolak</option>
             </select>
           </div>
@@ -374,6 +407,16 @@ const SekjurScheduleReview = ({ authToken }) => {
                     </button>
                   </>
                 )}
+
+                {schedule.status === "PUBLISHED" && (
+                  <button
+                    onClick={() => handleUnpublish(schedule.id)}
+                    className="flex-1 inline-flex justify-center items-center px-4 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Unpublish
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -408,68 +451,16 @@ const SekjurScheduleReview = ({ authToken }) => {
             <div className="px-6 py-4 overflow-y-auto flex-1">
               {selectedSchedule.scheduleItems &&
               selectedSchedule.scheduleItems.length > 0 ? (
-                <div className="space-y-6">
-                  {Object.entries(
-                    groupSchedulesByDay(selectedSchedule.scheduleItems)
-                  ).map(([day, items]) => {
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={day} className="border border-gray-200 rounded-lg">
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                          <h4 className="font-semibold text-gray-900">{day}</h4>
-                        </div>
-                        <div className="divide-y divide-gray-200">
-                          {items.map((item) => (
-                            <div key={item.id} className="p-4 hover:bg-gray-50">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <div className="flex items-start mb-2">
-                                    <BookOpen className="w-4 h-4 text-blue-600 mr-2 mt-1 flex-shrink-0" />
-                                    <div>
-                                      <p className="font-medium text-gray-900">
-                                        {item.mataKuliah?.nama || "N/A"}
-                                      </p>
-                                      <p className="text-sm text-gray-600">
-                                        {item.mataKuliah?.sks || 0} SKS • Kelas{" "}
-                                        {item.kelas || "-"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center mb-2">
-                                    <User className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700">
-                                      {item.dosen?.nama || "Belum ditentukan"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="flex items-center mb-2">
-                                    <Clock className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700">
-                                      {item.jamMulai} - {item.jamSelesai}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center mb-2">
-                                    <MapPin className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700">
-                                      {item.ruangan?.nama || "Belum ditentukan"}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Users className="w-4 h-4 text-gray-600 mr-2 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700">
-                                      Kapasitas: {item.kapasitasMahasiswa || 0}{" "}
-                                      mahasiswa
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      Tampilan Grid Jadwal
+                    </h4>
+                    <TimetableGridView
+                      scheduleItems={selectedSchedule.scheduleItems}
+                      className="bg-white rounded-lg border border-gray-200 p-4"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -526,6 +517,14 @@ const SekjurScheduleReview = ({ authToken }) => {
                     Setujui Jadwal
                   </button>
                 </>
+              )}
+              {selectedSchedule.status === "PUBLISHED" && (
+                <button
+                  onClick={() => handleUnpublish(selectedSchedule.id)}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                >
+                  Unpublish Jadwal
+                </button>
               )}
             </div>
           </div>

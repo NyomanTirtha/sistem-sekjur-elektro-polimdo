@@ -459,8 +459,15 @@ router.delete("/:id", async (req, res) => {
           "Pengajuan jadwal berhasil dibatalkan dan dikembalikan ke status DRAFT",
         data: updatedSchedule,
       });
+    } else if (schedule.status === "PUBLISHED") {
+      // Jadwal yang sudah dipublish tidak bisa dihapus
+      return res.status(400).json({
+        success: false,
+        message:
+          "Jadwal yang sudah dipublish tidak bisa dihapus. Silakan hubungi sekjur untuk melakukan unpublish terlebih dahulu jika diperlukan perubahan.",
+      });
     } else {
-      // Delete schedule completely (all statuses: DRAFT, REJECTED, APPROVED, PUBLISHED)
+      // Delete schedule completely (hanya untuk DRAFT, REJECTED, APPROVED)
       await prisma.prodiSchedule.delete({
         where: { id: parseInt(id) },
       });

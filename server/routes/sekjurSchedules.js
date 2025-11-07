@@ -385,6 +385,79 @@ router.post("/:id/approve", async (req, res) => {
   }
 });
 
+// POST /api/sekjur-schedules/:id/unpublish - Unpublish jadwal prodi (kembalikan ke APPROVED)
+router.post("/:id/unpublish", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sekjurUsername = req.user.username;
+
+    // Get the schedule
+    const schedule = await prisma.prodiSchedule.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        prodi: {
+          select: { nama: true, jurusanId: true },
+        },
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Jadwal tidak ditemukan",
+      });
+    }
+
+    // ? VALIDASI: Sekjur hanya bisa unpublish jadwal dari jurusannya
+    if (
+      req.userContext &&
+      req.userContext.jurusanId &&
+      schedule.prodi.jurusanId !== req.userContext.jurusanId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Anda tidak memiliki akses untuk unpublish jadwal dari jurusan lain",
+      });
+    }
+
+    if (schedule.status !== "PUBLISHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Hanya jadwal dengan status PUBLISHED yang bisa di-unpublish",
+      });
+    }
+
+    const updatedSchedule = await prisma.prodiSchedule.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: "APPROVED",
+      },
+      include: {
+        prodi: {
+          select: { nama: true },
+        },
+        timetablePeriod: {
+          select: { semester: true, tahunAkademik: true },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Jadwal prodi ${schedule.prodi.nama} berhasil di-unpublish`,
+      data: updatedSchedule,
+    });
+  } catch (error) {
+    console.error("Error unpublishing schedule:", error);
+    res.status(500).json({
+      success: false,
+      message: "Gagal melakukan unpublish jadwal",
+      error: error.message,
+    });
+  }
+});
+
 // POST /api/sekjur-schedules/:id/reject - Reject jadwal prodi
 router.post("/:id/reject", async (req, res) => {
   try {

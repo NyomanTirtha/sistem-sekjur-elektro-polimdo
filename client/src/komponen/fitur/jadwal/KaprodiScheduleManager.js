@@ -13,8 +13,10 @@ import {
   XCircle,
 } from "lucide-react";
 import axios from "axios";
+import TimetableGridView from "./TimetableGridView";
+import { getButtonPrimaryClass } from "../../../utilitas/theme";
 
-const KaprodiScheduleManager = ({ authToken }) => {
+const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   const [schedules, setSchedules] = useState([]);
   const [periods, setPeriods] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
@@ -553,7 +555,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                     schedule._count?.scheduleItems > 0 && (
                       <button
                         onClick={() => handleSubmitSchedule(schedule.id)}
-                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                        className={`flex-1 inline-flex justify-center items-center px-3 py-2 text-white rounded-md text-sm ${getButtonPrimaryClass(currentUser)}`}
                       >
                         <Send className="w-4 h-4 mr-1" />
                         Submit
@@ -628,7 +630,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className={`inline-flex items-center px-4 py-2 rounded-lg ${getButtonPrimaryClass(currentUser)}`}
           >
             <Plus className="w-5 h-5 mr-2" />
             Buat Jadwal Baru
@@ -656,7 +658,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                 {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
                   <button
                     onClick={() => setShowAddItemModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 shadow-sm"
+                    className={`inline-flex items-center px-4 py-2 rounded-md text-sm shadow-sm ${getButtonPrimaryClass(currentUser)}`}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Tambah Mata Kuliah
@@ -707,7 +709,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                   {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
                     <button
                       onClick={() => setShowAddItemModal(true)}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className={`inline-flex items-center px-4 py-2 rounded-md ${getButtonPrimaryClass(currentUser)}`}
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Tambah Mata Kuliah Pertama
@@ -715,87 +717,103 @@ const KaprodiScheduleManager = ({ authToken }) => {
                   )}
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {Object.entries(groupItemsByDay(scheduleItems)).map(
-                    ([day, items]) => (
-                      <div
-                        key={day}
-                        className="border border-gray-200 rounded-lg overflow-hidden"
-                      >
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                          <h4 className="font-medium text-gray-900">{day}</h4>
-                        </div>
-                        {items.length > 0 ? (
-                          <div className="divide-y divide-gray-200">
-                            {items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="p-4 hover:bg-gray-50"
-                              >
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <h5 className="font-medium text-gray-900 mb-1">
-                                      {item.mataKuliah.nama}
-                                    </h5>
-                                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                                      <div className="flex items-center">
-                                        <Clock className="w-4 h-4 mr-1" />
-                                        {item.jamMulai} - {item.jamSelesai}
-                                      </div>
-                                      <div className="flex items-center">
-                                        <MapPin className="w-4 h-4 mr-1" />
-                                        {item.ruangan.nama}
-                                      </div>
-                                      <div className="flex items-center">
-                                        <User className="w-4 h-4 mr-1" />
-                                        {item.dosen.nama}
-                                      </div>
-                                      <div className="flex items-center">
-                                        <Book className="w-4 h-4 mr-1" />
-                                        {item.mataKuliah.sks} SKS
-                                      </div>
-                                    </div>
-                                    {item.kelas && (
-                                      <div className="mt-1 text-sm text-gray-600">
-                                        Kelas: {item.kelas}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {["DRAFT", "REJECTED"].includes(
-                                    selectedSchedule.status,
-                                  ) && (
-                                    <div className="flex space-x-2 ml-4">
-                                      <button
-                                        onClick={() => openEditItemModal(item)}
-                                        className="inline-flex items-center px-3 py-1.5 border border-blue-300 bg-blue-50 rounded-md text-sm text-blue-700 hover:bg-blue-100 transition-colors"
-                                        title="Edit item jadwal"
-                                      >
-                                        <Edit className="w-4 h-4 mr-1" />
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteScheduleItem(item.id)
-                                        }
-                                        className="inline-flex items-center px-3 py-1.5 border border-red-300 bg-red-50 rounded-md text-sm text-red-700 hover:bg-red-100 transition-colors"
-                                        title="Hapus item jadwal"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-1" />
-                                        Hapus
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      Tampilan Grid Jadwal
+                    </h4>
+                    <TimetableGridView
+                      scheduleItems={scheduleItems}
+                      className="bg-white rounded-lg border border-gray-200 p-4"
+                    />
+                  </div>
+                  
+                  {/* List view untuk edit/hapus (hanya untuk DRAFT/REJECTED) */}
+                  {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
+                    <div className="mt-6">
+                      <h4 className="text-md font-semibold text-gray-900 mb-4">
+                        Daftar Item Jadwal
+                      </h4>
+                      <div className="space-y-4">
+                        {Object.entries(groupItemsByDay(scheduleItems)).map(
+                          ([day, items]) => (
+                            <div
+                              key={day}
+                              className="border border-gray-200 rounded-lg overflow-hidden"
+                            >
+                              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                                <h4 className="font-medium text-gray-900">{day}</h4>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-4 text-center text-gray-500">
-                            Belum ada mata kuliah pada {day}
-                          </div>
+                              {items.length > 0 ? (
+                                <div className="divide-y divide-gray-200">
+                                  {items.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="p-4 hover:bg-gray-50"
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <h5 className="font-medium text-gray-900 mb-1">
+                                            {item.mataKuliah.nama}
+                                          </h5>
+                                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                            <div className="flex items-center">
+                                              <Clock className="w-4 h-4 mr-1" />
+                                              {item.jamMulai} - {item.jamSelesai}
+                                            </div>
+                                            <div className="flex items-center">
+                                              <MapPin className="w-4 h-4 mr-1" />
+                                              {item.ruangan.nama}
+                                            </div>
+                                            <div className="flex items-center">
+                                              <User className="w-4 h-4 mr-1" />
+                                              {item.dosen.nama}
+                                            </div>
+                                            <div className="flex items-center">
+                                              <Book className="w-4 h-4 mr-1" />
+                                              {item.mataKuliah.sks} SKS
+                                            </div>
+                                          </div>
+                                          {item.kelas && (
+                                            <div className="mt-1 text-sm text-gray-600">
+                                              Kelas: {item.kelas}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex space-x-2 ml-4">
+                                          <button
+                                            onClick={() => openEditItemModal(item)}
+                                            className="inline-flex items-center px-3 py-1.5 border border-blue-300 bg-blue-50 rounded-md text-sm text-blue-700 hover:bg-blue-100 transition-colors"
+                                            title="Edit item jadwal"
+                                          >
+                                            <Edit className="w-4 h-4 mr-1" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() =>
+                                              handleDeleteScheduleItem(item.id)
+                                            }
+                                            className="inline-flex items-center px-3 py-1.5 border border-red-300 bg-red-50 rounded-md text-sm text-red-700 hover:bg-red-100 transition-colors"
+                                            title="Hapus item jadwal"
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-1" />
+                                            Hapus
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-4 text-center text-gray-500">
+                                  Belum ada mata kuliah pada {day}
+                                </div>
+                              )}
+                            </div>
+                          ),
                         )}
                       </div>
-                    ),
+                    </div>
                   )}
                 </div>
               )}
@@ -854,7 +872,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className={`px-4 py-2 rounded-md ${getButtonPrimaryClass(currentUser)}`}
                 >
                   Buat Jadwal
                 </button>
@@ -951,12 +969,21 @@ const KaprodiScheduleManager = ({ authToken }) => {
                   </label>
                   <select
                     value={itemFormData.ruanganId}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const selectedRoomId = e.target.value;
+                      const selectedRoom = availableRooms.find(
+                        (room) => room.id === parseInt(selectedRoomId)
+                      );
+                      
                       setItemFormData({
                         ...itemFormData,
-                        ruanganId: e.target.value,
-                      })
-                    }
+                        ruanganId: selectedRoomId,
+                        // Auto-fill kapasitas dari ruangan yang dipilih
+                        kapasitasMahasiswa: selectedRoom
+                          ? selectedRoom.kapasitas.toString()
+                          : "",
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
@@ -975,6 +1002,9 @@ const KaprodiScheduleManager = ({ authToken }) => {
                       ))
                     )}
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ruangan dapat dipilih manual atau otomatis terisi saat menginput kelas yang cocok
+                  </p>
                 </div>
 
                 <div>
@@ -1020,15 +1050,51 @@ const KaprodiScheduleManager = ({ authToken }) => {
                   <input
                     type="text"
                     value={itemFormData.kelas}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const kelasValue = e.target.value.trim();
+                      
+                      // Auto-fill ruangan dan kapasitas berdasarkan kelas
+                      let matchedRoom = null;
+                      
+                      if (kelasValue.length > 0) {
+                        // Cari ruangan yang cocok dengan kelas yang diinput
+                        // Priority: 1. Exact match, 2. Ruangan mengandung kelas, 3. Kelas mengandung ruangan
+                        const kelasUpper = kelasValue.toUpperCase();
+                        
+                        // Coba exact match dulu
+                        matchedRoom = availableRooms.find((room) => {
+                          const roomName = room.nama.trim().toUpperCase();
+                          return roomName === kelasUpper;
+                        });
+                        
+                        // Jika tidak ada exact match, coba contains match
+                        if (!matchedRoom) {
+                          matchedRoom = availableRooms.find((room) => {
+                            const roomName = room.nama.trim().toUpperCase();
+                            // Hanya match jika kelas cukup panjang (minimal 3 karakter) untuk menghindari false positive
+                            return kelasUpper.length >= 3 && 
+                                   (roomName.includes(kelasUpper) || kelasUpper.includes(roomName));
+                          });
+                        }
+                      }
+                      
                       setItemFormData({
                         ...itemFormData,
-                        kelas: e.target.value,
-                      })
-                    }
+                        kelas: kelasValue,
+                        // Auto-fill ruangan jika ditemukan match
+                        ruanganId: matchedRoom ? matchedRoom.id.toString() : itemFormData.ruanganId,
+                        // Auto-fill kapasitas jika ruangan ditemukan
+                        kapasitasMahasiswa: matchedRoom 
+                          ? matchedRoom.kapasitas.toString() 
+                          : itemFormData.kapasitasMahasiswa,
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Contoh: A1, B2"
+                    placeholder="Contoh: A101, B201"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ruangan dan kapasitas akan otomatis terisi jika kelas cocok dengan nama ruangan
+                  </p>
                 </div>
 
                 <div>
@@ -1046,7 +1112,11 @@ const KaprodiScheduleManager = ({ authToken }) => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="1"
+                    placeholder="Otomatis terisi dari kelas atau ruangan"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Kapasitas otomatis terisi saat memilih kelas yang cocok dengan ruangan atau saat memilih ruangan. Dapat diubah manual jika diperlukan.
+                  </p>
                 </div>
               </div>
 
@@ -1073,7 +1143,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className={`px-4 py-2 rounded-md ${getButtonPrimaryClass(currentUser)}`}
                 >
                   {editingItem ? "Update" : "Tambah"}
                 </button>
@@ -1140,7 +1210,7 @@ const KaprodiScheduleManager = ({ authToken }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className={`px-4 py-2 rounded-md ${getButtonPrimaryClass(currentUser)}`}
                 >
                   Simpan Perubahan
                 </button>

@@ -38,6 +38,7 @@ const MainLayout = ({
             menuItems={menuItems}
             expandedCategories={expandedCategories}
             onCategoryToggle={onCategoryToggle}
+            currentUser={currentUser}
           />
         </div>
 
