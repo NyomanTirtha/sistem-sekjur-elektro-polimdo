@@ -43,6 +43,7 @@ model ProgramStudi {
   mahasiswa  Mahasiswa[]
   mataKuliah MataKuliah[]
   kaprodiUsers User[]
+  prodiSchedules ProdiSchedule[]
 
   @@index([jurusanId])
   @@map("program_studi")
@@ -73,6 +74,8 @@ model Dosen {
   prodi              ProgramStudi        @relation(fields: [prodiId], references: [id])
   pengajuanSADetails PengajuanSADetail[]
   penugasanMengajar  PenugasanMengajar[]
+  scheduleItems      ScheduleItem[]
+  dosenRequests      DosenScheduleRequest[]
 
   @@index([prodiId], map: "dosen_prodiId_fkey")
   @@map("dosen")
@@ -87,6 +90,8 @@ model MataKuliah {
   programStudi     ProgramStudi        @relation(fields: [programStudiId], references: [id])
   pengajuanDetails PengajuanSADetail[]
   penugasanMengajar  PenugasanMengajar[]
+  scheduleItems      ScheduleItem[]
+  dosenRequests      DosenScheduleRequest[]
 
   @@index([programStudiId])
   @@map("mata_kuliah")
@@ -170,4 +175,167 @@ model PenugasanMengajar {
   @@index([dosenId])
   @@index([status])
   @@map("penugasan_mengajar")
+}
+
+// =====================================================
+// SISTEM JADWAL/TIMETABLE MODELS
+// =====================================================
+
+model TimetablePeriod {
+  id              Int             @id @default(autoincrement())
+  semester        SemesterType
+  tahunAkademik   String          // format: "2024/2025"
+  status          PeriodStatus    @default(DRAFT)
+  createdBySekjur String          // username sekjur yang buat
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  prodiSchedules  ProdiSchedule[]
+
+  @@unique([semester, tahunAkademik])
+  @@map("timetable_periods")
+}
+
+model Ruangan {
+  id           Int             @id @default(autoincrement())
+  nama         String          @unique // "A101", "LAB1", dll
+  kapasitas    Int
+  fasilitas    String?         // "Proyektor, AC, Whiteboard"
+  lokasi       String?         // "Gedung A, Lantai 1"
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  scheduleItems     ScheduleItem[]
+  dosenRequests     DosenScheduleRequest[]
+
+  @@map("ruangan")
+}
+
+model ProdiSchedule {
+  id                 Int             @id @default(autoincrement())
+  timetablePeriodId  Int
+  prodiId            Int
+  kaprodiId          String          // username kaprodi
+  status             ScheduleStatus  @default(DRAFT)
+  submittedAt        DateTime?
+  approvedAt         DateTime?
+  sekjurNotes        String?         // catatan dari sekjur
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  timetablePeriod    TimetablePeriod @relation(fields: [timetablePeriodId], references: [id], onDelete: Cascade)
+  prodi              ProgramStudi    @relation(fields: [prodiId], references: [id])
+  scheduleItems      ScheduleItem[]
+  revisions          ScheduleRevision[]
+
+  @@unique([timetablePeriodId, prodiId])
+  @@index([prodiId])
+  @@index([status])
+  @@map("prodi_schedules")
+}
+
+model ScheduleItem {
+  id                Int           @id @default(autoincrement())
+  prodiScheduleId   Int
+  mataKuliahId      Int
+  dosenId           String
+  hari              HariType
+  jamMulai          String        // format: "08:00"
+  jamSelesai        String        // format: "10:30"
+  ruanganId         Int
+  kelas             String?       // "A1", "B2", dll
+  kapasitasMahasiswa Int?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  prodiSchedule     ProdiSchedule @relation(fields: [prodiScheduleId], references: [id], onDelete: Cascade)
+  mataKuliah        MataKuliah    @relation(fields: [mataKuliahId], references: [id])
+  dosen             Dosen         @relation(fields: [dosenId], references: [nip])
+  ruangan           Ruangan       @relation(fields: [ruanganId], references: [id])
+
+  @@index([prodiScheduleId])
+  @@index([mataKuliahId])
+  @@index([dosenId])
+  @@index([ruanganId])
+  @@index([hari])
+  @@map("schedule_items")
+}
+
+model DosenScheduleRequest {
+  id                    Int               @id @default(autoincrement())
+  dosenId               String
+  kaprodiId             String            // username kaprodi tujuan
+  mataKuliahId          Int
+  preferredHari         HariType
+  preferredJamMulai     String            // format: "08:00"
+  preferredJamSelesai   String            // format: "10:30"
+  preferredRuanganId    Int?
+  alasanRequest         String
+  status                RequestStatus     @default(PENDING)
+  kaprodiNotes          String?
+  submittedAt           DateTime          @default(now())
+  processedAt           DateTime?
+
+  dosen                 Dosen             @relation(fields: [dosenId], references: [nip])
+  mataKuliah            MataKuliah        @relation(fields: [mataKuliahId], references: [id])
+  preferredRuangan      Ruangan?          @relation(fields: [preferredRuanganId], references: [id])
+
+  @@index([dosenId])
+  @@index([mataKuliahId])
+  @@index([status])
+  @@map("dosen_schedule_requests")
+}
+
+model ScheduleRevision {
+  id                Int           @id @default(autoincrement())
+  prodiScheduleId   Int
+  revisionNotes     String
+  createdBySekjur   String        // username sekjur
+  createdAt         DateTime      @default(now())
+
+  prodiSchedule     ProdiSchedule @relation(fields: [prodiScheduleId], references: [id], onDelete: Cascade)
+
+  @@index([prodiScheduleId])
+  @@map("schedule_revisions")
+}
+
+// =====================================================
+// ENUMS UNTUK SISTEM JADWAL
+// =====================================================
+
+enum SemesterType {
+  GANJIL
+  GENAP
+  ANTARA
+}
+
+enum PeriodStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum ScheduleStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum HariType {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

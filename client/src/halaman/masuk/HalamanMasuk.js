@@ -54,10 +54,25 @@ const LoginPage = ({ onLoginSuccess }) => {
       });
 
       if (response.status === 429) {
-        const retryAfter = response.headers.get('Retry-After') || response.headers.get('X-RateLimit-Reset');
-        const seconds = retryAfter ? parseInt(retryAfter) : 0;
-        const waitTime = seconds < 60 ? `${seconds} detik` : `${Math.ceil(seconds / 60)} menit`;
-        setError(`Terlalu banyak percobaan login. Silakan tunggu ${waitTime} sebelum mencoba lagi.`);
+        const errorData = await response.json().catch(() => ({}));
+        const retryAfter = errorData.retryAfter ||
+          response.headers.get('Retry-After') ||
+          response.headers.get('X-RateLimit-Reset') ||
+          null;
+
+        let waitMessage = 'Terlalu banyak percobaan login. Silakan tunggu beberapa saat sebelum mencoba lagi.';
+
+        if (retryAfter && retryAfter > 0) {
+          const minutes = Math.ceil(retryAfter / 60);
+          const seconds = retryAfter % 60;
+          if (minutes > 0) {
+            waitMessage = `Terlalu banyak percobaan login. Silakan tunggu ${minutes} menit sebelum mencoba lagi.`;
+          } else if (seconds > 0) {
+            waitMessage = `Terlalu banyak percobaan login. Silakan tunggu ${seconds} detik sebelum mencoba lagi.`;
+          }
+        }
+
+        setError(errorData.message || waitMessage);
         setLoading(false);
         return;
       }

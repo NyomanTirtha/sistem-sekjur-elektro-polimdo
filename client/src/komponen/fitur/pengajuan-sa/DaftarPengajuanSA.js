@@ -285,14 +285,26 @@ const PengajuanSAList = ({ authToken, currentUser, userType }) => {
 
   // Handler untuk tolak dari modal admin
   const handleTolakFromModal = async (pengajuanId, reason) => {
-    try {
-      await pengajuanSAService.tolakPengajuanSA(pengajuanId, reason);
-      showSuccessAlert('Pengajuan SA berhasil ditolak!');
-      fetchPengajuanSA();
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') console.error('Error rejecting pengajuan:', error);
-      showErrorAlert(error.message);
-    }
+    showConfirm(
+      `Apakah Anda yakin ingin menolak pengajuan SA ini?\n\nAlasan: ${reason}`,
+      async () => {
+        try {
+          await pengajuanSAService.tolakPengajuanSA(pengajuanId, reason);
+          showSuccessAlert('Pengajuan SA berhasil ditolak!');
+          fetchPengajuanSA();
+        } catch (error) {
+          if (process.env.NODE_ENV === 'development') console.error('Error rejecting pengajuan:', error);
+          showErrorAlert(error.message);
+        }
+      },
+      () => {
+        // User cancelled
+      },
+      'Konfirmasi Tolak Pengajuan',
+      'danger',
+      'Tolak',
+      'Batal'
+    );
   };
 
   const handleFormSubmitSuccess = () => {

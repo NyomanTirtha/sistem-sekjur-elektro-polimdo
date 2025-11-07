@@ -467,17 +467,17 @@ export default function DosenList({ authToken, currentUser }) {
             </div>
           ) : (
             <>
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                 <thead>
                   <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Nama</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">NIP</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Program Studi</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No. Telp</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Nama</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">NIP</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/4">Program Studi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
                     <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
                     {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-3 text-sm font-semibold text-gray-700">Aksi</th>
+                      <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
                     )}
                   </tr>
                 </thead>
@@ -488,11 +488,11 @@ export default function DosenList({ authToken, currentUser }) {
                     return (
                       <tr key={dsn.nip} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
-                        <td className="p-3 text-sm text-gray-900">{dsn.nama}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.nama}>{dsn.nama}</td>
                         <td className="p-3 text-sm text-gray-900">{dsn.nip}</td>
-                        <td className="p-3 text-sm text-gray-900">{dsn.prodi ? dsn.prodi.nama : '-'}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.prodi ? dsn.prodi.nama : '-'}>{dsn.prodi ? dsn.prodi.nama : '-'}</td>
                         <td className="p-3 text-sm text-gray-900">{dsn.noTelp || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900 max-w-xs truncate" title={dsn.alamat}>{dsn.alamat || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={dsn.alamat}>{dsn.alamat || '-'}</td>
                         {(canAddEdit() || canDelete()) && (
                           <td className="p-3 text-center">
                             <div className="flex justify-center space-x-2">

@@ -20,20 +20,8 @@ const ModalDetailSekjur = ({
   if (!showModal || !selectedDetail) return null;
 
   const handleVerifikasi = () => {
-    showConfirm(
-      'Apakah Anda yakin ingin memverifikasi pembayaran pengajuan SA ini?\n\nSetelah diverifikasi, pengajuan akan diteruskan ke Kaprodi untuk verifikasi dan penentuan dosen.',
-      () => {
-        onVerifikasi(selectedDetail.id);
-        setShowModal(false);
-      },
-      () => {
-        // User cancelled
-      },
-      'Konfirmasi Verifikasi Pembayaran',
-      'warning',
-      'Verifikasi',
-      'Batal'
-    );
+    onVerifikasi(selectedDetail.id);
+    setShowModal(false);
   };
 
   const handleTolak = () => {
@@ -46,22 +34,10 @@ const ModalDetailSekjur = ({
       return;
     }
 
-    showConfirm(
-      `Apakah Anda yakin ingin menolak pengajuan SA ini?\n\nAlasan: ${alasanPenolakan}`,
-      () => {
-        onTolak(selectedDetail.id, alasanPenolakan);
-        setShowTolakModal(false);
-        setAlasanPenolakan('');
-        setShowModal(false);
-      },
-      () => {
-        // User cancelled
-      },
-      'Konfirmasi Tolak Pengajuan',
-      'danger',
-      'Tolak',
-      'Batal'
-    );
+    onTolak(selectedDetail.id, alasanPenolakan);
+    setShowTolakModal(false);
+    setAlasanPenolakan('');
+    setShowModal(false);
   };
 
   const calculateEstimatedCost = () => {

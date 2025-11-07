@@ -273,26 +273,26 @@ const ProdiContent = ({ authToken, currentUser }) => {
               `}</style>
             </div>
           ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">No</th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Nama Program Studi</th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Ketua Prodi</th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Jumlah Dosen</th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Jumlah Mahasiswa</th>
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProdi.map((prd, index) => (
-                  <tr key={prd.id} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <td className="p-3 text-sm text-gray-900">{index + 1}</td>
-                    <td className="p-3 text-sm text-gray-900">{prd.nama || '-'}</td>
-                    <td className="p-3 text-sm text-gray-900">{prd.ketuaProdi || '-'}</td>
-                    <td className="p-3 text-sm text-gray-900">{prd.dosen?.length || 0}</td>
-                    <td className="p-3 text-sm text-gray-900">{prd.mahasiswa?.length || 0}</td>
-                    <td className="p-3">
+              <table className="w-full border-collapse table-fixed">
+                <thead>
+                  <tr className="bg-gray-100 border-b border-gray-300">
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/4">Nama Program Studi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/4">Ketua Prodi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">Jumlah Dosen</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-40">Jumlah Mahasiswa</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProdi.map((prd, index) => (
+                    <tr key={prd.id} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <td className="p-3 text-sm text-gray-900">{index + 1}</td>
+                      <td className="p-3 text-sm text-gray-900 truncate" title={prd.nama || '-'}>{prd.nama || '-'}</td>
+                      <td className="p-3 text-sm text-gray-900 truncate" title={prd.ketuaProdi || '-'}>{prd.ketuaProdi || '-'}</td>
+                      <td className="p-3 text-sm text-gray-900">{prd.dosen?.length || 0}</td>
+                      <td className="p-3 text-sm text-gray-900">{prd.mahasiswa?.length || 0}</td>
+                      <td className="p-3">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => openModal(prd)}

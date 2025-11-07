@@ -125,57 +125,30 @@ const TabelPengajuanSA = ({
       return;
     }
 
-    const mataKuliahName = item.mataKuliah?.nama || item.mataKuliah || 'SA';
+    setIsUpdating({ ...isUpdating, [item.id]: true });
+    try {
+      await onUpdateNilaiDetail(item.id, nilai);
+      setNilaiInputs({ ...nilaiInputs, [item.id]: '' });
 
-    showConfirm(
-      `Apakah Anda yakin ingin memberikan nilai "${nilai}" untuk mata kuliah "${mataKuliahName}"?\n\nSetelah nilai diinput, mata kuliah ini akan dinyatakan SELESAI dan tidak dapat diubah lagi.`,
-      async () => {
-        setIsUpdating({ ...isUpdating, [item.id]: true });
-        try {
-          // ✅ FIXED: Gunakan updateNilaiDetail untuk per mata kuliah
-          await onUpdateNilaiDetail(item.id, nilai);
-          setNilaiInputs({ ...nilaiInputs, [item.id]: '' });
+      if (typeof fetchPengajuanSA === 'function') {
+        setStatusPerRow({});
+        await new Promise(resolve => setTimeout(resolve, 300));
+        await fetchPengajuanSA();
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') console.error('Error updating nilai:', error);
 
-          // ✅ FIXED: Pastikan data di-refresh setelah input nilai untuk update status
-          if (typeof fetchPengajuanSA === 'function') {
-            // Reset statusPerRow untuk memastikan status diambil dari data baru setelah fetch
-            // Ini penting karena backend sudah update status master ke SELESAI jika semua sudah dinilai
-            setStatusPerRow({});
-
-            // Fetch data baru dengan delay kecil untuk memastikan backend sudah selesai update
-            await new Promise(resolve => setTimeout(resolve, 300));
-            await fetchPengajuanSA();
-
-            // ✅ FIXED: Data sudah ter-refresh, statusPerRow sudah di-reset
-            // Status akan diambil dari item.status yang baru dari backend
-          }
-
-          showSuccessAlert(`Nilai ${nilai} berhasil diinput untuk mata kuliah "${mataKuliahName}"!\nMata kuliah ini telah selesai dinilai.`);
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') console.error('Error updating nilai:', error);
-
-          // Jika error 404 (data tidak ditemukan), refresh data otomatis
-          if (error.message.includes('tidak ditemukan')) {
-            showWarningAlert(`${error.message}\n\nMemperbarui data...`);
-            // Trigger refresh dari parent component
-            if (typeof fetchPengajuanSA === 'function') {
-              fetchPengajuanSA();
-            }
-          } else {
-            showErrorAlert(`Error: ${error.message}`);
-          }
-        } finally {
-          setIsUpdating({ ...isUpdating, [item.id]: false });
+      if (error.message.includes('tidak ditemukan')) {
+        showWarningAlert(`${error.message}\n\nMemperbarui data...`);
+        if (typeof fetchPengajuanSA === 'function') {
+          fetchPengajuanSA();
         }
-      },
-      () => {
-        // User cancelled
-      },
-      'Konfirmasi Input Nilai',
-      'warning',
-      'Input Nilai',
-      'Batal'
-    );
+      } else {
+        showErrorAlert(`Error: ${error.message}`);
+      }
+    } finally {
+      setIsUpdating({ ...isUpdating, [item.id]: false });
+    }
   };
 
   const handleTolakPengajuan = async (pengajuanId) => {

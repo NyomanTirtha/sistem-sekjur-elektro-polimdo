@@ -28,28 +28,28 @@ import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils'
 const API_BASE = 'http://localhost:5000/api';
 
 // Skeleton Loading Component
-const TableSkeleton = ({ rows = 5, columns = 8 }) => {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="text-left p-4 font-medium text-gray-900">No</th>
-            <th className="text-left p-4 font-medium text-gray-900">Nama</th>
-            <th className="text-left p-4 font-medium text-gray-900">NIM</th>
-            <th className="text-left p-4 font-medium text-gray-900">Program Studi</th>
-            <th className="text-left p-4 font-medium text-gray-900">Angkatan</th>
-            <th className="text-left p-4 font-medium text-gray-900">Semester</th>
-            <th className="text-left p-4 font-medium text-gray-900">No. Telp</th>
-            <th className="text-left p-4 font-medium text-gray-900">Alamat</th>
-            <th className="text-center p-4 font-medium text-gray-900">Aksi</th>
-          </tr>
-        </thead>
+  const TableSkeleton = ({ rows = 5, columns = 8 }) => {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse table-fixed">
+          <thead>
+            <tr className="border-b bg-gray-50">
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/6">Nama</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">NIM</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Program Studi</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Angkatan</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Semester</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
+              <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
+              <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
+            </tr>
+          </thead>
         <tbody>
-          {Array.from({ length: rows }).map((_, index) => (
-            <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-              {Array.from({ length: columns }).map((_, colIndex) => (
-                <td key={colIndex} className="p-4">
+            {Array.from({ length: rows }).map((_, index) => (
+              <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                {Array.from({ length: columns }).map((_, colIndex) => (
+                  <td key={colIndex} className="p-3">
                   <div className="animate-pulse">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                   </div>
@@ -564,19 +564,19 @@ export default function MahasiswaList({ authToken, currentUser }) {
             </div>
           ) : (
             <div className="transition-opacity duration-300 ease-in-out opacity-100">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                 <thead>
                   <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Nama</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">NIM</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Program Studi</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Angkatan</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Semester</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">No. Telp</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/6">Nama</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">NIM</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Program Studi</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Angkatan</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Semester</th>
+                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
                     <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
                     {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-3 text-sm font-semibold text-gray-700">Aksi</th>
+                      <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
                     )}
                   </tr>
                 </thead>
@@ -592,13 +592,13 @@ export default function MahasiswaList({ authToken, currentUser }) {
                         className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                       >
                         <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
-                        <td className="p-3 text-sm text-gray-900">{mhs.nama}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={mhs.nama}>{mhs.nama}</td>
                         <td className="p-3 text-sm text-gray-900">{mhs.nim}</td>
-                        <td className="p-3 text-sm text-gray-900">{prodiName}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={prodiName}>{prodiName}</td>
                         <td className="p-3 text-sm text-gray-900">{mhs.angkatan || '-'}</td>
                         <td className="p-3 text-sm text-gray-900">{mhs.semester || '-'}</td>
                         <td className="p-3 text-sm text-gray-900">{mhs.noTelp || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900 max-w-xs truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
+                        <td className="p-3 text-sm text-gray-900 truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
                         {(canAddEdit() || canDelete()) && (
                           <td className="p-3 text-center">
                             <div className="flex justify-center space-x-2">
