@@ -67,6 +67,7 @@ router.post("/", async (req, res) => {
       preferredJamMulai,
       preferredJamSelesai,
       preferredRuanganId,
+      preferredKelas,
       alasanRequest,
     } = req.body;
     const dosenNip = req.user.username;
@@ -193,6 +194,9 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Normalize kelas to uppercase if provided
+    const kelasNormalized = preferredKelas ? preferredKelas.trim().toUpperCase() : null;
+
     const newRequest = await prisma.dosenScheduleRequest.create({
       data: {
         dosenId: dosenNip,
@@ -204,6 +208,7 @@ router.post("/", async (req, res) => {
         preferredRuanganId: preferredRuanganId
           ? parseInt(preferredRuanganId)
           : null,
+        preferredKelas: kelasNormalized,
         alasanRequest,
         status: "PENDING",
       },
@@ -664,7 +669,7 @@ router.post("/:id/approve", async (req, res) => {
           jamMulai: request.preferredJamMulai,
           jamSelesai: request.preferredJamSelesai,
           ruanganId: request.preferredRuanganId,
-          kelas: null, // Bisa diisi manual oleh kaprodi nanti
+          kelas: request.preferredKelas || null, // Gunakan kelas dari request dosen
           kapasitasMahasiswa: request.preferredRuangan?.kapasitas || null,
         },
         include: {

@@ -7,6 +7,75 @@ const prisma = new PrismaClient();
 // PRODI SCHEDULES MANAGEMENT ROUTES (KAPRODI)
 // =====================================================
 
+// GET /api/prodi-schedules/kelas-list - Get list of kelas untuk prodi dosen yang login
+router.get("/kelas-list", async (req, res) => {
+  try {
+    const dosenNip = req.user.username;
+    const userRole = req.user.role;
+
+    // Get dosen's prodi
+    let prodiId = null;
+    if (userRole === "DOSEN") {
+      const dosen = await prisma.dosen.findUnique({
+        where: { nip: dosenNip },
+        select: { prodiId: true },
+      });
+      if (!dosen) {
+        return res.status(403).json({
+          success: false,
+          message: "Dosen tidak ditemukan",
+        });
+      }
+      prodiId = dosen.prodiId;
+    } else if (userRole === "KAPRODI") {
+      const user = await prisma.user.findUnique({
+        where: { username: dosenNip },
+        select: { programStudiId: true },
+      });
+      if (!user || !user.programStudiId) {
+        return res.status(403).json({
+          success: false,
+          message: "User tidak terkait dengan program studi",
+        });
+      }
+      prodiId = user.programStudiId;
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: "Hanya dosen dan kaprodi yang dapat mengakses endpoint ini",
+      });
+    }
+
+    // Get all unique kelas from prodi schedules
+    const schedules = await prisma.prodiSchedule.findMany({
+      where: {
+        prodiId: prodiId,
+      },
+      select: {
+        kelas: true,
+      },
+      distinct: ["kelas"],
+      orderBy: {
+        kelas: "asc",
+      },
+    });
+
+    const kelasList = schedules.map((s) => s.kelas).filter((k) => k);
+
+    res.json({
+      success: true,
+      data: kelasList,
+    });
+  } catch (error) {
+    console.error("Error fetching kelas list:", error);
+    res.status(500).json({
+      success: false,
+      message: "Gagal mengambil daftar kelas",
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/prodi-schedules/my-prodi - List jadwal untuk prodi kaprodi yang login
 router.get("/my-prodi", async (req, res) => {
   try {
@@ -79,7 +148,7 @@ router.get("/my-prodi", async (req, res) => {
 // POST /api/prodi-schedules - Buat jadwal baru untuk prodi (KAPRODI only)
 router.post("/", async (req, res) => {
   try {
-    const { timetablePeriodId } = req.body;
+    const { timetablePeriodId, kelas } = req.body;
     const kaprodiUsername = req.user.username;
 
     if (!timetablePeriodId) {
@@ -88,6 +157,16 @@ router.post("/", async (req, res) => {
         message: "Periode timetable harus dipilih",
       });
     }
+
+    if (!kelas || !kelas.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Kelas harus diisi",
+      });
+    }
+
+    // Normalize kelas to uppercase
+    const kelasNormalized = kelas.trim().toUpperCase();
 
     // Get user's prodi
     const user = await prisma.user.findUnique({
@@ -121,18 +200,19 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Check if schedule already exists for this prodi and period
+    // Check if schedule already exists for this prodi, period, and kelas
     const existingSchedule = await prisma.prodiSchedule.findFirst({
       where: {
         timetablePeriodId: parseInt(timetablePeriodId),
         prodiId: user.programStudiId,
+        kelas: kelasNormalized,
       },
     });
 
     if (existingSchedule) {
       return res.status(400).json({
         success: false,
-        message: "Jadwal untuk periode ini sudah ada",
+        message: `Jadwal untuk kelas ${kelasNormalized} pada periode ini sudah ada`,
       });
     }
 
@@ -141,6 +221,7 @@ router.post("/", async (req, res) => {
         timetablePeriodId: parseInt(timetablePeriodId),
         prodiId: user.programStudiId,
         kaprodiId: kaprodiUsername,
+        kelas: kelasNormalized,
         status: "DRAFT",
       },
       include: {
@@ -596,6 +677,11 @@ router.post("/:id/items", async (req, res) => {
         prodiId: user.programStudiId,
         kaprodiId: kaprodiUsername,
       },
+      select: {
+        id: true,
+        status: true,
+        kelas: true,
+      },
     });
 
     if (!schedule) {
@@ -678,11 +764,36 @@ router.post("/:id/items", async (req, res) => {
     }
 
     // Check for conflicts within this schedule
+    // Also check for duplicate mata kuliah in same kelas, hari, and time
     const internalConflicts = await prisma.scheduleItem.findMany({
       where: {
         prodiScheduleId: parseInt(id),
         hari,
         OR: [
+          // Duplicate mata kuliah in same kelas, hari, and time
+          {
+            mataKuliahId: parseInt(mataKuliahId),
+            OR: [
+              {
+                AND: [
+                  { jamMulai: { lte: jamMulai } },
+                  { jamSelesai: { gt: jamMulai } },
+                ],
+              },
+              {
+                AND: [
+                  { jamMulai: { lt: jamSelesai } },
+                  { jamSelesai: { gte: jamSelesai } },
+                ],
+              },
+              {
+                AND: [
+                  { jamMulai: { gte: jamMulai } },
+                  { jamSelesai: { lte: jamSelesai } },
+                ],
+              },
+            ],
+          },
           // Dosen conflict
           {
             dosenId,
@@ -736,6 +847,19 @@ router.post("/:id/items", async (req, res) => {
     });
 
     if (internalConflicts.length > 0) {
+      // Check if it's a duplicate mata kuliah
+      const duplicateMataKuliah = internalConflicts.find(
+        (conflict) => conflict.mataKuliahId === parseInt(mataKuliahId)
+      );
+      
+      if (duplicateMataKuliah) {
+        return res.status(400).json({
+          success: false,
+          message: `Mata kuliah yang sama tidak boleh dijadwalkan pada hari dan jam yang sama untuk kelas ${schedule.kelas}`,
+          data: { conflicts: internalConflicts },
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: "Terdapat konflik waktu dengan jadwal yang sudah ada",
@@ -752,7 +876,7 @@ router.post("/:id/items", async (req, res) => {
         jamMulai,
         jamSelesai,
         ruanganId: parseInt(ruanganId),
-        kelas: kelas || null,
+        kelas: schedule?.kelas || null, // Use kelas from schedule
         kapasitasMahasiswa: kapasitasMahasiswa
           ? parseInt(kapasitasMahasiswa)
           : null,

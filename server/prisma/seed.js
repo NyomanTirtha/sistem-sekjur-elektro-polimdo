@@ -13,60 +13,60 @@ async function main() {
     // Hapus semua data yang ada (hati-hati di production!)
     // Urutan penting: hapus data yang memiliki foreign key terlebih dahulu
     console.log('Membersihkan data lama...');
-    
+
     // 1. Hapus data yang reference ke dosen/mahasiswa/mataKuliah
     console.log('  - Menghapus detail pengajuan SA...');
     await prisma.pengajuanSADetail.deleteMany();
-    
+
     console.log('  - Menghapus schedule items...');
     await prisma.scheduleItem.deleteMany();
-    
+
     console.log('  - Menghapus dosen schedule requests...');
     await prisma.dosenScheduleRequest.deleteMany();
-    
+
     console.log('  - Menghapus schedule revisions...');
     await prisma.scheduleRevision.deleteMany();
-    
+
     console.log('  - Menghapus prodi schedules...');
     await prisma.prodiSchedule.deleteMany();
-    
+
     console.log('  - Menghapus timetable periods...');
     await prisma.timetablePeriod.deleteMany();
-    
+
     console.log('  - Menghapus ruangan...');
     await prisma.ruangan.deleteMany();
-    
+
     console.log('  - Menghapus penugasan mengajar...');
     await prisma.penugasanMengajar.deleteMany();
-    
+
     // 2. Hapus pengajuan SA (reference ke mahasiswa)
     console.log('  - Menghapus pengajuan SA...');
     await prisma.pengajuanSA.deleteMany();
-    
+
     // 3. Hapus mahasiswa (reference ke programStudi)
     console.log('  - Menghapus mahasiswa...');
     await prisma.mahasiswa.deleteMany();
-    
+
     // 4. Hapus dosen (reference ke programStudi)
     console.log('  - Menghapus dosen...');
     await prisma.dosen.deleteMany();
-    
+
     // 5. Hapus mata kuliah (reference ke programStudi)
     console.log('  - Menghapus mata kuliah...');
     await prisma.mataKuliah.deleteMany();
-    
+
     // 6. Hapus program studi (reference ke jurusan)
     console.log('  - Menghapus program studi...');
     await prisma.programStudi.deleteMany();
-    
+
     // 7. Hapus user (reference ke jurusan/programStudi)
     console.log('  - Menghapus user...');
     await prisma.user.deleteMany();
-    
+
     // 8. Hapus jurusan (paling akhir)
     console.log('  - Menghapus jurusan...');
     await prisma.jurusan.deleteMany();
-    
+
     console.log('✅ Data lama berhasil dihapus!');
 
     // 1. Insert Jurusan
@@ -82,27 +82,27 @@ async function main() {
     console.log('Memasukkan data Program Studi...');
     await prisma.programStudi.createMany({
       data: [
-        { 
-          id: 1, 
-          nama: 'D4 Teknik Informatika', 
+        {
+          id: 1,
+          nama: 'D4 Teknik Informatika',
           ketuaProdi: 'Harson Kapoh,ST,.MT',
           jurusanId: 1
         },
-        { 
-          id: 2, 
-          nama: 'D4 Teknik Listrik', 
+        {
+          id: 2,
+          nama: 'D4 Teknik Listrik',
           ketuaProdi: 'I Gede Para Atmaja,ST.,MT',
           jurusanId: 1
         },
-        { 
-          id: 3, 
-          nama: 'D4 Teknik Konstruksi Bangunan Gedung', 
+        {
+          id: 3,
+          nama: 'D4 Teknik Konstruksi Bangunan Gedung',
           ketuaProdi: 'Dr. Ir. Budi Santoso, MT.',
           jurusanId: 2
         },
-        { 
-          id: 4, 
-          nama: 'D4 Teknik Konstruksi Jalan dan Jembatan', 
+        {
+          id: 4,
+          nama: 'D4 Teknik Konstruksi Jalan dan Jembatan',
           ketuaProdi: 'Ir. Ahmad Wijaya, ST., MT.',
           jurusanId: 2
         }
@@ -114,154 +114,154 @@ async function main() {
     await prisma.user.createMany({
       data: [
         // Sekretaris Jurusan Teknik Elektro
-        { 
-          username: 'admin', 
-          nama: 'Marson James Budiman, SST., MT.', 
-          password: hashedPassword, 
+        {
+          username: 'admin',
+          nama: 'Marson James Budiman, SST., MT.',
+          password: hashedPassword,
           role: 'SEKJUR',
           jurusanId: 1
         },
         // Sekretaris Jurusan Teknik Sipil
-        { 
-          username: 'sekjur_sipil', 
-          nama: 'Pendekar Trio Lonan, ST., MT.', 
-          password: hashedPassword, 
+        {
+          username: 'sekjur_sipil',
+          nama: 'Pendekar Trio Lonan, ST., MT.',
+          password: hashedPassword,
           role: 'SEKJUR',
           jurusanId: 2
         },
-        
+
         // Kaprodi Teknik Sipil
-        { 
-          username: '197201011998031007', 
-          nama: 'Dr. Ir. Budi Santoso, MT.', 
-          password: hashedPassword, 
+        {
+          username: '197201011998031007',
+          nama: 'Dr. Ir. Budi Santoso, MT.',
+          password: hashedPassword,
           role: 'KAPRODI',
           jurusanId: null,
           programStudiId: 3
         },
-        { 
-          username: '197301011998031008', 
-          nama: 'Ir. Ahmad Wijaya, ST., MT.', 
-          password: hashedPassword, 
+        {
+          username: '197301011998031008',
+          nama: 'Ir. Ahmad Wijaya, ST., MT.',
+          password: hashedPassword,
           role: 'KAPRODI',
           jurusanId: null,
           programStudiId: 4
         },
-        
-        { 
-          username: '197101011999031004', 
-          nama: 'Harson Kapoh,ST,.MT', 
-          password: hashedPassword, 
+
+        {
+          username: '197101011999031004',
+          nama: 'Harson Kapoh,ST,.MT',
+          password: hashedPassword,
           role: 'KAPRODI',
           jurusanId: null,
           programStudiId: 1
         },
-        { 
-          username: '196901301993031003', 
-          nama: 'I Gede Para Atmaja,ST.,MT', 
-          password: hashedPassword, 
+        {
+          username: '196901301993031003',
+          nama: 'I Gede Para Atmaja,ST.,MT',
+          password: hashedPassword,
           role: 'KAPRODI',
           jurusanId: null,
           programStudiId: 2
         },
-        
+
         // Dosen Teknik Elektro
-        { 
-          username: '197405232002121004', 
-          nama: 'Maksy Sendiang, SST.,MIT', 
-          password: hashedPassword, 
+        {
+          username: '197405232002121004',
+          nama: 'Maksy Sendiang, SST.,MIT',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 1  // D4 Teknik Informatika
         },
-        { 
-          username: '196602071989032001', 
-          nama: 'Fitria Claudya Lahinta, S.S,T.,MT', 
-          password: hashedPassword, 
+        {
+          username: '196602071989032001',
+          nama: 'Fitria Claudya Lahinta, S.S,T.,MT',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 2  // D4 Teknik Listrik
         },
         // Dosen Teknik Sipil
-        { 
-          username: '197501011998031005', 
-          nama: 'Ir. Siti Nurhaliza, ST., MT.', 
-          password: hashedPassword, 
+        {
+          username: '197501011998031005',
+          nama: 'Ir. Siti Nurhaliza, ST., MT.',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
-        { 
-          username: '197601011998031006', 
-          nama: 'Drs. Muhammad Rizki, ST., M.Eng.', 
-          password: hashedPassword, 
+        {
+          username: '197601011998031006',
+          nama: 'Drs. Muhammad Rizki, ST., M.Eng.',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
-        { 
-          username: '197701011998031009', 
-          nama: 'Ir. Dewi Sartika, ST., MT.', 
-          password: hashedPassword, 
+        {
+          username: '197701011998031009',
+          nama: 'Ir. Dewi Sartika, ST., MT.',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
-        { 
-          username: '197801011998031010', 
-          nama: 'Drs. Agus Setiawan, ST., M.Sc.', 
-          password: hashedPassword, 
+        {
+          username: '197801011998031010',
+          nama: 'Drs. Agus Setiawan, ST., M.Sc.',
+          password: hashedPassword,
           role: 'DOSEN',
           jurusanId: null,
           programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
-        
+
         // Mahasiswa Teknik Elektro
-        { 
-          username: '23024099', 
-          nama: 'RICHARD APOUW', 
-          password: hashedPassword, 
+        {
+          username: '23024099',
+          nama: 'RICHARD APOUW',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 1  // D4 Teknik Informatika
         },
-        { 
-          username: '24023052', 
-          nama: 'ARIEL PAULUS KAPOH', 
-          password: hashedPassword, 
+        {
+          username: '24023052',
+          nama: 'ARIEL PAULUS KAPOH',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 2  // D4 Teknik Listrik
         },
         // Mahasiswa Teknik Sipil
-        { 
-          username: '23025001', 
-          nama: 'RUDI HERMAWAN', 
-          password: hashedPassword, 
+        {
+          username: '23025001',
+          nama: 'RUDI HERMAWAN',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
-        { 
-          username: '23025002', 
-          nama: 'SARI INDAH SARI', 
-          password: hashedPassword, 
+        {
+          username: '23025002',
+          nama: 'SARI INDAH SARI',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 3  // D4 Teknik Konstruksi Bangunan Gedung
         },
-        { 
-          username: '24025001', 
-          nama: 'ANDI PRASETYA', 
-          password: hashedPassword, 
+        {
+          username: '24025001',
+          nama: 'ANDI PRASETYA',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
         },
-        { 
-          username: '24025002', 
-          nama: 'LINA KARTIKA', 
-          password: hashedPassword, 
+        {
+          username: '24025002',
+          nama: 'LINA KARTIKA',
+          password: hashedPassword,
           role: 'MAHASISWA',
           jurusanId: null,
           programStudiId: 4  // D4 Teknik Konstruksi Jalan dan Jembatan
@@ -365,67 +365,67 @@ async function main() {
     console.log('Memasukkan data Mahasiswa...');
     await prisma.mahasiswa.createMany({
       data: [
-        { 
-          nim: '23024099', 
-          nama: 'RICHARD APOUW', 
+        {
+          nim: '23024099',
+          nama: 'RICHARD APOUW',
           programStudiId: 1,
-          angkatan: '2023', 
-          semester: 3, 
-          noTelp: '082134567890', 
-          alamat: 'Jl. Raya Malalayang No. 123, Manado' 
+          angkatan: '2023',
+          semester: 3,
+          noTelp: '082134567890',
+          alamat: 'Jl. Raya Malalayang No. 123, Manado'
         },
-        { 
-          nim: '24023052', 
-          nama: 'ARIEL PAULUS KAPOH', 
+        {
+          nim: '24023052',
+          nama: 'ARIEL PAULUS KAPOH',
           programStudiId: 2,
-          angkatan: '2024', 
-          semester: 3, 
-          noTelp: '082134567891', 
-          alamat: 'Jl. Sario No. 456, Manado' 
+          angkatan: '2024',
+          semester: 3,
+          noTelp: '082134567891',
+          alamat: 'Jl. Sario No. 456, Manado'
         },
         // Mahasiswa Teknik Sipil
-        { 
-          nim: '23025001', 
-          nama: 'RUDI HERMAWAN', 
+        {
+          nim: '23025001',
+          nama: 'RUDI HERMAWAN',
           programStudiId: 3,
-          angkatan: '2023', 
-          semester: 3, 
-          noTelp: '082134567892', 
-          alamat: 'Jl. Teknik Sipil No. 100, Manado' 
+          angkatan: '2023',
+          semester: 3,
+          noTelp: '082134567892',
+          alamat: 'Jl. Teknik Sipil No. 100, Manado'
         },
-        { 
-          nim: '23025002', 
-          nama: 'SARI INDAH SARI', 
+        {
+          nim: '23025002',
+          nama: 'SARI INDAH SARI',
           programStudiId: 3,
-          angkatan: '2023', 
-          semester: 3, 
-          noTelp: '082134567893', 
-          alamat: 'Jl. Teknik Sipil No. 101, Manado' 
+          angkatan: '2023',
+          semester: 3,
+          noTelp: '082134567893',
+          alamat: 'Jl. Teknik Sipil No. 101, Manado'
         },
-        { 
-          nim: '24025001', 
-          nama: 'ANDI PRASETYA', 
+        {
+          nim: '24025001',
+          nama: 'ANDI PRASETYA',
           programStudiId: 4,
-          angkatan: '2024', 
-          semester: 3, 
-          noTelp: '082134567894', 
-          alamat: 'Jl. Teknik Sipil No. 200, Manado' 
+          angkatan: '2024',
+          semester: 3,
+          noTelp: '082134567894',
+          alamat: 'Jl. Teknik Sipil No. 200, Manado'
         },
-        { 
-          nim: '24025002', 
-          nama: 'LINA KARTIKA', 
+        {
+          nim: '24025002',
+          nama: 'LINA KARTIKA',
           programStudiId: 4,
-          angkatan: '2024', 
-          semester: 3, 
-          noTelp: '082134567895', 
-          alamat: 'Jl. Teknik Sipil No. 201, Manado' 
+          angkatan: '2024',
+          semester: 3,
+          noTelp: '082134567895',
+          alamat: 'Jl. Teknik Sipil No. 201, Manado'
         }
       ]
     });
 
     // 6. Insert Mata Kuliah
     console.log('Memasukkan data Mata Kuliah...');
-    
+
     // Mata Kuliah D4 Teknik Informatika (Semester 1-2)
     const mataKuliahInformatika = [
       // Semester 1
@@ -440,7 +440,7 @@ async function main() {
       { nama: 'Praktikum Algoritma dan Pemrograman', sks: 1, semester: 1, programStudiId: 1 },
       { nama: 'Pengantar Sistem Informasi', sks: 2, semester: 1, programStudiId: 1 },
       { nama: 'Workshop Jaringan Komputer Dasar', sks: 2, semester: 1, programStudiId: 1 },
-      
+
       // Semester 2
       { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 1 },
       { nama: 'Matematika Diskrit', sks: 3, semester: 2, programStudiId: 1 },
@@ -470,7 +470,7 @@ async function main() {
       { nama: 'Praktikum Dasar Rangkaian Listrik', sks: 1, semester: 1, programStudiId: 2 },
       { nama: 'Gambar Teknik Listrik', sks: 2, semester: 1, programStudiId: 2 },
       { nama: 'Pengantar Teknik Elektro', sks: 2, semester: 1, programStudiId: 2 },
-      
+
       // Semester 2
       { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 2 },
       { nama: 'Matematika Teknik', sks: 3, semester: 2, programStudiId: 2 },
@@ -500,7 +500,7 @@ async function main() {
       { nama: 'Pengantar Teknik Sipil', sks: 2, semester: 1, programStudiId: 3 },
       { nama: 'Mekanika Teknik Dasar', sks: 3, semester: 1, programStudiId: 3 },
       { nama: 'Praktikum Mekanika Teknik', sks: 1, semester: 1, programStudiId: 3 },
-      
+
       // Semester 2
       { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 3 },
       { nama: 'Matematika Teknik', sks: 3, semester: 2, programStudiId: 3 },
@@ -529,7 +529,7 @@ async function main() {
       { nama: 'Pengantar Teknik Sipil', sks: 2, semester: 1, programStudiId: 4 },
       { nama: 'Mekanika Teknik Dasar', sks: 3, semester: 1, programStudiId: 4 },
       { nama: 'Praktikum Mekanika Teknik', sks: 1, semester: 1, programStudiId: 4 },
-      
+
       // Semester 2
       { nama: 'Bahasa Inggris Teknik 2', sks: 2, semester: 2, programStudiId: 4 },
       { nama: 'Matematika Teknik', sks: 3, semester: 2, programStudiId: 4 },
@@ -546,6 +546,27 @@ async function main() {
 
     await prisma.mataKuliah.createMany({
       data: [...mataKuliahInformatika, ...mataKuliahListrik, ...mataKuliahTKBG, ...mataKuliahTKJJ]
+    });
+
+    // 7. Insert Ruangan untuk Teknik Elektro
+    console.log('Memasukkan data Ruangan...');
+    await prisma.ruangan.createMany({
+      data: [
+        {
+          nama: 'GKT',
+          kapasitas: 35,
+          fasilitas: 'Proyektor, AC, Whiteboard, Sound System',
+          lokasi: 'Gedung GKT, Lantai 1',
+          isActive: true
+        },
+        {
+          nama: 'Jurusan',
+          kapasitas: 35,
+          fasilitas: 'Proyektor, AC, Whiteboard',
+          lokasi: 'Gedung Jurusan Teknik Elektro, Lantai 1',
+          isActive: true
+        }
+      ]
     });
 
     console.log('\n✅ Seeding berhasil!');
@@ -579,6 +600,7 @@ async function main() {
     console.log(`  - Mata Kuliah D4 Teknik Informatika: ${mataKuliahInformatika.length} (Semester 1-2)`);
     console.log(`  - Mata Kuliah D4 Teknik Listrik: ${mataKuliahListrik.length} (Semester 1-2)`);
     console.log(`  - Total Mata Kuliah: ${mataKuliahInformatika.length + mataKuliahListrik.length}`);
+    console.log(`  - Ruangan: 2 (GKT, Jurusan)`);
     console.log('============================================');
 
   } catch (error) {

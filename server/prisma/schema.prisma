@@ -217,6 +217,7 @@ model ProdiSchedule {
   timetablePeriodId  Int
   prodiId            Int
   kaprodiId          String          // username kaprodi
+  kelas              String          // Nama kelas (contoh: "1TI1", "2TL2")
   status             ScheduleStatus  @default(DRAFT)
   submittedAt        DateTime?
   approvedAt         DateTime?
@@ -229,9 +230,10 @@ model ProdiSchedule {
   scheduleItems      ScheduleItem[]
   revisions          ScheduleRevision[]
 
-  @@unique([timetablePeriodId, prodiId])
+  @@unique([timetablePeriodId, prodiId, kelas])
   @@index([prodiId])
   @@index([status])
+  @@index([kelas])
   @@map("prodi_schedules")
 }
 
@@ -271,6 +273,7 @@ model DosenScheduleRequest {
   preferredJamMulai     String            // format: "08:00"
   preferredJamSelesai   String            // format: "10:30"
   preferredRuanganId    Int?
+  preferredKelas        String?           // Kelas yang dipilih dosen (contoh: "1TI1", "2TL2")
   alasanRequest         String
   status                RequestStatus     @default(PENDING)
   kaprodiNotes          String?
@@ -284,6 +287,7 @@ model DosenScheduleRequest {
   @@index([dosenId])
   @@index([mataKuliahId])
   @@index([status])
+  @@index([preferredKelas])
   @@map("dosen_schedule_requests")
 }
 
