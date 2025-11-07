@@ -11,8 +11,12 @@ import {
   Clock,
   Users,
   FileText,
+  BookOpen,
+  GraduationCap,
 } from "lucide-react";
 import axios from "axios";
+import ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TimetablePeriodManager = ({ authToken }) => {
   const [periods, setPeriods] = useState([]);
@@ -364,248 +368,396 @@ const TimetablePeriodManager = ({ authToken }) => {
       )}
 
       {/* Create Period Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <form onSubmit={handleCreatePeriod}>
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Buat Periode Timetable Baru
-                </h3>
-              </div>
+      {showCreateModal &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
+            <motion.div
+              key="create-modal-backdrop"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowCreateModal(false);
+                  setFormData({ semester: "", tahunAkademik: "" });
+                }
+              }}
+            >
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <form onSubmit={handleCreatePeriod}>
+                  {/* Header */}
+                  <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <Calendar className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">
+                            Buat Periode Timetable Baru
+                          </h3>
+                          <p className="text-sm text-blue-100">
+                            Tambahkan periode baru untuk jadwal kuliah
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateModal(false);
+                          setFormData({ semester: "", tahunAkademik: "" });
+                        }}
+                        className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                        aria-label="Close modal"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="px-6 py-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Semester *
-                  </label>
-                  <select
-                    value={formData.semester}
-                    onChange={(e) =>
-                      setFormData({ ...formData, semester: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Pilih Semester</option>
-                    <option value="GANJIL">Ganjil</option>
-                    <option value="GENAP">Genap</option>
-                    <option value="ANTARA">Antara</option>
-                  </select>
-                </div>
+                  {/* Content */}
+                  <div className="p-6 bg-gray-50 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Semester *
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={formData.semester}
+                          onChange={(e) =>
+                            setFormData({ ...formData, semester: e.target.value })
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
+                          required
+                        >
+                          <option value="">Pilih Semester</option>
+                          <option value="GANJIL">Ganjil</option>
+                          <option value="GENAP">Genap</option>
+                          <option value="ANTARA">Antara</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3">
+                          <Calendar className="w-5 h-5 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tahun Akademik *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tahunAkademik}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        tahunAkademik: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Contoh: 2024/2025"
-                    required
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tahun Akademik *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.tahunAkademik}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              tahunAkademik: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                          placeholder="Contoh: 2024/2025"
+                          required
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                          <BookOpen className="w-5 h-5 text-gray-400" />
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Format: Tahun/Tahun (contoh: 2024/2025)
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setFormData({ semester: "", tahunAkademik: "" });
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-white border-t border-gray-200 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setFormData({ semester: "", tahunAkademik: "" });
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Simpan
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body
+        )}
 
       {/* Period Detail Modal */}
-      {showDetailModal && selectedPeriod && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Detail Periode: {selectedPeriod.semester}{" "}
-                  {selectedPeriod.tahunAkademik}
-                </h3>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${getStatusColor(selectedPeriod.status)}`}
-                >
-                  {getStatusLabel(selectedPeriod.status)}
-                </span>
-              </div>
-              <button
-                onClick={() => {
+      {showDetailModal &&
+        selectedPeriod &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
+            <motion.div
+              key="detail-modal-backdrop"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
                   setShowDetailModal(false);
                   setSelectedPeriod(null);
                   setPeriodSchedules([]);
-                }}
-                className="text-gray-400 hover:text-gray-600"
+                }
+              }}
+            >
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+                {/* Header */}
+                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-white mb-1">
+                          Detail Periode Timetable
+                        </h3>
+                        <p className="text-lg text-blue-100 font-medium">
+                          {selectedPeriod.semester} {selectedPeriod.tahunAkademik}
+                        </p>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(selectedPeriod.status)}`}
+                        >
+                          {getStatusLabel(selectedPeriod.status)}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        setSelectedPeriod(null);
+                        setPeriodSchedules([]);
+                      }}
+                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      aria-label="Close modal"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
 
-            <div className="px-6 py-4 overflow-y-auto flex-1">
-              {/* Statistics Summary */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-blue-600 font-medium">
-                        Total Prodi
-                      </p>
-                      <p className="text-2xl font-bold text-blue-900">
-                        {selectedPeriod.stats?.totalProdi || 0}
-                      </p>
-                    </div>
-                    <Users className="w-8 h-8 text-blue-400" />
-                  </div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-green-600 font-medium">
-                        Selesai
-                      </p>
-                      <p className="text-2xl font-bold text-green-900">
-                        {selectedPeriod.stats?.completedSchedules || 0}
-                      </p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-400" />
-                  </div>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-yellow-600 font-medium">
-                        Pending
-                      </p>
-                      <p className="text-2xl font-bold text-yellow-900">
-                        {selectedPeriod.stats?.pendingSchedules || 0}
-                      </p>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-400" />
-                  </div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Draft</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {selectedPeriod.stats?.draftSchedules || 0}
-                      </p>
-                    </div>
-                    <FileText className="w-8 h-8 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Schedules List */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                  Jadwal Program Studi
-                </h4>
-
-                {loadingDetail ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">Memuat jadwal...</p>
-                    </div>
-                  </div>
-                ) : periodSchedules.length > 0 ? (
-                  <div className="space-y-3">
-                    {periodSchedules.map((schedule) => (
-                      <div
-                        key={schedule.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition"
-                      >
-                        <div className="flex justify-between items-start">
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto bg-gray-50">
+                  <div className="p-6 space-y-6">
+                    {/* Statistics Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-white border border-blue-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h5 className="font-semibold text-gray-900">
-                              {schedule.prodi?.nama || "N/A"}
-                            </h5>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                              <span className="flex items-center">
-                                <FileText className="w-4 h-4 mr-1" />
-                                {schedule._count?.scheduleItems || 0} Item
-                                Jadwal
-                              </span>
-                              {schedule.submittedAt && (
-                                <span className="flex items-center">
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  {new Date(
-                                    schedule.submittedAt,
-                                  ).toLocaleDateString("id-ID")}
-                                </span>
-                              )}
-                            </div>
+                            <p className="text-sm text-blue-600 font-medium mb-1">
+                              Total Prodi
+                            </p>
+                            <p className="text-3xl font-bold text-blue-900">
+                              {selectedPeriod.stats?.totalProdi || 0}
+                            </p>
                           </div>
-                          <div>
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getScheduleStatusColor(schedule.status)}`}
-                            >
-                              {getScheduleStatusLabel(schedule.status)}
-                            </span>
+                          <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <Users className="w-6 h-6 text-blue-600" />
                           </div>
                         </div>
-                        {schedule.sekjurNotes && (
-                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                            <p className="text-xs font-medium text-yellow-800 mb-1">
-                              Catatan Sekjur:
+                      </div>
+                      <div className="bg-white border border-green-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-green-600 font-medium mb-1">
+                              Selesai
                             </p>
-                            <p className="text-sm text-yellow-700">
-                              {schedule.sekjurNotes}
+                            <p className="text-3xl font-bold text-green-900">
+                              {selectedPeriod.stats?.completedSchedules || 0}
+                            </p>
+                          </div>
+                          <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                            <CheckCircle className="w-6 h-6 text-green-600" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-yellow-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-yellow-600 font-medium mb-1">
+                              Pending
+                            </p>
+                            <p className="text-3xl font-bold text-yellow-900">
+                              {selectedPeriod.stats?.pendingSchedules || 0}
+                            </p>
+                          </div>
+                          <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                            <Clock className="w-6 h-6 text-yellow-600" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-600 font-medium mb-1">
+                              Draft
+                            </p>
+                            <p className="text-3xl font-bold text-gray-900">
+                              {selectedPeriod.stats?.draftSchedules || 0}
+                            </p>
+                          </div>
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-gray-600" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Schedules List */}
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-5 h-5 text-gray-600" />
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            Jadwal Program Studi
+                          </h4>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        {loadingDetail ? (
+                          <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
+                              <p className="text-sm text-gray-600">
+                                Memuat jadwal...
+                              </p>
+                            </div>
+                          </div>
+                        ) : periodSchedules.length > 0 ? (
+                          <div className="space-y-3">
+                            {periodSchedules.map((schedule) => (
+                              <div
+                                key={schedule.id}
+                                className="border border-gray-200 rounded-lg p-5 hover:border-blue-300 hover:shadow-md transition-all bg-white"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                        <GraduationCap className="w-5 h-5 text-blue-600" />
+                                      </div>
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 text-lg">
+                                          {schedule.prodi?.nama || "N/A"}
+                                        </h5>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-6 text-sm text-gray-600 pl-12">
+                                      <span className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4" />
+                                        <span className="font-medium">
+                                          {schedule._count?.scheduleItems || 0}
+                                        </span>{" "}
+                                        Item Jadwal
+                                      </span>
+                                      {schedule.submittedAt && (
+                                        <span className="flex items-center gap-2">
+                                          <Clock className="w-4 h-4" />
+                                          Diajukan:{" "}
+                                          {new Date(
+                                            schedule.submittedAt
+                                          ).toLocaleDateString("id-ID", {
+                                            day: "numeric",
+                                            month: "long",
+                                            year: "numeric",
+                                          })}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span
+                                      className={`inline-block px-4 py-2 rounded-lg text-xs font-semibold ${getScheduleStatusColor(schedule.status)}`}
+                                    >
+                                      {getScheduleStatusLabel(schedule.status)}
+                                    </span>
+                                  </div>
+                                </div>
+                                {schedule.sekjurNotes && (
+                                  <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                                    <p className="text-xs font-semibold text-yellow-800 mb-1 flex items-center gap-2">
+                                      <FileText className="w-3 h-3" />
+                                      Catatan Sekjur:
+                                    </p>
+                                    <p className="text-sm text-yellow-700">
+                                      {schedule.sekjurNotes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <FileText className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                            <h5 className="text-lg font-medium text-gray-900 mb-2">
+                              Belum ada jadwal
+                            </h5>
+                            <p className="text-sm text-gray-500">
+                              Belum ada jadwal untuk periode ini
                             </p>
                           </div>
                         )}
                       </div>
-                    ))}
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                    <p>Belum ada jadwal untuk periode ini</p>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedPeriod(null);
-                  setPeriodSchedules([]);
-                }}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                {/* Footer */}
+                <div className="px-6 py-4 bg-white border-t border-gray-200 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedPeriod(null);
+                      setPeriodSchedules([]);
+                    }}
+                    className="px-5 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium inline-flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Tutup
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body
+        )}
     </div>
   );
 };
