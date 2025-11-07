@@ -146,19 +146,36 @@ router.post("/", async (req, res) => {
     }
 
     // Get kaprodi for this prodi
+    // Cari kaprodi berdasarkan programStudiId yang sama dengan dosen.prodiId
     const kaprodi = await prisma.user.findFirst({
       where: {
         role: "KAPRODI",
         programStudiId: dosen.prodiId,
       },
+      select: {
+        username: true,
+        nama: true,
+        programStudiId: true,
+      },
     });
 
     if (!kaprodi) {
+      console.error("Kaprodi tidak ditemukan untuk prodi:", {
+        dosenNip: dosenNip,
+        dosenProdiId: dosen.prodiId,
+        dosenProdiNama: dosen.prodi?.nama,
+      });
       return res.status(400).json({
         success: false,
-        message: "Kaprodi tidak ditemukan untuk prodi ini",
+        message: `Kaprodi tidak ditemukan untuk program studi ${dosen.prodi?.nama || dosen.prodiId}. Pastikan ada kaprodi yang terdaftar untuk program studi ini.`,
       });
     }
+
+    console.log("Kaprodi ditemukan:", {
+      kaprodiUsername: kaprodi.username,
+      kaprodiNama: kaprodi.nama,
+      prodiId: kaprodi.programStudiId,
+    });
 
     // Check if there's already a pending request for the same mata kuliah
     const existingRequest = await prisma.dosenScheduleRequest.findFirst({
@@ -197,12 +214,22 @@ router.post("/", async (req, res) => {
         preferredRuangan: {
           select: { id: true, nama: true, kapasitas: true },
         },
+        dosen: {
+          select: { nip: true, nama: true },
+        },
       },
+    });
+
+    console.log("Request berhasil dibuat:", {
+      requestId: newRequest.id,
+      dosenId: newRequest.dosenId,
+      kaprodiId: newRequest.kaprodiId,
+      mataKuliah: newRequest.mataKuliah?.nama,
     });
 
     res.status(201).json({
       success: true,
-      message: "Request berhasil disubmit ke kaprodi",
+      message: `Request berhasil disubmit ke kaprodi ${kaprodi.nama}`,
       data: newRequest,
     });
   } catch (error) {
@@ -454,10 +481,13 @@ router.post("/:id/approve", async (req, res) => {
       },
       include: {
         dosen: {
-          select: { nama: true },
+          select: { nama: true, prodiId: true },
         },
         mataKuliah: {
-          select: { nama: true },
+          select: { nama: true, id: true, programStudiId: true },
+        },
+        preferredRuangan: {
+          select: { id: true, nama: true, kapasitas: true },
         },
       },
     });
@@ -477,27 +507,189 @@ router.post("/:id/approve", async (req, res) => {
       });
     }
 
-    const updatedRequest = await prisma.dosenScheduleRequest.update({
-      where: { id: parseInt(id) },
-      data: {
-        status: "APPROVED",
-        kaprodiNotes: notes || null,
-        processedAt: new Date(),
+    // Get kaprodi's prodi
+    const kaprodi = await prisma.user.findUnique({
+      where: { username: kaprodiUsername },
+      select: { programStudiId: true },
+    });
+
+    if (!kaprodi || !kaprodi.programStudiId) {
+      return res.status(400).json({
+        success: false,
+        message: "Kaprodi tidak terkait dengan program studi",
+      });
+    }
+
+    // Cari periode aktif jika tidak diberikan
+    let periodId = req.body.timetablePeriodId;
+    if (!periodId) {
+      const activePeriod = await prisma.timetablePeriod.findFirst({
+        where: { status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!activePeriod) {
+        return res.status(400).json({
+          success: false,
+          message: "Tidak ada periode aktif. Silakan pilih periode atau buat periode baru",
+        });
+      }
+      periodId = activePeriod.id;
+    }
+
+    // Cari atau buat jadwal prodi
+    let prodiSchedule = await prisma.prodiSchedule.findFirst({
+      where: {
+        timetablePeriodId: parseInt(periodId),
+        prodiId: kaprodi.programStudiId,
+        kaprodiId: kaprodiUsername,
+      },
+    });
+
+    if (!prodiSchedule) {
+      // Buat jadwal prodi baru jika belum ada
+      prodiSchedule = await prisma.prodiSchedule.create({
+        data: {
+          timetablePeriodId: parseInt(periodId),
+          prodiId: kaprodi.programStudiId,
+          kaprodiId: kaprodiUsername,
+          status: "DRAFT",
+        },
+      });
+    }
+
+    // Validasi: Pastikan ruangan sudah dipilih
+    if (!request.preferredRuanganId) {
+      return res.status(400).json({
+        success: false,
+        message: "Request harus memiliki ruangan yang dipilih untuk dapat di-approve",
+      });
+    }
+
+    // Helper function untuk cek overlap waktu
+    const isTimeOverlapping = (start1, end1, start2, end2) => {
+      const timeToMinutes = (time) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+      const start1Min = timeToMinutes(start1);
+      const end1Min = timeToMinutes(end1);
+      const start2Min = timeToMinutes(start2);
+      const end2Min = timeToMinutes(end2);
+      return start1Min < end2Min && end1Min > start2Min;
+    };
+
+    // Cek konflik jadwal sebelum menambahkan
+    const existingItems = await prisma.scheduleItem.findMany({
+      where: {
+        prodiScheduleId: prodiSchedule.id,
+        hari: request.preferredHari,
       },
       include: {
-        dosen: {
-          select: { nip: true, nama: true },
-        },
-        mataKuliah: {
-          select: { id: true, nama: true, sks: true },
-        },
+        mataKuliah: { select: { nama: true } },
+        dosen: { select: { nama: true } },
+        ruangan: { select: { nama: true } },
       },
+    });
+
+    // Cek konflik dengan item yang sudah ada
+    let conflictingItem = null;
+    for (const item of existingItems) {
+      const hasTimeConflict = isTimeOverlapping(
+        request.preferredJamMulai,
+        request.preferredJamSelesai,
+        item.jamMulai,
+        item.jamSelesai,
+      );
+
+      if (hasTimeConflict) {
+        // Cek konflik dosen
+        if (item.dosenId === request.dosenId) {
+          conflictingItem = {
+            ...item,
+            conflictType: "dosen",
+          };
+          break;
+        }
+        // Cek konflik ruangan
+        if (item.ruanganId === request.preferredRuanganId) {
+          conflictingItem = {
+            ...item,
+            conflictType: "ruangan",
+          };
+          break;
+        }
+      }
+    }
+
+    if (conflictingItem) {
+      const conflictMessage =
+        conflictingItem.conflictType === "dosen"
+          ? `Dosen ${conflictingItem.dosen.nama} sudah memiliki jadwal untuk mata kuliah ${conflictingItem.mataKuliah.nama} pada waktu yang sama`
+          : `Ruangan ${conflictingItem.ruangan.nama} sudah digunakan untuk mata kuliah ${conflictingItem.mataKuliah.nama} pada waktu yang sama`;
+      
+      return res.status(400).json({
+        success: false,
+        message: `Konflik jadwal terdeteksi. ${conflictMessage}`,
+      });
+    }
+
+    // Mulai transaksi untuk update request dan create scheduleItem
+    const result = await prisma.$transaction(async (tx) => {
+      // Update request status
+      const updatedRequest = await tx.dosenScheduleRequest.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: "APPROVED",
+          kaprodiNotes: notes || null,
+          processedAt: new Date(),
+        },
+        include: {
+          dosen: {
+            select: { nip: true, nama: true },
+          },
+          mataKuliah: {
+            select: { id: true, nama: true, sks: true },
+          },
+        },
+      });
+
+      // Tambahkan scheduleItem ke jadwal prodi
+      const newScheduleItem = await tx.scheduleItem.create({
+        data: {
+          prodiScheduleId: prodiSchedule.id,
+          mataKuliahId: request.mataKuliahId,
+          dosenId: request.dosenId,
+          hari: request.preferredHari,
+          jamMulai: request.preferredJamMulai,
+          jamSelesai: request.preferredJamSelesai,
+          ruanganId: request.preferredRuanganId,
+          kelas: null, // Bisa diisi manual oleh kaprodi nanti
+          kapasitasMahasiswa: request.preferredRuangan?.kapasitas || null,
+        },
+        include: {
+          mataKuliah: {
+            select: { id: true, nama: true, sks: true },
+          },
+          dosen: {
+            select: { nip: true, nama: true },
+          },
+          ruangan: {
+            select: { id: true, nama: true, kapasitas: true },
+          },
+        },
+      });
+
+      return { updatedRequest, newScheduleItem };
     });
 
     res.json({
       success: true,
-      message: `Request dari ${request.dosen.nama} untuk mata kuliah ${request.mataKuliah.nama} berhasil diapprove`,
-      data: updatedRequest,
+      message: `Request dari ${result.updatedRequest.dosen.nama} untuk mata kuliah ${result.updatedRequest.mataKuliah.nama} berhasil diapprove dan ditambahkan ke jadwal`,
+      data: {
+        request: result.updatedRequest,
+        scheduleItem: result.newScheduleItem,
+      },
     });
   } catch (error) {
     console.error("Error approving dosen request:", error);
