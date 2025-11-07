@@ -390,21 +390,6 @@ const deleteMataKuliah = async (req, res) => {
       });
     }
 
-    // Cek apakah mata kuliah sedang digunakan dalam penugasan mengajar
-    const usedInPenugasan = await prisma.penugasanMengajar.findFirst({
-      where: {
-        mataKuliahId: mataKuliahId,
-      },
-    });
-
-    if (usedInPenugasan) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Mata kuliah tidak dapat dihapus karena sedang digunakan dalam penugasan mengajar",
-      });
-    }
-
     // Cek apakah mata kuliah sedang digunakan dalam jadwal
     const usedInSchedule = await prisma.scheduleItem.findFirst({
       where: {

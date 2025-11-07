@@ -596,66 +596,7 @@ const getSuggestedDosen = async (req, res) => {
       }
     }
     
-    // 1. Cek dosen yang ACTIVE untuk MK tersebut di semester kurikulum yang sesuai
-    // Semester di penugasan mengajar = semester kurikulum MK
-    if (semesterPengajuan && mk.semester === semesterPengajuan && tahunAjaran) {
-      const activeAssignments = await prisma.penugasanMengajar.findMany({
-        where: {
-          mataKuliahId: parseInt(mataKuliahId),
-          tahunAjaran,
-          semester: mk.semester, // Semester kurikulum MK
-          status: 'ACTIVE'
-        },
-        include: {
-          dosen: {
-            select: {
-              nip: true,
-              nama: true,
-              prodiId: true,
-              noTelp: true,
-              alamat: true,
-              isKaprodi: true
-            }
-          }
-        }
-      });
-      
-      activeAssignments.forEach(assignment => {
-        suggestions.push({
-          dosenId: assignment.dosenId,
-          dosen: assignment.dosen,
-          priority: 1, // Highest priority
-          reason: `Dosen yang aktif mengajar mata kuliah ini di semester ${mk.semester}`
-        });
-      });
-    }
-    
-    // 2. Cek dosen yang pernah mengajar MK tersebut di semester kurikulum yang sama (dari history)
-    const historyAssignments = await prisma.penugasanMengajar.findMany({
-      where: {
-        mataKuliahId: parseInt(mataKuliahId),
-        semester: mk.semester, // Semester kurikulum MK
-        status: 'ACTIVE',
-        dosenId: {
-          notIn: suggestions.map(s => s.dosenId)
-        }
-      },
-      include: {
-        dosen: true
-      },
-      distinct: ['dosenId']
-    });
-    
-    historyAssignments.forEach(assignment => {
-      suggestions.push({
-        dosenId: assignment.dosenId,
-        dosen: assignment.dosen,
-        priority: 2,
-        reason: `Dosen yang pernah mengajar mata kuliah ini di semester ${mk.semester}`
-      });
-    });
-    
-    // 3. Cek dosen di prodi yang sama dengan MK
+    // Cek dosen di prodi yang sama dengan MK
     if (mk) {
       const dosenInProdi = await prisma.dosen.findMany({
         where: {

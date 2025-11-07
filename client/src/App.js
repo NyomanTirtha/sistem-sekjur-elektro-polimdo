@@ -26,12 +26,6 @@ const ProdiList = lazy(
 const UsersList = lazy(
   () => import("./komponen/fitur/pengguna/DaftarPengguna"),
 );
-const TeachingPicker = lazy(
-  () => import("./komponen/fitur/dosen/PilihPenugasan"),
-);
-const TeachingAssignmentManager = lazy(
-  () => import("./komponen/fitur/penugasan-mengajar/KelolaPenugasan"),
-);
 const TimetablePeriodManager = lazy(
   () => import("./komponen/fitur/jadwal/TimetablePeriodManager"),
 );
@@ -172,30 +166,6 @@ export default function App() {
           component: DosenScheduleRequestManager,
           description: "Ajukan request mengajar mata kuliah",
           allowedRoles: ["dosen"],
-        },
-      ],
-    },
-    {
-      id: "pengajaran",
-      label: "Penugasan Mengajar",
-      icon: BookOpen,
-      allowedRoles: ["dosen", "kaprodi"],
-      items: [
-        {
-          id: "penugasan-mengajar",
-          label: "Penugasan Mengajar",
-          icon: BookOpen,
-          component: TeachingPicker,
-          description: "Lihat dan ajukan mata kuliah yang akan diajarkan",
-          allowedRoles: ["dosen"],
-        },
-        {
-          id: "kelola-penugasan",
-          label: "Kelola Penugasan",
-          icon: BookOpen,
-          component: TeachingAssignmentManager,
-          description: "Kelola dan setujui penugasan mengajar dosen",
-          allowedRoles: ["kaprodi"],
         },
       ],
     },
