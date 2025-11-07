@@ -8,6 +8,16 @@ import {
   LogOut,
   BookOpen,
   Calendar,
+  Building2,
+  UserCheck,
+  School,
+  Clock,
+  CheckSquare,
+  CalendarDays,
+  Send,
+  FolderOpen,
+  Settings,
+  UserCog,
 } from "lucide-react";
 import MainLayout from "./komponen/layout/MainLayouts";
 import LoginPage from "./halaman/masuk/HalamanMasuk";
@@ -102,13 +112,13 @@ export default function App() {
     {
       id: "akademik",
       label: "Data Akademik",
-      icon: GraduationCap,
+      icon: BookOpen,
       allowedRoles: ["sekjur", "dosen", "kaprodi"],
       items: [
         {
           id: "prodi",
           label: "Program Studi",
-          icon: ClipboardList,
+          icon: Building2,
           component: ProdiList,
           description: "Kelola data program studi",
           allowedRoles: ["sekjur"],
@@ -116,7 +126,7 @@ export default function App() {
         {
           id: "mahasiswa",
           label: "Mahasiswa",
-          icon: Users,
+          icon: GraduationCap,
           component: MahasiswaList,
           description: "Kelola data mahasiswa",
           allowedRoles: ["sekjur", "dosen", "kaprodi"],
@@ -124,7 +134,7 @@ export default function App() {
         {
           id: "dosen",
           label: "Dosen",
-          icon: GraduationCap,
+          icon: UserCheck,
           component: DosenList,
           description: "Kelola data dosen",
           allowedRoles: ["sekjur"],
@@ -134,13 +144,13 @@ export default function App() {
     {
       id: "jadwal",
       label: "Manajemen Jadwal",
-      icon: Calendar,
+      icon: CalendarDays,
       allowedRoles: ["sekjur", "kaprodi", "dosen"],
       items: [
         {
           id: "periode-jadwal",
           label: "Periode Jadwal",
-          icon: Calendar,
+          icon: Clock,
           component: TimetablePeriodManager,
           description: "Kelola periode timetable",
           allowedRoles: ["sekjur"],
@@ -148,7 +158,7 @@ export default function App() {
         {
           id: "review-jadwal",
           label: "Review Jadwal",
-          icon: FileText,
+          icon: CheckSquare,
           component: SekjurScheduleReview,
           description: "Review dan setujui jadwal dari Kaprodi",
           allowedRoles: ["sekjur"],
@@ -164,7 +174,7 @@ export default function App() {
         {
           id: "request-jadwal",
           label: "Request Jadwal",
-          icon: FileText,
+          icon: Send,
           component: DosenScheduleRequestManager,
           description: "Ajukan request mengajar mata kuliah",
           allowedRoles: ["dosen"],
@@ -174,13 +184,13 @@ export default function App() {
     {
       id: "semester-antara",
       label: "Semester Antara (SA)",
-      icon: FileText,
+      icon: School,
       allowedRoles: ["sekjur", "dosen", "mahasiswa", "kaprodi"],
       items: [
         {
           id: "pengajuan-sa",
           label: "Pengajuan SA",
-          icon: FileText,
+          icon: FolderOpen,
           component: PengajuanSAList,
           description: "Kelola pengajuan SA",
           allowedRoles: ["sekjur", "dosen", "mahasiswa", "kaprodi"],
@@ -190,13 +200,13 @@ export default function App() {
     {
       id: "sistem",
       label: "Sistem",
-      icon: Users,
+      icon: Settings,
       allowedRoles: ["sekjur"],
       items: [
         {
           id: "users",
           label: "Daftar Akun",
-          icon: Users,
+          icon: UserCog,
           component: UsersList,
           description: "Kelola akun yang terdaftar di sistem",
           allowedRoles: ["sekjur"],

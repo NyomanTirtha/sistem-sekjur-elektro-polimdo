@@ -215,7 +215,18 @@ const Header = ({
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div 
+                className="flex-1 overflow-y-auto profile-scroll-container"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
+                <style>{`
+                  .profile-scroll-container::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
                 <div className="p-8">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div className="bg-gray-50 p-4 rounded border border-gray-200">

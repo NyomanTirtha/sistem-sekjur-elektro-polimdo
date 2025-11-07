@@ -26,3 +26,29 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Hide scrollbar globally but keep scroll functionality */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Hide scrollbar for all overflow elements in main layout */
+main.overflow-auto,
+nav.overflow-y-auto,
+div.overflow-y-auto,
+div.overflow-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+main.overflow-auto::-webkit-scrollbar,
+nav.overflow-y-auto::-webkit-scrollbar,
+div.overflow-y-auto::-webkit-scrollbar,
+div.overflow-auto::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

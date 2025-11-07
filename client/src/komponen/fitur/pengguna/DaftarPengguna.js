@@ -18,8 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Info
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 
 const UsersList = ({ authToken, currentUser }) => {
@@ -30,6 +32,7 @@ const UsersList = ({ authToken, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('ALL');
   const [showPassword, setShowPassword] = useState(false);
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +78,18 @@ const UsersList = ({ authToken, currentUser }) => {
 
   useEffect(() => {
     fetchUsers();
-  }, [authToken]);
+    
+    // Cek apakah user sudah melihat info popup untuk tab Daftar Akun
+    const storageKey = `info_popup_daftar_akun_${currentUser?.username || currentUser?.id}`;
+    const hasSeenPopup = localStorage.getItem(storageKey);
+    
+    if (!hasSeenPopup) {
+      // Delay sedikit agar halaman sudah ter-render
+      setTimeout(() => {
+        setShowInfoPopup(true);
+      }, 500);
+    }
+  }, [authToken, currentUser]);
 
   // Reset to first page when search or filter changes
   useEffect(() => {
@@ -398,8 +412,109 @@ const UsersList = ({ authToken, currentUser }) => {
     );
   }
 
+  const handleCloseInfoPopup = () => {
+    const storageKey = `info_popup_daftar_akun_${currentUser?.username || currentUser?.id}`;
+    localStorage.setItem(storageKey, 'true');
+    setShowInfoPopup(false);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Info Popup - muncul saat pertama kali buka tab Daftar Akun */}
+      <AnimatePresence>
+        {showInfoPopup && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseInfoPopup}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            >
+              {/* Popup */}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <Shield className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">Panduan Manajemen Akun</h2>
+                        <p className="text-blue-100 text-sm mt-1">Informasi penting tentang manajemen akun</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCloseInfoPopup}
+                      className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="space-y-4 text-sm text-gray-700">
+                    <div>
+                      <h3 className="font-semibold text-base text-gray-800 mb-3">Hak Akses Berdasarkan Role:</h3>
+                      <ul className="list-disc list-inside space-y-2 leading-relaxed">
+                        <li><strong>Sekjur:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</li>
+                        <li><strong>Kaprodi:</strong> Mengelola pengajuan SA dan penugasan dosen</li>
+                        <li><strong>Dosen:</strong> Mengajar SA dan memberikan nilai kepada mahasiswa</li>
+                        <li><strong>Mahasiswa:</strong> Mengajukan SA dan melihat status pengajuan</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-yellow-800 font-semibold mb-1">⚠️ Peringatan Penting:</p>
+                          <p className="text-xs text-yellow-700">
+                            Penghapusan akun bersifat permanen dan akan menghapus semua data terkait. Pastikan Anda yakin sebelum menghapus akun.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-blue-800 font-semibold mb-1">💡 Catatan:</p>
+                          <p className="text-xs text-blue-700">
+                            Role Mahasiswa tidak dapat diubah untuk menjaga integritas data akademik.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-center">
+                  <button
+                    onClick={handleCloseInfoPopup}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <Check className="w-4 h-4" />
+                    Saya Mengerti
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       {/* Action Bar - Updated to match MahasiswaList style */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -843,24 +958,6 @@ const UsersList = ({ authToken, currentUser }) => {
         )}
       </div>
 
-      {/* Info Panel */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-          <div className="text-sm text-yellow-700">
-            <strong>Panduan Manajemen Akun:</strong>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li><strong>Sekjur:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</li>
-              <li><strong>Kaprodi:</strong> Mengelola pengajuan SA dan penugasan dosen</li>
-              <li><strong>Dosen:</strong> Mengajar SA dan memberikan nilai kepada mahasiswa</li>
-              <li><strong>Mahasiswa:</strong> Mengajukan SA dan melihat status pengajuan</li>
-            </ul>
-            <div className="mt-3 p-2 bg-yellow-100 rounded border border-yellow-300">
-              <strong>⚠️ Peringatan:</strong> Penghapusan akun bersifat permanen dan akan menghapus semua data terkait.
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
