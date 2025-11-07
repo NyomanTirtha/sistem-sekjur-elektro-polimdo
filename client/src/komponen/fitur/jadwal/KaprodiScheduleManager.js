@@ -20,6 +20,7 @@ import TimetableGridView from "./TimetableGridView";
 import { getButtonPrimaryClass } from "../../../utilitas/theme";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 
 // Konstanta jam istirahat (dapat disesuaikan)
 const JAM_ISTIRAHAT = {
@@ -171,7 +172,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error fetching dosen requests:", error);
-      alert(error.response?.data?.message || "Gagal mengambil request dari dosen");
+      showErrorAlert(error.response?.data?.message || "Gagal mengambil request dari dosen");
     } finally {
       setLoadingRequests(false);
     }
@@ -192,7 +193,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       );
 
       if (response.data.success) {
-        alert("Request berhasil disetujui dan ditambahkan ke jadwal");
+        showSuccessAlert("Request berhasil disetujui dan ditambahkan ke jadwal");
         setShowRequestDetailModal(false);
         setSelectedRequest(null);
         setRequestActionNotes("");
@@ -203,14 +204,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error approving request:", error);
-      alert(error.response?.data?.message || "Gagal menyetujui request");
+      showErrorAlert(error.response?.data?.message || "Gagal menyetujui request");
     }
   };
 
   // Reject request
   const handleRejectRequest = async (requestId) => {
     if (!requestActionNotes || requestActionNotes.trim() === "") {
-      alert("Alasan penolakan wajib diisi");
+      showWarningAlert("Alasan penolakan wajib diisi");
       return;
     }
 
@@ -224,7 +225,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       );
 
       if (response.data.success) {
-        alert("Request berhasil ditolak");
+        showSuccessAlert("Request berhasil ditolak");
         setShowRequestDetailModal(false);
         setSelectedRequest(null);
         setRequestActionNotes("");
@@ -232,7 +233,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
-      alert(error.response?.data?.message || "Gagal menolak request");
+      showErrorAlert(error.response?.data?.message || "Gagal menolak request");
     }
   };
 
@@ -349,14 +350,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       );
 
       if (response.data.success) {
-        alert("Jadwal berhasil dibuat");
+        showSuccessAlert("Jadwal berhasil dibuat");
         setShowCreateModal(false);
         setCreateFormData({ timetablePeriodId: "" });
         fetchMySchedules();
       }
     } catch (error) {
       console.error("Error creating schedule:", error);
-      alert(error.response?.data?.message || "Gagal membuat jadwal");
+      showErrorAlert(error.response?.data?.message || "Gagal membuat jadwal");
     }
   };
 
@@ -478,7 +479,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       });
 
       if (response.data.success) {
-        alert(
+        showSuccessAlert(
           editingItem
             ? "Item jadwal berhasil diupdate"
             : "Item jadwal berhasil ditambahkan",
@@ -503,64 +504,70 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       console.error("Error saving schedule item:", error);
       const errorMessage = error.response?.data?.message || "Gagal menyimpan item jadwal";
       setValidationError(errorMessage);
-      alert(errorMessage);
+      showErrorAlert(errorMessage);
     }
   };
 
   const handleDeleteScheduleItem = async (itemId) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus item jadwal ini?")) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin menghapus item jadwal ini?",
+      async () => {
+        try {
+          const response = await axios.delete(
+            `http://localhost:5000/api/prodi-schedules/items/${itemId}`,
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/prodi-schedules/items/${itemId}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Item jadwal berhasil dihapus");
-        fetchScheduleItems(selectedSchedule.id);
-        fetchMySchedules();
-      }
-    } catch (error) {
-      console.error("Error deleting schedule item:", error);
-      alert(error.response?.data?.message || "Gagal menghapus item jadwal");
-    }
+          if (response.data.success) {
+            showSuccessAlert("Item jadwal berhasil dihapus");
+            fetchScheduleItems(selectedSchedule.id);
+            fetchMySchedules();
+          }
+        } catch (error) {
+          console.error("Error deleting schedule item:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal menghapus item jadwal");
+        }
+      },
+      null,
+      "Konfirmasi Hapus",
+      "warning"
+    );
   };
 
   const handleSubmitSchedule = async (scheduleId) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin submit jadwal ini ke sekjur untuk review?",
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin submit jadwal ini ke sekjur untuk review?",
+      async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:5000/api/prodi-schedules/${scheduleId}/submit`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/prodi-schedules/${scheduleId}/submit`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Jadwal berhasil disubmit ke sekjur untuk review");
-        fetchMySchedules();
-        if (selectedSchedule && selectedSchedule.id === scheduleId) {
-          setSelectedSchedule({ ...selectedSchedule, status: "SUBMITTED" });
+          if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil disubmit ke sekjur untuk review");
+            fetchMySchedules();
+            if (selectedSchedule && selectedSchedule.id === scheduleId) {
+              setSelectedSchedule({ ...selectedSchedule, status: "SUBMITTED" });
+            }
+          }
+        } catch (error) {
+          console.error("Error submitting schedule:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal submit jadwal");
         }
-      }
-    } catch (error) {
-      console.error("Error submitting schedule:", error);
-      alert(error.response?.data?.message || "Gagal submit jadwal");
-    }
+      },
+      null,
+      "Konfirmasi Submit",
+      "info"
+    );
+    return;
   };
+
 
   const handleDeleteSchedule = async (scheduleId) => {
     const schedule = schedules.find((s) => s.id === scheduleId);
@@ -584,35 +591,43 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         "⚠️ PERINGATAN!\n\nJadwal ini sudah DISETUJUI/DIPUBLISH!\n\nMenghapus jadwal yang sudah disetujui dapat mengganggu sistem penjadwalan.\n\nApakah Anda yakin ingin menghapus jadwal ini?\nSemua item jadwal akan ikut terhapus.";
     }
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    showConfirm(
+      confirmMessage,
+      async () => {
+        try {
+          const response = await axios.delete(
+            `http://localhost:5000/api/prodi-schedules/${scheduleId}`,
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/prodi-schedules/${scheduleId}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        const message =
-          schedule?.status === "SUBMITTED" ||
-            schedule?.status === "UNDER_REVIEW"
-            ? "Pengajuan jadwal berhasil dibatalkan"
-            : "Jadwal berhasil dihapus";
-        alert(message);
-        fetchMySchedules();
-        if (selectedSchedule && selectedSchedule.id === scheduleId) {
-          setSelectedSchedule(null);
-          setScheduleItems([]);
+          if (response.data.success) {
+            const message =
+              schedule?.status === "SUBMITTED" ||
+                schedule?.status === "UNDER_REVIEW"
+                ? "Pengajuan jadwal berhasil dibatalkan"
+                : "Jadwal berhasil dihapus";
+            showSuccessAlert(message);
+            fetchMySchedules();
+            if (selectedSchedule && selectedSchedule.id === scheduleId) {
+              setSelectedSchedule(null);
+              setScheduleItems([]);
+            }
+          }
+        } catch (error) {
+          console.error("Error deleting schedule:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal menghapus jadwal");
         }
-      }
-    } catch (error) {
-      console.error("Error deleting schedule:", error);
-      alert(error.response?.data?.message || "Gagal menghapus jadwal");
-    }
+      },
+      null,
+      schedule?.status === "APPROVED" || schedule?.status === "PUBLISHED"
+        ? "Peringatan"
+        : "Konfirmasi Hapus",
+      schedule?.status === "APPROVED" || schedule?.status === "PUBLISHED"
+        ? "danger"
+        : "warning"
+    );
   };
 
   const openEditScheduleModal = (schedule) => {
@@ -638,7 +653,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       );
 
       if (response.data.success) {
-        alert("Jadwal berhasil diperbarui");
+        showSuccessAlert("Jadwal berhasil diperbarui");
         setShowEditScheduleModal(false);
         setEditingSchedule(null);
         setCreateFormData({ timetablePeriodId: "" });
@@ -646,7 +661,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error updating schedule:", error);
-      alert(error.response?.data?.message || "Gagal memperbarui jadwal");
+      showErrorAlert(error.response?.data?.message || "Gagal memperbarui jadwal");
     }
   };
 

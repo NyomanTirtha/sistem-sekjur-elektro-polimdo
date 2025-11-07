@@ -15,6 +15,7 @@ import {
 import axios from "axios";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { showSuccessAlert, showErrorAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 
 const TimetablePeriodManager = ({ authToken }) => {
   const [periods, setPeriods] = useState([]);
@@ -49,7 +50,7 @@ const TimetablePeriodManager = ({ authToken }) => {
       }
     } catch (error) {
       console.error("Error fetching periods:", error);
-      alert("Gagal mengambil data periode timetable");
+      showErrorAlert("Gagal mengambil data periode timetable");
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ const TimetablePeriodManager = ({ authToken }) => {
       }
     } catch (error) {
       console.error("Error fetching period schedules:", error);
-      alert("Gagal mengambil jadwal periode");
+      showErrorAlert("Gagal mengambil jadwal periode");
     } finally {
       setLoadingDetail(false);
     }
@@ -92,14 +93,14 @@ const TimetablePeriodManager = ({ authToken }) => {
       );
 
       if (response.data.success) {
-        alert("Periode timetable berhasil dibuat");
+        showSuccessAlert("Periode timetable berhasil dibuat");
         setShowCreateModal(false);
         setFormData({ semester: "", tahunAkademik: "" });
         fetchPeriods();
       }
     } catch (error) {
       console.error("Error creating period:", error);
-      alert(error.response?.data?.message || "Gagal membuat periode timetable");
+      showErrorAlert(error.response?.data?.message || "Gagal membuat periode timetable");
     }
   };
 
@@ -112,12 +113,12 @@ const TimetablePeriodManager = ({ authToken }) => {
       );
 
       if (response.data.success) {
-        alert("Status periode berhasil diupdate");
+        showSuccessAlert("Status periode berhasil diupdate");
         fetchPeriods();
       }
     } catch (error) {
       console.error("Error updating period status:", error);
-      alert(error.response?.data?.message || "Gagal mengupdate status periode");
+      showErrorAlert(error.response?.data?.message || "Gagal mengupdate status periode");
     }
   };
 
@@ -129,88 +130,92 @@ const TimetablePeriodManager = ({ authToken }) => {
       ? "⚠️ PERHATIAN!\n\nPeriode ini memiliki jadwal yang sudah dibuat.\nMenghapus periode akan menghapus SEMUA jadwal yang terkait!\n\nApakah Anda yakin ingin melanjutkan?"
       : "Apakah Anda yakin ingin menghapus periode ini?";
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    showConfirm(
+      confirmMessage,
+      async () => {
+        try {
+          const response = await axios.delete(
+            `http://localhost:5000/api/timetable/periods/${periodId}`,
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/timetable/periods/${periodId}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Periode berhasil dihapus");
-        fetchPeriods();
-      }
-    } catch (error) {
-      console.error("Error deleting period:", error);
-      alert(error.response?.data?.message || "Gagal menghapus periode");
-    }
+          if (response.data.success) {
+            showSuccessAlert("Periode berhasil dihapus");
+            fetchPeriods();
+          }
+        } catch (error) {
+          console.error("Error deleting period:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal menghapus periode");
+        }
+      },
+      null,
+      hasSchedules ? "Peringatan" : "Konfirmasi Hapus",
+      hasSchedules ? "danger" : "warning"
+    );
   };
 
   const handlePublishPeriod = async (periodId) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin mempublish semua jadwal yang sudah diapprove?",
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin mempublish semua jadwal yang sudah diapprove?",
+      async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:5000/api/timetable/periods/${periodId}/publish`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/timetable/periods/${periodId}/publish`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Jadwal berhasil dipublish");
-        fetchPeriods();
-      }
-    } catch (error) {
-      console.error("Error publishing schedules:", error);
-      alert(error.response?.data?.message || "Gagal mempublish jadwal");
-    }
+          if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil dipublish");
+            fetchPeriods();
+          }
+        } catch (error) {
+          console.error("Error publishing schedules:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal mempublish jadwal");
+        }
+      },
+      null,
+      "Konfirmasi Publish",
+      "info"
+    );
   };
 
   const handleUnpublishSchedule = async (scheduleId) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
+      async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Jadwal berhasil di-unpublish!");
-        // Refresh period schedules
-        if (selectedPeriod) {
-          handleViewPeriod(selectedPeriod);
+          if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil di-unpublish!");
+            // Refresh period schedules
+            if (selectedPeriod) {
+              handleViewPeriod(selectedPeriod);
+            }
+            fetchPeriods();
+          }
+        } catch (error) {
+          console.error("Error unpublishing schedule:", error);
+          showErrorAlert(
+            error.response?.data?.message || "Gagal melakukan unpublish jadwal",
+          );
         }
-        fetchPeriods();
-      }
-    } catch (error) {
-      console.error("Error unpublishing schedule:", error);
-      alert(
-        error.response?.data?.message || "Gagal melakukan unpublish jadwal",
-      );
-    }
+      },
+      null,
+      "Konfirmasi Unpublish",
+      "warning"
+    );
   };
 
   const getStatusColor = (status) => {

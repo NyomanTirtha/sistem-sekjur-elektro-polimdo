@@ -11,6 +11,7 @@ import {
 import axios from "axios";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { showSuccessAlert, showErrorAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 
 // Helper function untuk format date dengan validasi
 const formatDateSafe = (dateString, options = {}) => {
@@ -120,7 +121,7 @@ const DosenScheduleRequestManager = ({ authToken }) => {
       );
 
       if (response.data.success) {
-        alert("Request berhasil disubmit ke kaprodi");
+        showSuccessAlert("Request berhasil disubmit ke kaprodi");
         setShowCreateModal(false);
         setFormData({
           mataKuliahId: "",
@@ -135,32 +136,36 @@ const DosenScheduleRequestManager = ({ authToken }) => {
       }
     } catch (error) {
       console.error("Error creating request:", error);
-      alert(error.response?.data?.message || "Gagal membuat request");
+      showErrorAlert(error.response?.data?.message || "Gagal membuat request");
     }
   };
 
   const handleDeleteRequest = async (requestId) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus request ini?")) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin menghapus request ini?",
+      async () => {
+        try {
+          const response = await axios.delete(
+            `http://localhost:5000/api/dosen-requests/${requestId}`,
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            },
+          );
 
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/dosen-requests/${requestId}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        alert("Request berhasil dihapus");
-        fetchMyRequests();
-        fetchAvailableCourses();
-      }
-    } catch (error) {
-      console.error("Error deleting request:", error);
-      alert(error.response?.data?.message || "Gagal menghapus request");
-    }
+          if (response.data.success) {
+            showSuccessAlert("Request berhasil dihapus");
+            fetchMyRequests();
+            fetchAvailableCourses();
+          }
+        } catch (error) {
+          console.error("Error deleting request:", error);
+          showErrorAlert(error.response?.data?.message || "Gagal menghapus request");
+        }
+      },
+      null,
+      "Konfirmasi Hapus",
+      "warning"
+    );
   };
 
   const getStatusColor = (status) => {

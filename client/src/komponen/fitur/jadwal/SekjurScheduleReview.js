@@ -16,6 +16,7 @@ import axios from "axios";
 import TimetableGridView from "./TimetableGridView";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 
 const SekjurScheduleReview = ({ authToken }) => {
   const [schedules, setSchedules] = useState([]);
@@ -69,7 +70,7 @@ const SekjurScheduleReview = ({ authToken }) => {
       }
     } catch (error) {
       console.error("Error fetching schedules:", error);
-      alert("Gagal mengambil data jadwal");
+      showErrorAlert("Gagal mengambil data jadwal");
     } finally {
       setLoading(false);
     }
@@ -81,40 +82,40 @@ const SekjurScheduleReview = ({ authToken }) => {
   };
 
   const handleApprove = async (scheduleId) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin menyetujui jadwal ini? Jadwal yang disetujui akan masuk ke sistem."
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin menyetujui jadwal ini? Jadwal yang disetujui akan masuk ke sistem.",
+      async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/approve`,
+            { notes: approveNotes || null },
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            }
+          );
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/approve`,
-        { notes: approveNotes || null },
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
+          if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil disetujui!");
+            setApproveNotes("");
+            setShowDetailModal(false);
+            fetchSchedules();
+          }
+        } catch (error) {
+          console.error("Error approving schedule:", error);
+          showErrorAlert(
+            error.response?.data?.message || "Gagal menyetujui jadwal"
+          );
         }
-      );
-
-      if (response.data.success) {
-        alert("Jadwal berhasil disetujui!");
-        setApproveNotes("");
-        setShowDetailModal(false);
-        fetchSchedules();
-      }
-    } catch (error) {
-      console.error("Error approving schedule:", error);
-      alert(
-        error.response?.data?.message || "Gagal menyetujui jadwal"
-      );
-    }
+      },
+      null,
+      "Konfirmasi Setujui",
+      "info"
+    );
   };
 
   const handleReject = async () => {
     if (!rejectNotes.trim()) {
-      alert("Alasan penolakan harus diisi!");
+      showWarningAlert("Alasan penolakan harus diisi!");
       return;
     }
 
@@ -130,7 +131,7 @@ const SekjurScheduleReview = ({ authToken }) => {
       );
 
       if (response.data.success) {
-        alert("Jadwal ditolak dan dikembalikan untuk revisi");
+        showSuccessAlert("Jadwal ditolak dan dikembalikan untuk revisi");
         setRejectNotes("");
         setShowRejectModal(false);
         setShowDetailModal(false);
@@ -138,41 +139,41 @@ const SekjurScheduleReview = ({ authToken }) => {
       }
     } catch (error) {
       console.error("Error rejecting schedule:", error);
-      alert(
+      showErrorAlert(
         error.response?.data?.message || "Gagal menolak jadwal"
       );
     }
   };
 
   const handleUnpublish = async (scheduleId) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali."
-      )
-    ) {
-      return;
-    }
+    showConfirm(
+      "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
+      async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+            }
+          );
 
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
+          if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil di-unpublish!");
+            setShowDetailModal(false);
+            fetchSchedules();
+          }
+        } catch (error) {
+          console.error("Error unpublishing schedule:", error);
+          showErrorAlert(
+            error.response?.data?.message || "Gagal melakukan unpublish jadwal"
+          );
         }
-      );
-
-      if (response.data.success) {
-        alert("Jadwal berhasil di-unpublish!");
-        setShowDetailModal(false);
-        fetchSchedules();
-      }
-    } catch (error) {
-      console.error("Error unpublishing schedule:", error);
-      alert(
-        error.response?.data?.message || "Gagal melakukan unpublish jadwal"
-      );
-    }
+      },
+      null,
+      "Konfirmasi Unpublish",
+      "warning"
+    );
   };
 
   const handleStartReview = async (scheduleId) => {
@@ -186,12 +187,12 @@ const SekjurScheduleReview = ({ authToken }) => {
       );
 
       if (response.data.success) {
-        alert("Status jadwal diubah menjadi 'Sedang Direview'");
+        showSuccessAlert("Status jadwal diubah menjadi 'Sedang Direview'");
         fetchSchedules();
       }
     } catch (error) {
       console.error("Error starting review:", error);
-      alert(error.response?.data?.message || "Gagal memulai review");
+      showErrorAlert(error.response?.data?.message || "Gagal memulai review");
     }
   };
 
@@ -405,26 +406,26 @@ const SekjurScheduleReview = ({ authToken }) => {
 
                 {(schedule.status === "SUBMITTED" ||
                   schedule.status === "UNDER_REVIEW") && (
-                  <>
-                    <button
-                      onClick={() => handleApprove(schedule.id)}
-                      className="inline-flex items-center px-2.5 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Setujui
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedSchedule(schedule);
-                        setShowRejectModal(true);
-                      }}
-                      className="inline-flex items-center px-2.5 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
-                    >
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Tolak
-                    </button>
-                  </>
-                )}
+                    <>
+                      <button
+                        onClick={() => handleApprove(schedule.id)}
+                        className="inline-flex items-center px-2.5 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Setujui
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedSchedule(schedule);
+                          setShowRejectModal(true);
+                        }}
+                        className="inline-flex items-center px-2.5 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Tolak
+                      </button>
+                    </>
+                  )}
 
                 {schedule.status === "PUBLISHED" && (
                   <button
@@ -496,42 +497,42 @@ const SekjurScheduleReview = ({ authToken }) => {
               {/* Content */}
               <div className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-6">
-              {selectedSchedule.scheduleItems &&
-              selectedSchedule.scheduleItems.length > 0 ? (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                      Tampilan Grid Jadwal
-                    </h4>
-                    <TimetableGridView
-                      scheduleItems={selectedSchedule.scheduleItems}
-                      className="bg-white rounded-lg border border-gray-200 p-4"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                  <p>Jadwal kosong</p>
-                </div>
-              )}
+                  {selectedSchedule.scheduleItems &&
+                    selectedSchedule.scheduleItems.length > 0 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                          Tampilan Grid Jadwal
+                        </h4>
+                        <TimetableGridView
+                          scheduleItems={selectedSchedule.scheduleItems}
+                          className="bg-white rounded-lg border border-gray-200 p-4"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                      <p>Jadwal kosong</p>
+                    </div>
+                  )}
 
-              {/* Notes Section */}
-              {(selectedSchedule.status === "SUBMITTED" ||
-                selectedSchedule.status === "UNDER_REVIEW") && (
-                <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Catatan untuk Kaprodi (Opsional)
-                  </label>
-                  <textarea
-                    value={approveNotes}
-                    onChange={(e) => setApproveNotes(e.target.value)}
-                    placeholder="Tambahkan catatan jika diperlukan..."
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                  />
-                </div>
-              )}
+                  {/* Notes Section */}
+                  {(selectedSchedule.status === "SUBMITTED" ||
+                    selectedSchedule.status === "UNDER_REVIEW") && (
+                      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Catatan untuk Kaprodi (Opsional)
+                        </label>
+                        <textarea
+                          value={approveNotes}
+                          onChange={(e) => setApproveNotes(e.target.value)}
+                          placeholder="Tambahkan catatan jika diperlukan..."
+                          rows="3"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        />
+                      </div>
+                    )}
                 </div>
               </div>
 
@@ -549,24 +550,24 @@ const SekjurScheduleReview = ({ authToken }) => {
                 </button>
                 {(selectedSchedule.status === "SUBMITTED" ||
                   selectedSchedule.status === "UNDER_REVIEW") && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setShowDetailModal(false);
-                        setShowRejectModal(true);
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      Tolak Jadwal
-                    </button>
-                    <button
-                      onClick={() => handleApprove(selectedSchedule.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Setujui Jadwal
-                    </button>
-                  </>
-                )}
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          setShowRejectModal(true);
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                      >
+                        Tolak Jadwal
+                      </button>
+                      <button
+                        onClick={() => handleApprove(selectedSchedule.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                      >
+                        Setujui Jadwal
+                      </button>
+                    </>
+                  )}
                 {selectedSchedule.status === "PUBLISHED" && (
                   <button
                     onClick={() => handleUnpublish(selectedSchedule.id)}
