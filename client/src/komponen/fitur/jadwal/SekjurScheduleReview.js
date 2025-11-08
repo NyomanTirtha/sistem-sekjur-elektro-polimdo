@@ -86,27 +86,27 @@ const SekjurScheduleReview = ({ authToken }) => {
     showConfirm(
       "Apakah Anda yakin ingin menyetujui jadwal ini? Jadwal yang disetujui akan masuk ke sistem.",
       async () => {
-        try {
-          const response = await axios.post(
-            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/approve`,
-            { notes: approveNotes || null },
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            }
-          );
-
-          if (response.data.success) {
-            showSuccessAlert("Jadwal berhasil disetujui!");
-            setApproveNotes("");
-            setShowDetailModal(false);
-            fetchSchedules();
-          }
-        } catch (error) {
-          console.error("Error approving schedule:", error);
-          showErrorAlert(
-            error.response?.data?.message || "Gagal menyetujui jadwal"
-          );
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/approve`,
+        { notes: approveNotes || null },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
         }
+      );
+
+      if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil disetujui!");
+        setApproveNotes("");
+        setShowDetailModal(false);
+        fetchSchedules();
+      }
+    } catch (error) {
+      console.error("Error approving schedule:", error);
+          showErrorAlert(
+        error.response?.data?.message || "Gagal menyetujui jadwal"
+      );
+    }
       },
       null,
       "Konfirmasi Setujui",
@@ -150,26 +150,26 @@ const SekjurScheduleReview = ({ authToken }) => {
     showConfirm(
       "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
       async () => {
-        try {
-          const response = await axios.post(
-            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
-            {},
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            }
-          );
-
-          if (response.data.success) {
-            showSuccessAlert("Jadwal berhasil di-unpublish!");
-            setShowDetailModal(false);
-            fetchSchedules();
-          }
-        } catch (error) {
-          console.error("Error unpublishing schedule:", error);
-          showErrorAlert(
-            error.response?.data?.message || "Gagal melakukan unpublish jadwal"
-          );
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
         }
+      );
+
+      if (response.data.success) {
+            showSuccessAlert("Jadwal berhasil di-unpublish!");
+        setShowDetailModal(false);
+        fetchSchedules();
+      }
+    } catch (error) {
+      console.error("Error unpublishing schedule:", error);
+          showErrorAlert(
+        error.response?.data?.message || "Gagal melakukan unpublish jadwal"
+      );
+    }
       },
       null,
       "Konfirmasi Unpublish",
@@ -352,8 +352,8 @@ const SekjurScheduleReview = ({ authToken }) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-sm font-semibold text-gray-900 truncate">
-                      {schedule.prodi?.nama || "N/A"}
-                    </h3>
+                    {schedule.prodi?.nama || "N/A"}
+                  </h3>
                     <span
                       className={`inline-block px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getStatusColor(schedule.status)}`}
                     >
@@ -404,26 +404,26 @@ const SekjurScheduleReview = ({ authToken }) => {
 
                 {(schedule.status === "SUBMITTED" ||
                   schedule.status === "UNDER_REVIEW") && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(schedule.id)}
+                  <>
+                    <button
+                      onClick={() => handleApprove(schedule.id)}
                         className="inline-flex items-center px-2.5 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
-                      >
+                    >
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Setujui
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedSchedule(schedule);
-                          setShowRejectModal(true);
-                        }}
+                      Setujui
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedSchedule(schedule);
+                        setShowRejectModal(true);
+                      }}
                         className="inline-flex items-center px-2.5 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
-                      >
+                    >
                         <XCircle className="w-3 h-3 mr-1" />
-                        Tolak
-                      </button>
-                    </>
-                  )}
+                      Tolak
+                    </button>
+                  </>
+                )}
 
                 {schedule.status === "PUBLISHED" && (
                   <button
@@ -470,111 +470,111 @@ const SekjurScheduleReview = ({ authToken }) => {
               {/* Header */}
               <div className="p-5 bg-gradient-to-r from-gray-600 to-gray-700 border-b border-gray-800">
                 <div className="flex justify-between items-center">
-                  <div>
+              <div>
                     <h2 className="text-xl font-semibold text-white mb-1">
-                      Detail Jadwal: {selectedSchedule.prodi?.nama}
+                  Detail Jadwal: {selectedSchedule.prodi?.nama}
                     </h2>
                     <p className="text-sm text-gray-200">
-                      {selectedSchedule.timetablePeriod?.semester}{" "}
-                      {selectedSchedule.timetablePeriod?.tahunAkademik}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedSchedule(null);
-                    }}
+                  {selectedSchedule.timetablePeriod?.semester}{" "}
+                  {selectedSchedule.timetablePeriod?.tahunAkademik}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedSchedule(null);
+                }}
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                     aria-label="Close modal"
-                  >
+              >
                     <XCircle className="w-5 h-5" />
-                  </button>
+              </button>
                 </div>
-              </div>
+            </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto bg-gray-50">
                 <div className="p-6">
-                  {selectedSchedule.scheduleItems &&
-                    selectedSchedule.scheduleItems.length > 0 ? (
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                          Tampilan Grid Jadwal
-                        </h4>
-                        <TimetableGridView
-                          scheduleItems={selectedSchedule.scheduleItems}
-                          className="bg-white rounded-lg border border-gray-200 p-4"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                      <p>Jadwal kosong</p>
-                    </div>
-                  )}
+              {selectedSchedule.scheduleItems &&
+              selectedSchedule.scheduleItems.length > 0 ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      Tampilan Grid Jadwal
+                    </h4>
+                    <TimetableGridView
+                      scheduleItems={selectedSchedule.scheduleItems}
+                      className="bg-white rounded-lg border border-gray-200 p-4"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                  <p>Jadwal kosong</p>
+                </div>
+              )}
 
-                  {/* Notes Section */}
-                  {(selectedSchedule.status === "SUBMITTED" ||
-                    selectedSchedule.status === "UNDER_REVIEW") && (
+              {/* Notes Section */}
+              {(selectedSchedule.status === "SUBMITTED" ||
+                selectedSchedule.status === "UNDER_REVIEW") && (
                       <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Catatan untuk Kaprodi (Opsional)
-                        </label>
-                        <textarea
-                          value={approveNotes}
-                          onChange={(e) => setApproveNotes(e.target.value)}
-                          placeholder="Tambahkan catatan jika diperlukan..."
-                          rows="3"
+                    Catatan untuk Kaprodi (Opsional)
+                  </label>
+                  <textarea
+                    value={approveNotes}
+                    onChange={(e) => setApproveNotes(e.target.value)}
+                    placeholder="Tambahkan catatan jika diperlukan..."
+                    rows="3"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        />
-                      </div>
-                    )}
+                  />
                 </div>
-              </div>
+              )}
+                </div>
+            </div>
 
               {/* Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedSchedule(null);
-                    setApproveNotes("");
-                  }}
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedSchedule(null);
+                  setApproveNotes("");
+                }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  Tutup
-                </button>
-                {(selectedSchedule.status === "SUBMITTED" ||
-                  selectedSchedule.status === "UNDER_REVIEW") && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setShowDetailModal(false);
-                          setShowRejectModal(true);
-                        }}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                      >
-                        Tolak Jadwal
-                      </button>
-                      <button
-                        onClick={() => handleApprove(selectedSchedule.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                      >
-                        Setujui Jadwal
-                      </button>
-                    </>
-                  )}
-                {selectedSchedule.status === "PUBLISHED" && (
+              >
+                Tutup
+              </button>
+              {(selectedSchedule.status === "SUBMITTED" ||
+                selectedSchedule.status === "UNDER_REVIEW") && (
+                <>
                   <button
-                    onClick={() => handleUnpublish(selectedSchedule.id)}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setShowRejectModal(true);
+                    }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                   >
-                    Unpublish Jadwal
+                    Tolak Jadwal
                   </button>
-                )}
-              </div>
+                  <button
+                    onClick={() => handleApprove(selectedSchedule.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    Setujui Jadwal
+                  </button>
+                </>
+              )}
+              {selectedSchedule.status === "PUBLISHED" && (
+                <button
+                  onClick={() => handleUnpublish(selectedSchedule.id)}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  Unpublish Jadwal
+                </button>
+              )}
+            </div>
             </motion.div>
           </motion.div>
         </AnimatePresence>,
@@ -626,44 +626,44 @@ const SekjurScheduleReview = ({ authToken }) => {
                     <XCircle className="w-5 h-5" />
                   </button>
                 </div>
-              </div>
+            </div>
 
               {/* Content */}
               <div className="p-6 bg-gray-50">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Alasan Penolakan *
-                </label>
-                <textarea
-                  value={rejectNotes}
-                  onChange={(e) => setRejectNotes(e.target.value)}
-                  placeholder="Jelaskan alasan penolakan dan apa yang perlu diperbaiki..."
-                  rows="5"
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Alasan Penolakan *
+              </label>
+              <textarea
+                value={rejectNotes}
+                onChange={(e) => setRejectNotes(e.target.value)}
+                placeholder="Jelaskan alasan penolakan dan apa yang perlu diperbaiki..."
+                rows="5"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 bg-white"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Catatan ini akan dikirim ke Kaprodi untuk revisi
-                </p>
-              </div>
+                required
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Catatan ini akan dikirim ke Kaprodi untuk revisi
+              </p>
+            </div>
 
               {/* Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowRejectModal(false);
-                    setRejectNotes("");
-                  }}
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectNotes("");
+                }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleReject}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleReject}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                  Tolak Jadwal
-                </button>
-              </div>
+              >
+                Tolak Jadwal
+              </button>
+            </div>
             </motion.div>
           </motion.div>
         </AnimatePresence>,

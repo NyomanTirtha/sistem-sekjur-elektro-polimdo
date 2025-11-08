@@ -52,3 +52,48 @@ div.overflow-y-auto::-webkit-scrollbar,
 div.overflow-auto::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+/* ✅ PERFORMANCE: Smooth fade-in animation for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ✅ PERFORMANCE: Prevent glitch during tab switching */
+* {
+  /* Reduce browser repaints */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+}
+
+/* ✅ PERFORMANCE: Optimize table rendering */
+table {
+  /* Use hardware acceleration for better performance */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: contents;
+}
+
+/* ✅ PERFORMANCE: Smooth transitions for interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.15s ease-in-out;
+  will-change: auto;
+}
+
+/* ✅ PERFORMANCE: Prevent layout shift during loading */
+.overflow-x-auto {
+  contain: layout style;
+}
+
+/* ✅ PERFORMANCE: Optimize main content area */
+main {
+  contain: layout style paint;
+  content-visibility: auto;
+}

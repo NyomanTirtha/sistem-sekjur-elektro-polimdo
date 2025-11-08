@@ -97,7 +97,7 @@ const getAllUsers = async (req, res) => {
     users.forEach(user => {
       console.log(`  - User: ${user.username} (${user.nama}), Role: ${user.role}, programStudiId: ${user.programStudiId}, jurusanId: ${user.jurusanId}`);
     });
-    
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -603,8 +603,8 @@ const updateUser = async (req, res) => {
         if (programStudiId !== undefined && programStudiId !== null && programStudiId !== '') {
           updateData.programStudiId = parseInt(programStudiId);
         }
-        updateData.jurusanId = null;
-      }
+      updateData.jurusanId = null;
+    }
     }
     
     // Log update data sebelum update

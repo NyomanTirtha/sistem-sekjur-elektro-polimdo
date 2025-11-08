@@ -24,7 +24,7 @@ const MainLayout = ({
   authToken,
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   // Get theme colors based on jurusan
   const theme = getTheme(currentUser);
 
@@ -33,6 +33,7 @@ const MainLayout = ({
       <div className="flex h-screen">
         <div
           className={`sidebar-container ${sidebarCollapsed ? "w-16" : "w-64"} transition-all duration-300 flex-shrink-0 relative z-20`}
+          style={{ willChange: sidebarCollapsed ? 'auto' : 'width' }}
         >
           <Sidebar
             activeMenu={activeMenu}
@@ -59,7 +60,7 @@ const MainLayout = ({
             />
           </div>
 
-          <main className="flex-1 overflow-auto pt-16">
+          <main className="flex-1 overflow-auto pt-16" style={{ willChange: 'scroll-position' }}>
             <div className="p-4 sm:p-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-full">
                 <div className="p-6">
@@ -69,7 +70,7 @@ const MainLayout = ({
                     </h1>
                     <div className={`h-px ${theme.primary.border || 'bg-gray-200'} opacity-30`}></div>
                   </div>
-                  <div>{children}</div>
+                  <div key={activeMenu}>{children}</div>
                 </div>
               </div>
             </div>

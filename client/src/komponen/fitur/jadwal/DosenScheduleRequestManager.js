@@ -166,23 +166,23 @@ const DosenScheduleRequestManager = ({ authToken }) => {
     showConfirm(
       "Apakah Anda yakin ingin menghapus request ini?",
       async () => {
-        try {
-          const response = await axios.delete(
-            `http://localhost:5000/api/dosen-requests/${requestId}`,
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            },
-          );
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/dosen-requests/${requestId}`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+      );
 
-          if (response.data.success) {
+      if (response.data.success) {
             showSuccessAlert("Request berhasil dihapus");
-            fetchMyRequests();
-            fetchAvailableCourses();
-          }
-        } catch (error) {
-          console.error("Error deleting request:", error);
+        fetchMyRequests();
+        fetchAvailableCourses();
+      }
+    } catch (error) {
+      console.error("Error deleting request:", error);
           showErrorAlert(error.response?.data?.message || "Gagal menghapus request");
-        }
+    }
       },
       null,
       "Konfirmasi Hapus",
@@ -297,12 +297,12 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                   {/* Nama Mata Kuliah - Fixed Width */}
                   <div className="w-48 flex-shrink-0">
                     <h3 className="text-sm font-semibold text-gray-900 truncate" title={request.mataKuliah.nama}>
-                      {request.mataKuliah.nama}
-                    </h3>
+                        {request.mataKuliah.nama}
+                      </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {request.mataKuliah.sks} SKS
-                    </p>
-                  </div>
+                        {request.mataKuliah.sks} SKS
+                      </p>
+                    </div>
 
                   {/* Status Badge */}
                   <div className="flex-shrink-0">
@@ -414,7 +414,7 @@ const DosenScheduleRequestManager = ({ authToken }) => {
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <form onSubmit={handleCreateRequest}>
+            <form onSubmit={handleCreateRequest}>
                 {/* Header */}
                 <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
                   <div className="flex justify-between items-center">
@@ -441,7 +441,7 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                       <XCircle className="w-5 h-5" />
                     </button>
                   </div>
-                </div>
+              </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -600,36 +600,36 @@ const DosenScheduleRequestManager = ({ authToken }) => {
                     required
                   />
                 </div>
-                  </div>
                 </div>
+              </div>
 
                 {/* Footer */}
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setFormData({
-                        mataKuliahId: "",
-                        preferredHari: "",
-                        preferredJamMulai: "",
-                        preferredJamSelesai: "",
-                        preferredRuanganId: "",
-                        alasanRequest: "",
-                      });
-                    }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setFormData({
+                      mataKuliahId: "",
+                      preferredHari: "",
+                      preferredJamMulai: "",
+                      preferredJamSelesai: "",
+                      preferredRuanganId: "",
+                      alasanRequest: "",
+                    });
+                  }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Submit Request
-                  </button>
-                </div>
-              </form>
+                >
+                  Submit Request
+                </button>
+              </div>
+            </form>
             </motion.div>
           </motion.div>
         </AnimatePresence>,

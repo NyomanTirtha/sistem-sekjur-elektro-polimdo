@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Users, 
-  UserPlus, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Users,
+  UserPlus,
+  Edit,
+  Trash2,
+  Eye,
   EyeOff,
   Search,
   Filter,
@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 import Loading from '../../umum/Loading';
+import { TABLE, BUTTON, ALERT } from '../../../constants/colors';
 
 const UsersList = ({ authToken, currentUser }) => {
   const [users, setUsers] = useState([]);
@@ -34,11 +35,11 @@ const UsersList = ({ authToken, currentUser }) => {
   const [filterRole, setFilterRole] = useState('ALL');
   const [showPassword, setShowPassword] = useState(false);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     nama: '',
@@ -79,11 +80,11 @@ const UsersList = ({ authToken, currentUser }) => {
 
   useEffect(() => {
     fetchUsers();
-    
+
     // Cek apakah user sudah melihat info popup untuk tab Daftar Akun
     const storageKey = `info_popup_daftar_akun_${currentUser?.username || currentUser?.id}`;
     const hasSeenPopup = localStorage.getItem(storageKey);
-    
+
     if (!hasSeenPopup) {
       // Delay sedikit agar halaman sudah ter-render
       setTimeout(() => {
@@ -182,15 +183,15 @@ const UsersList = ({ authToken, currentUser }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     const isEditing = !!editingUser;
     const action = isEditing ? 'mengedit' : 'membuat';
-    
-    const confirmMessage = isEditing 
+
+    const confirmMessage = isEditing
       ? `Apakah Anda yakin ingin mengupdate akun "${formData.nama}" (${formData.username})?`
       : `Apakah Anda yakin ingin membuat akun baru untuk "${formData.nama}" dengan role ${formData.role}?`;
 
@@ -209,10 +210,10 @@ const UsersList = ({ authToken, currentUser }) => {
             submitData.password = formData.password;
           }
 
-          const url = isEditing 
+          const url = isEditing
             ? `http://localhost:5000/api/users/${editingUser.id}`
             : 'http://localhost:5000/api/users';
-          
+
           const method = isEditing ? 'PUT' : 'POST';
 
           const response = await fetch(url, {
@@ -235,7 +236,7 @@ const UsersList = ({ authToken, currentUser }) => {
               resetForm();
               // Refresh users list after a short delay to ensure backend has processed
               setTimeout(() => {
-                fetchUsers();
+              fetchUsers();
               }, 100);
             } else {
               // Error case with success: false
@@ -293,7 +294,7 @@ const UsersList = ({ authToken, currentUser }) => {
     }
 
     const confirmMessage = `Apakah Anda yakin ingin menghapus akun "${user.nama}" (${user.username})?\n\nTindakan ini tidak dapat dibatalkan.`;
-    
+
     showConfirm(
       confirmMessage,
       async () => {
@@ -342,12 +343,12 @@ const UsersList = ({ authToken, currentUser }) => {
   // Filter users based on search and role - Optimized with useMemo
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
-      const matchesSearch = 
+      const matchesSearch =
         user.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.username.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesRole = filterRole === 'ALL' || user.role === filterRole;
-      
+
       return matchesSearch && matchesRole;
     });
   }, [users, searchTerm, filterRole]);
@@ -359,11 +360,11 @@ const UsersList = ({ authToken, currentUser }) => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentUsers = filteredUsers.slice(startIndex, endIndex);
-    
+
     // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -371,10 +372,10 @@ const UsersList = ({ authToken, currentUser }) => {
     } else {
       const leftOffset = Math.floor(maxVisiblePages / 2);
       const rightOffset = maxVisiblePages - leftOffset - 1;
-      
+
       let start = Math.max(1, currentPage - leftOffset);
       let end = Math.min(totalPages, currentPage + rightOffset);
-      
+
       if (end - start + 1 < maxVisiblePages) {
         if (start === 1) {
           end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -382,12 +383,12 @@ const UsersList = ({ authToken, currentUser }) => {
           start = Math.max(1, end - maxVisiblePages + 1);
         }
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return { totalItems, totalPages, startIndex, endIndex, currentUsers, pages };
   }, [filteredUsers, currentPage, itemsPerPage]);
 
@@ -439,20 +440,20 @@ const UsersList = ({ authToken, currentUser }) => {
                 className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-lg">
+                <div className={`${TABLE.header} p-6 rounded-t-lg border-b border-gray-800`}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="bg-white bg-opacity-20 p-3 rounded-lg">
                         <Shield className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold">Panduan Manajemen Akun</h2>
-                        <p className="text-blue-100 text-sm mt-1">Informasi penting tentang manajemen akun</p>
+                        <h2 className="text-xl font-bold text-white">Panduan Manajemen Akun</h2>
+                        <p className="text-gray-200 text-sm mt-1">Informasi penting tentang manajemen akun</p>
                       </div>
                     </div>
                     <button
                       onClick={handleCloseInfoPopup}
-                      className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 transition-colors"
+                      className="text-white hover:bg-gray-800 rounded-lg p-2 transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -460,51 +461,62 @@ const UsersList = ({ authToken, currentUser }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <div className="space-y-4 text-sm text-gray-700">
-                    <div>
-                      <h3 className="font-semibold text-base text-gray-800 mb-3">Hak Akses Berdasarkan Role:</h3>
-                      <ul className="list-disc list-inside space-y-2 leading-relaxed">
-                        <li><strong>Sekjur:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</li>
-                        <li><strong>Kaprodi:</strong> Mengelola pengajuan SA dan penugasan dosen</li>
-                        <li><strong>Dosen:</strong> Mengajar SA dan memberikan nilai kepada mahasiswa</li>
-                        <li><strong>Mahasiswa:</strong> Mengajukan SA dan melihat status pengajuan</li>
+                <div className="p-6 bg-gray-50">
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h3 className="font-semibold text-base text-gray-800 mb-3 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-gray-600" />
+                        Hak Akses Berdasarkan Role:
+                      </h3>
+                      <ul className="space-y-3 text-sm text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span><strong className="text-gray-900">Sekjur:</strong> Akses penuh ke sistem, dapat mengelola semua fitur</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span><strong className="text-gray-900">Kaprodi:</strong> Mengelola pengajuan SA dan penugasan dosen</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span><strong className="text-gray-900">Dosen:</strong> Mengajar SA dan memberikan nilai kepada mahasiswa</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span><strong className="text-gray-900">Mahasiswa:</strong> Mengajukan SA dan melihat status pengajuan</span>
+                        </li>
                       </ul>
                     </div>
-                    
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-yellow-800 font-semibold mb-1">⚠️ Peringatan Penting:</p>
-                          <p className="text-xs text-yellow-700">
-                            Penghapusan akun bersifat permanen dan akan menghapus semua data terkait. Pastikan Anda yakin sebelum menghapus akun.
-                          </p>
-                        </div>
+
+                    <div className={`${ALERT.warning} flex items-start gap-3`}>
+                      <AlertCircle className={`${ALERT.warningIcon} mt-0.5 flex-shrink-0`} />
+                      <div>
+                        <p className={`${ALERT.warningText} font-semibold text-sm mb-1`}>⚠️ Peringatan Penting:</p>
+                        <p className={`${ALERT.warningText} text-sm`}>
+                          Penghapusan akun bersifat permanen dan akan menghapus semua data terkait. Pastikan Anda yakin sebelum menghapus akun.
+                        </p>
                       </div>
                     </div>
 
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-blue-800 font-semibold mb-1">💡 Catatan:</p>
-                          <p className="text-xs text-blue-700">
-                            Role Mahasiswa tidak dapat diubah untuk menjaga integritas data akademik.
-                          </p>
-                        </div>
+                    <div className={`${ALERT.info} flex items-start gap-3`}>
+                      <Info className={`${ALERT.infoIcon} mt-0.5 flex-shrink-0`} />
+                      <div>
+                        <p className={`${ALERT.infoText} font-semibold text-sm mb-1`}>💡 Catatan:</p>
+                        <p className={`${ALERT.infoText} text-sm`}>
+                          Role Mahasiswa tidak dapat diubah untuk menjaga integritas data akademik.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-center">
+                <div className="border-t border-gray-200 p-4 bg-white flex justify-center">
                   <button
                     onClick={handleCloseInfoPopup}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                    className={`${BUTTON.primary} flex items-center gap-2 min-w-[180px] justify-center`}
                   >
-                    <Check className="w-4 h-4" />
+                    <Check className="w-5 h-5" />
                     Saya Mengerti
                   </button>
                 </div>
@@ -573,12 +585,12 @@ const UsersList = ({ authToken, currentUser }) => {
         {roles.map(role => {
           const Icon = role.icon;
           const roleCount = users.filter(user => user.role === role.value).length;
-          
+
           // Get subtle color for icon
           const iconColor = role.value === 'SEKJUR' ? 'text-red-500' :
                            role.value === 'KAPRODI' ? 'text-purple-500' :
                            role.value === 'DOSEN' ? 'text-blue-500' : 'text-green-500';
-          
+
           return (
             <div key={role.value} className="bg-white p-3 rounded border border-gray-200">
               <div className="flex items-center gap-2 mb-1.5">
@@ -699,7 +711,7 @@ const UsersList = ({ authToken, currentUser }) => {
                   // Disable role selection if editing MAHASISWA
                   const isDisabled = editingUser && editingUser.role === 'MAHASISWA';
                   const isSelected = formData.role === role.value;
-                  
+
                   return (
                     <label
                       key={role.value}
@@ -779,8 +791,8 @@ const UsersList = ({ authToken, currentUser }) => {
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>
-              {searchTerm || filterRole !== 'ALL' 
-                ? 'Tidak ada akun yang sesuai dengan filter' 
+              {searchTerm || filterRole !== 'ALL'
+                ? 'Tidak ada akun yang sesuai dengan filter'
                 : 'Belum ada akun terdaftar'
               }
             </p>
@@ -804,9 +816,9 @@ const UsersList = ({ authToken, currentUser }) => {
                   {currentUsers.map((user) => {
                     const roleInfo = getRoleInfo(user.role);
                     const Icon = roleInfo.icon;
-                    const isCurrentUser = user.username === currentUser.username || 
+                    const isCurrentUser = user.username === currentUser.username ||
                                          (currentUser.id && user.id === currentUser.id);
-                    
+
                     return (
                       <tr key={user.id} className={`hover:bg-gray-50 ${isCurrentUser ? 'bg-blue-50' : ''}`}>
                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -846,7 +858,7 @@ const UsersList = ({ authToken, currentUser }) => {
                                   onClick={() => handleDelete(user)}
                                   disabled={isCurrentUser}
                                   className={`p-1 rounded transition-colors ${
-                                    isCurrentUser 
+                                    isCurrentUser
                                       ? 'text-gray-400 cursor-not-allowed'
                                       : 'text-red-500 hover:text-red-700'
                                   }`}
@@ -874,7 +886,7 @@ const UsersList = ({ authToken, currentUser }) => {
                     <span className="font-medium">{Math.min(endIndex, totalItems)}</span> dari{' '}
                     <span className="font-medium">{totalItems}</span> akun
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {/* First Page */}
                     <button

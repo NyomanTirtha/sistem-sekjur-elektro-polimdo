@@ -47,9 +47,9 @@ const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 };
 
-const Header = ({ 
-  title = "Dashboard", 
-  user = "Sekretaris Jurusan", 
+const Header = ({
+  title = "Dashboard",
+  user = "Sekretaris Jurusan",
   role = "SEKJUR",
   onToggleSidebar,
   sidebarCollapsed = false,
@@ -72,7 +72,7 @@ const Header = ({
   const displayName = currentUser.nama || currentUser.name || user;
   const roleLabel = roleConfig.label;
   const subtitle = roleConfig.getSubtitle(currentUser);
-  
+
   // Get theme colors based on jurusan
   const theme = getTheme(currentUser);
   const headerAccentClass = getHeaderAccentClass(currentUser);
@@ -116,30 +116,18 @@ const Header = ({
 
   const renderProfileFields = () => {
     const fields = profileFieldsConfig[normalizedRole] || [];
-    const colorMap = {
-      blue: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600', text: 'text-blue-900', value: 'text-blue-700' },
-      purple: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-purple-600', text: 'text-purple-900', value: 'text-purple-700' },
-      indigo: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-indigo-600', text: 'text-indigo-900', value: 'text-indigo-700' },
-      orange: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-orange-600', text: 'text-orange-900', value: 'text-orange-700' },
-      cyan: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-cyan-600', text: 'text-cyan-900', value: 'text-cyan-700' },
-      teal: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-teal-600', text: 'text-teal-900', value: 'text-teal-700' },
-      pink: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-pink-600', text: 'text-pink-900', value: 'text-pink-700' },
-      green: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-green-600', text: 'text-green-900', value: 'text-green-700' },
-      amber: { bg: 'bg-gray-50', border: 'border-gray-200', icon: 'text-amber-600', text: 'text-amber-900', value: 'text-amber-700' }
-    };
 
     return fields.map((field) => {
       const Icon = field.icon;
-      const colors = colorMap[field.color] || colorMap.blue;
       let value = field.custom ? field.custom(currentUser) : (field.path ? getNestedValue(currentUser, field.path) : currentUser[field.key]);
       value = value || 'Tidak tersedia';
 
       return (
-        <div key={field.key} className={`flex items-center space-x-3 p-3 ${colors.bg} rounded-lg border ${colors.border}`}>
-          <Icon className={`w-5 h-5 ${colors.icon}`} />
+        <div key={field.key} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+          <Icon className="w-5 h-5 text-gray-600" />
           <div>
-            <span className={`text-sm font-medium ${colors.text}`}>{field.label}</span>
-            <p className={`text-sm ${colors.value}`}>{value}</p>
+            <span className="text-sm font-medium text-gray-700">{field.label}</span>
+            <p className="text-sm text-gray-900">{value}</p>
           </div>
         </div>
       );
@@ -199,23 +187,23 @@ const Header = ({
         showProfile && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowProfile(false)}>
             <div className="bg-white rounded shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <div className={`p-6 ${theme.primary.bg} text-white border-b border-gray-200`}>
+              <div className="p-6 bg-gradient-to-r from-gray-600 to-gray-700 text-white border-b border-gray-800">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center border-2 ${avatarBorderClass}`}>
+                    <div className="w-12 h-12 bg-gray-500 rounded-full flex items-center justify-center">
                       <User className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h2 className="text-xl font-semibold">{displayName}</h2>
-                      <p className="text-sm text-gray-300">{roleLabel}</p>
+                      <p className="text-sm text-gray-200">{roleLabel}</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowProfile(false)} className="p-2 hover:bg-gray-700 rounded text-white">
+                  <button onClick={() => setShowProfile(false)} className="p-2 hover:bg-gray-800 rounded-lg text-white">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-              <div 
+              <div
                 className="flex-1 overflow-y-auto profile-scroll-container"
                 style={{
                   scrollbarWidth: 'none',

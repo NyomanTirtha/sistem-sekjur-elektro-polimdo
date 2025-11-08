@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, memo } from "react";
 import {
   Users,
   GraduationCap,
@@ -54,6 +54,9 @@ const DosenScheduleRequestManager = lazy(
 const SekjurScheduleReview = lazy(
   () => import("./komponen/fitur/jadwal/SekjurScheduleReview"),
 );
+const DosenMySchedule = lazy(
+  () => import("./komponen/fitur/jadwal/DosenMySchedule"),
+);
 
 export default function App() {
   const [currentView, setCurrentView] = useState("login");
@@ -80,7 +83,7 @@ export default function App() {
 
   const defaultTabMapping = {
     sekjur: "prodi",
-    dosen: "mahasiswa",
+    dosen: "jadwal-saya",
     kaprodi: "jadwal-prodi",
     mahasiswa: "pengajuan-sa",
   };
@@ -177,6 +180,14 @@ export default function App() {
           component: KaprodiScheduleManager,
           description: "Buat dan kelola jadwal kuliah prodi",
           allowedRoles: ["kaprodi"],
+        },
+        {
+          id: "jadwal-saya",
+          label: "Jadwal Mengajar Saya",
+          icon: Calendar,
+          component: DosenMySchedule,
+          description: "Lihat jadwal mengajar Anda",
+          allowedRoles: ["dosen"],
         },
         {
           id: "request-jadwal",
@@ -680,11 +691,19 @@ export default function App() {
       >
         {ActiveComponent && (
           <Suspense fallback={<LoadingPage message="Memuat halaman..." />}>
-            <ActiveComponent
-              authToken={authToken}
-              currentUser={currentUser}
-              userType={userType}
-            />
+            <div
+              key={activeTab}
+              style={{
+                animation: 'fadeIn 0.15s ease-in',
+                animationFillMode: 'both'
+              }}
+            >
+              <ActiveComponent
+                authToken={authToken}
+                currentUser={currentUser}
+                userType={userType}
+              />
+            </div>
           </Suspense>
         )}
       </MainLayout>

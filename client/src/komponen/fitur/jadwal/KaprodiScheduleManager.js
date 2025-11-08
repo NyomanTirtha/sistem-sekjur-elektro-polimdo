@@ -22,6 +22,7 @@ import { getButtonPrimaryClass } from "../../../utilitas/theme";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
+import { TABLE, BUTTON, BADGE } from '../../../constants/colors';
 
 // Konstanta jam istirahat (dapat disesuaikan)
 const JAM_ISTIRAHAT = {
@@ -882,7 +883,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className={`inline-flex items-center px-4 py-2 rounded-lg ${getButtonPrimaryClass(currentUser)}`}
+          className={`${BUTTON.primary} inline-flex items-center`}
         >
           <Plus className="w-5 h-5 mr-2" />
           Buat Jadwal Baru
@@ -1013,9 +1014,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {schedule.kelas || `${schedule.timetablePeriod.semester} ${schedule.timetablePeriod.tahunAkademik}`}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {schedule.timetablePeriod.semester} {schedule.timetablePeriod.tahunAkademik}
+                    </h3>
+                    <span className={BADGE.gray}>
+                      {schedule.kelas}
+                    </span>
+                  </div>
                   <span
                     className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}
                   >
@@ -1176,7 +1182,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className={`inline-flex items-center px-4 py-2 rounded-lg ${getButtonPrimaryClass(currentUser)}`}
+            className={`${BUTTON.primary} inline-flex items-center`}
           >
             <Plus className="w-5 h-5 mr-2" />
             Buat Jadwal Baru
@@ -1212,15 +1218,20 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+              <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div>
-                      <h2 className="text-xl font-semibold text-white mb-1">
-                        {selectedSchedule.kelas || `${selectedSchedule.timetablePeriod.semester} ${selectedSchedule.timetablePeriod.tahunAkademik}`}
-                      </h2>
-                      <p className="text-sm text-blue-100">
-                        Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedSchedule.status)}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-xl font-semibold text-white">
+                          {selectedSchedule.timetablePeriod.semester} {selectedSchedule.timetablePeriod.tahunAkademik}
+                        </h2>
+                        <span className={BADGE.gray}>
+                          {selectedSchedule.kelas}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-200">
+                        Status: <span className={`${BADGE.gray} ml-2`}>
                           {getStatusLabel(selectedSchedule.status)}
                         </span>
                       </p>
@@ -1230,7 +1241,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
                       <button
                         onClick={() => setShowAddItemModal(true)}
-                        className="inline-flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm transition-colors"
+                        className={`${BUTTON.secondary} inline-flex items-center text-sm`}
                       >
                         <Plus className="w-4 h-4 mr-1" />
                         Tambah
@@ -1241,7 +1252,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                         setSelectedSchedule(null);
                         setScheduleItems([]);
                       }}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                       aria-label="Close modal"
                     >
                       <XCircle className="w-5 h-5" />
@@ -1327,11 +1338,11 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
             >
               <form onSubmit={handleCreateSchedule}>
                 {/* Header */}
-                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
                   <div className="flex justify-between items-center">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Buat Jadwal Baru</h2>
-                      <p className="text-sm text-blue-100">Pilih periode dan masukkan kelas untuk jadwal baru</p>
+                      <p className="text-sm text-gray-200">Pilih periode dan masukkan kelas untuk jadwal baru</p>
                     </div>
                     <button
                       type="button"
@@ -1339,7 +1350,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                         setShowCreateModal(false);
                         setCreateFormData({ timetablePeriodId: "", kelas: "" });
                       }}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                       aria-label="Close modal"
                     >
                       <XCircle className="w-5 h-5" />
@@ -1405,13 +1416,13 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                       setShowCreateModal(false);
                       setCreateFormData({ timetablePeriodId: "", kelas: "" });
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    className={BUTTON.secondary}
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
+                    className={BUTTON.primary}
                   >
                     Buat
                   </button>

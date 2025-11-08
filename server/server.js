@@ -70,6 +70,10 @@ const protectedRoutes = [
     path: "/api/sekjur-schedules",
     router: require("./routes/sekjurSchedules"),
   },
+  {
+    path: "/api/schedule-validation",
+    router: require("./routes/scheduleValidation"),
+  },
 ];
 
 app.use("/api/auth", authRoutes);

@@ -59,6 +59,7 @@ model Mahasiswa {
   alamat         String?
   programStudi   ProgramStudi  @relation(fields: [programStudiId], references: [id])
   pengajuanSA    PengajuanSA[]
+  enrollments    Enrollment[]
 
   @@index([programStudiId], map: "mahasiswa_programStudiId_fkey")
   @@map("mahasiswa")
@@ -71,11 +72,13 @@ model Dosen {
   noTelp             String?
   alamat             String?
   isKaprodi          Boolean             @default(false)
+  maxSKSPerSemester  Int                 @default(16) // Maksimal SKS per semester
   prodi              ProgramStudi        @relation(fields: [prodiId], references: [id])
   pengajuanSADetails PengajuanSADetail[]
   penugasanMengajar  PenugasanMengajar[]
   scheduleItems      ScheduleItem[]
   dosenRequests      DosenScheduleRequest[]
+  workloads          DosenWorkload[]
 
   @@index([prodiId], map: "dosen_prodiId_fkey")
   @@map("dosen")
@@ -229,6 +232,7 @@ model ProdiSchedule {
   prodi              ProgramStudi    @relation(fields: [prodiId], references: [id])
   scheduleItems      ScheduleItem[]
   revisions          ScheduleRevision[]
+  enrollments        Enrollment[]
 
   @@unique([timetablePeriodId, prodiId, kelas])
   @@index([prodiId])
@@ -248,6 +252,7 @@ model ScheduleItem {
   ruanganId         Int
   kelas             String?       // "A1", "B2", dll
   kapasitasMahasiswa Int?
+  maxBebanSKS       Int?          // Maksimal SKS untuk item ini
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -304,6 +309,72 @@ model ScheduleRevision {
   @@map("schedule_revisions")
 }
 
+model Enrollment {
+  id                Int           @id @default(autoincrement())
+  mahasiswaId       String
+  prodiScheduleId   Int
+  tahunAkademik     String        // format: "2024/2025"
+  semester          SemesterType
+  status            EnrollmentStatus @default(ACTIVE)
+  enrolledAt        DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  mahasiswa         Mahasiswa     @relation(fields: [mahasiswaId], references: [nim], onDelete: Cascade)
+  prodiSchedule     ProdiSchedule @relation(fields: [prodiScheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([mahasiswaId, prodiScheduleId, tahunAkademik, semester])
+  @@index([mahasiswaId])
+  @@index([prodiScheduleId])
+  @@index([tahunAkademik])
+  @@index([semester])
+  @@map("enrollments")
+}
+
+model ScheduleConflictLog {
+  id                Int           @id @default(autoincrement())
+  conflictType      ConflictType
+  description       String        @db.Text
+  scheduleItemId1   Int?
+  scheduleItemId2   Int?
+  severity          ConflictSeverity @default(HIGH)
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  notes             String?       @db.Text
+  detectedAt        DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([conflictType])
+  @@index([severity])
+  @@index([resolvedAt])
+  @@index([detectedAt])
+  @@map("schedule_conflict_logs")
+}
+
+model DosenWorkload {
+  id                Int           @id @default(autoincrement())
+  dosenId           String
+  tahunAkademik     String        // format: "2024/2025"
+  semester          SemesterType
+  totalSKS          Int           @default(0)
+  totalMataKuliah   Int           @default(0)
+  totalJamMengajar  Int           @default(0) // dalam menit
+  maxSKSAllowed     Int           @default(16) // Batas maksimal SKS
+  isOverloaded      Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  dosen             Dosen         @relation(fields: [dosenId], references: [nip], onDelete: Cascade)
+
+  @@unique([dosenId, tahunAkademik, semester])
+  @@index([dosenId])
+  @@index([tahunAkademik])
+  @@index([semester])
+  @@index([isOverloaded])
+  @@map("dosen_workloads")
+}
+
 // =====================================================
 // ENUMS UNTUK SISTEM JADWAL
 // =====================================================
@@ -342,4 +413,28 @@ enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum ConflictType {
+  DOSEN_CONFLICT
+  RUANGAN_CONFLICT
+  MAHASISWA_CONFLICT
+  KAPASITAS_EXCEEDED
+  DOSEN_OVERLOAD
+  TIME_OVERLAP
+  INVALID_TIME_SLOT
+}
+
+enum ConflictSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }

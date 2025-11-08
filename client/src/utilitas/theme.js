@@ -5,27 +5,27 @@
  */
 export const getJurusanName = (user) => {
   if (!user) return null;
-  
+
   // Untuk SEKJUR
   if (user.jurusan?.nama) {
     return user.jurusan.nama;
   }
-  
+
   // Untuk DOSEN/KAPRODI - cek dari prodi
   if (user.prodi?.jurusan?.nama) {
     return user.prodi.jurusan.nama;
   }
-  
+
   // Untuk KAPRODI - cek dari programStudi (fallback)
   if (user.programStudi?.jurusan?.nama) {
     return user.programStudi.jurusan.nama;
   }
-  
+
   // Untuk MAHASISWA
   if (user.programStudi?.jurusan?.nama) {
     return user.programStudi.jurusan.nama;
   }
-  
+
   return null;
 };
 
@@ -34,7 +34,7 @@ export const getJurusanName = (user) => {
  */
 export const getTheme = (user) => {
   const jurusanName = getJurusanName(user);
-  
+
   // Teknik Elektro - Biru dongker
   if (jurusanName && jurusanName.toLowerCase().includes('elektro')) {
     return {
@@ -65,7 +65,7 @@ export const getTheme = (user) => {
       },
     };
   }
-  
+
   // Teknik Sipil - Cokelat dongker
   if (jurusanName && jurusanName.toLowerCase().includes('sipil')) {
     return {
@@ -96,7 +96,7 @@ export const getTheme = (user) => {
       },
     };
   }
-  
+
   // Teknik Informatika - Hijau dongker
   if (jurusanName && (jurusanName.toLowerCase().includes('informatika') || jurusanName.toLowerCase().includes('ti'))) {
     return {
@@ -127,7 +127,7 @@ export const getTheme = (user) => {
       },
     };
   }
-  
+
   // Teknik Mesin - Merah dongker
   if (jurusanName && jurusanName.toLowerCase().includes('mesin')) {
     return {
@@ -158,7 +158,7 @@ export const getTheme = (user) => {
       },
     };
   }
-  
+
   // Teknik Sipil - Cokelat dongker (sudah ada di atas)
   // Teknik Arsitektur - Ungu dongker
   if (jurusanName && jurusanName.toLowerCase().includes('arsitektur')) {
@@ -190,11 +190,11 @@ export const getTheme = (user) => {
       },
     };
   }
-  
+
   // Default (jika tidak ada jurusan atau jurusan lain)
   return {
     primary: {
-      bg: 'bg-gray-800',
+      bg: 'bg-gradient-to-r from-gray-600 to-gray-700',
       hover: 'hover:bg-gray-700',
       text: 'text-gray-800',
       border: 'border-gray-800',
@@ -212,8 +212,8 @@ export const getTheme = (user) => {
       active: 'bg-gray-800 text-white',
     },
     header: {
-      accent: 'text-gray-600',
-      border: 'border-gray-200',
+      accent: 'text-gray-200',
+      border: 'border-gray-800',
     },
     avatar: {
       border: 'border-gray-500',
@@ -268,4 +268,3 @@ export const getAvatarBorderClass = (user) => {
   const theme = getTheme(user);
   return theme.avatar?.border || 'border-gray-500';
 };
-

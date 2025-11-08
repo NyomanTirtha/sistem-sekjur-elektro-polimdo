@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
   Users,
   GraduationCap,
   ChevronLeft,
@@ -22,6 +22,7 @@ import {
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 import Loading from '../../umum/Loading';
 import { getTheme } from '../../../utilitas/theme';
+import { TABLE, BUTTON, BADGE } from '../../../constants/colors';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -138,19 +139,19 @@ export default function DosenList({ authToken, currentUser }) {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!canAddEdit()) {
       showWarningAlert('Anda tidak memiliki izin untuk melakukan tindakan ini.');
       return;
     }
-    
+
     // Validate required fields
     if (!formData.nama || !formData.nip || !formData.prodiId) {
       showWarningAlert('Nama, NIP, dan Program Studi wajib diisi');
       return;
     }
 
-    const confirmMessage = editData 
+    const confirmMessage = editData
       ? `Apakah Anda yakin ingin memperbarui data dosen "${formData.nama}" (NIP: ${formData.nip})?\n\nData yang sudah diperbarui tidak dapat dikembalikan.`
       : `Apakah Anda yakin ingin menambahkan dosen baru dengan nama "${formData.nama}" (NIP: ${formData.nip})?`;
 
@@ -158,17 +159,17 @@ export default function DosenList({ authToken, currentUser }) {
       confirmMessage,
       async () => {
         try {
-          const url = editData 
+          const url = editData
             ? `${API_BASE}/dosen/${editData.nip}`
             : `${API_BASE}/dosen`;
-          
+
           const method = editData ? 'PUT' : 'POST';
-          
+
           const submitData = {
             ...formData,
             prodiId: parseInt(formData.prodiId)
           };
-          
+
           const response = await apiCall(url, {
             method,
             body: JSON.stringify(submitData),
@@ -269,10 +270,10 @@ export default function DosenList({ authToken, currentUser }) {
     return Array.isArray(dosen) ? dosen.filter(dsn => {
       const matchesSearch = dsn.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            dsn.nip.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesProdi = filterProdi === '' || 
+
+      const matchesProdi = filterProdi === '' ||
                           (dsn.prodi && dsn.prodi.id === parseInt(filterProdi));
-      
+
       return matchesSearch && matchesProdi;
     }) : [];
   }, [dosen, searchTerm, filterProdi]);
@@ -289,11 +290,11 @@ export default function DosenList({ authToken, currentUser }) {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentDosen = filteredDosen.slice(startIndex, endIndex);
-    
+
     // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -301,10 +302,10 @@ export default function DosenList({ authToken, currentUser }) {
     } else {
       const leftOffset = Math.floor(maxVisiblePages / 2);
       const rightOffset = maxVisiblePages - leftOffset - 1;
-      
+
       let start = Math.max(1, currentPage - leftOffset);
       let end = Math.min(totalPages, currentPage + rightOffset);
-      
+
       if (end - start + 1 < maxVisiblePages) {
         if (start === 1) {
           end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -312,12 +313,12 @@ export default function DosenList({ authToken, currentUser }) {
           start = Math.max(1, end - maxVisiblePages + 1);
         }
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return { totalItems, totalPages, startIndex, endIndex, currentDosen, pages };
   }, [filteredDosen, currentPage, itemsPerPage]);
 
@@ -423,9 +424,9 @@ export default function DosenList({ authToken, currentUser }) {
         {canAddEdit() && (
           <button
             onClick={() => openModal()}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-600 transition-colors"
+            className={`${BUTTON.primary} flex items-center justify-center whitespace-nowrap min-w-[200px]`}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-5 h-5 mr-2 flex-shrink-0" />
             Tambah Dosen
           </button>
         )}
@@ -435,15 +436,15 @@ export default function DosenList({ authToken, currentUser }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <Users className="w-4 h-4 text-blue-500 opacity-70" />
+            <Users className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Total Dosen</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{dosen.length}</p>
         </div>
-        
+
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <GraduationCap className="w-4 h-4 text-green-500 opacity-70" />
+            <GraduationCap className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Program Studi</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{prodiCount}</p>
@@ -451,7 +452,7 @@ export default function DosenList({ authToken, currentUser }) {
 
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <Filter className="w-4 h-4 text-purple-500 opacity-70" />
+            <Filter className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Hasil Filter</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{totalItems}</p>
@@ -479,34 +480,34 @@ export default function DosenList({ authToken, currentUser }) {
             </div>
           ) : (
             <>
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '50px' }}>No</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '25%' }}>Nama</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '180px' }}>NIP</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '20%' }}>Program Studi</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700" style={{ width: '140px' }}>No. Telp</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
-                    {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-3 text-sm font-semibold text-gray-700" style={{ width: '100px' }}>Aksi</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
+              <table className="w-full">
+                  <thead className={TABLE.header}>
+                    <tr>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3 w-16`}>No</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Nama</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>NIP</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Program Studi</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>No. Telp</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Alamat</th>
+                      {(canAddEdit() || canDelete()) && (
+                        <th className={`${TABLE.headerText} text-center px-4 py-3 w-24`}>Aksi</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                   {currentDosen.map((dsn, index) => {
                     const globalIndex = startIndex + index;
-                    
+
                     return (
-                      <tr key={dsn.nip} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
-                        <td className="p-3 text-sm text-gray-900">
+                      <tr key={dsn.nip} className="hover:bg-blue-50 transition-colors">
+                        <td className="px-4 py-3 text-sm text-gray-700">{globalIndex + 1}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           <div className="truncate" title={dsn.nama}>{dsn.nama}</div>
                         </td>
-                        <td className="p-3 text-sm text-gray-900">
+                        <td className="px-4 py-3 text-sm text-gray-700 font-mono">
                           <div className="truncate" title={dsn.nip}>{dsn.nip}</div>
                         </td>
-                        <td className="p-3 text-sm text-gray-900">
+                        <td className="px-4 py-3 text-sm text-gray-700">
                           <div className="truncate" title={dsn.prodi ? dsn.prodi.nama : '-'}>{dsn.prodi ? dsn.prodi.nama : '-'}</div>
                         </td>
                         <td className="p-3 text-sm text-gray-900">
@@ -516,12 +517,12 @@ export default function DosenList({ authToken, currentUser }) {
                           <div className="truncate" title={dsn.alamat || '-'}>{dsn.alamat || '-'}</div>
                         </td>
                         {(canAddEdit() || canDelete()) && (
-                          <td className="p-3 text-center">
-                            <div className="flex justify-center space-x-2">
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex justify-center items-center gap-2">
                               {canAddEdit() && (
                                 <button
                                   onClick={() => openModal(dsn)}
-                                  className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
+                                  className={BUTTON.iconPrimary}
                                   title="Edit"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -530,7 +531,7 @@ export default function DosenList({ authToken, currentUser }) {
                               {canDelete() && (
                                 <button
                                   onClick={() => handleDelete(dsn.nip)}
-                                  className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                                  className={BUTTON.iconDanger}
                                   title="Hapus"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -542,8 +543,8 @@ export default function DosenList({ authToken, currentUser }) {
                       </tr>
                     );
                   })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
 
               {/* Pagination */}
               {totalPages > 1 && (
@@ -554,7 +555,7 @@ export default function DosenList({ authToken, currentUser }) {
                       <span className="font-medium">{Math.min(endIndex, totalItems)}</span> dari{' '}
                       <span className="font-medium">{totalItems}</span> dosen
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {/* First Page */}
                       <button
@@ -634,7 +635,7 @@ export default function DosenList({ authToken, currentUser }) {
               )}
             </>
           )}
-          
+
           {!loading && currentDosen.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-2">
@@ -647,9 +648,9 @@ export default function DosenList({ authToken, currentUser }) {
               {!searchTerm && !filterProdi && canAddEdit() && (
                 <button
                   onClick={() => openModal()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className={`${BUTTON.primary} inline-flex items-center justify-center whitespace-nowrap min-w-[200px]`}
                 >
-                  <Plus className="w-4 h-4 mr-2 inline" />
+                  <Plus className="w-5 h-5 mr-2 flex-shrink-0" />
                   Tambah Dosen Pertama
                 </button>
               )}
@@ -662,7 +663,7 @@ export default function DosenList({ authToken, currentUser }) {
       {typeof window !== 'undefined' && createPortal(
         <AnimatePresence>
           {showModal && (
-            <motion.div 
+            <motion.div
               className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
               style={{ zIndex: 9999 }}
               initial={{ opacity: 0 }}
@@ -676,7 +677,7 @@ export default function DosenList({ authToken, currentUser }) {
                 }
               }}
             >
-              <motion.div 
+              <motion.div
                 className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
                 style={{ zIndex: 10000 }}
               initial={{ opacity: 0 }}
@@ -686,33 +687,28 @@ export default function DosenList({ authToken, currentUser }) {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              {(() => {
-                const theme = getTheme(currentUser);
-                return (
-                  <div className={`p-6 text-white ${theme.primary.bg} border-b ${theme.primary.border}`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h2 className="text-xl font-semibold mb-1">
-                          {editData ? 'Edit Data Dosen' : 'Tambah Dosen Baru'}
-                        </h2>
-                        <p className={`text-sm ${theme.header.accent || 'text-white/80'}`}>
-                          {editData ? 'Perbarui informasi dosen' : 'Lengkapi informasi dosen baru'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setShowModal(false);
-                          resetForm();
-                        }}
-                        className={`p-2 ${theme.primary.hover} rounded transition-colors text-white`}
-                        aria-label="Close modal"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+              <div className={`p-6 ${TABLE.header} border-b border-gray-800`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-1">
+                      {editData ? 'Edit Data Dosen' : 'Tambah Dosen Baru'}
+                    </h2>
+                    <p className="text-sm text-gray-200">
+                      {editData ? 'Perbarui informasi dosen' : 'Lengkapi informasi dosen baru'}
+                    </p>
                   </div>
-                );
-              })()}
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
+                    aria-label="Close modal"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
@@ -735,7 +731,7 @@ export default function DosenList({ authToken, currentUser }) {
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           NIP <span className="text-red-500">*</span>
@@ -780,7 +776,7 @@ export default function DosenList({ authToken, currentUser }) {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         No. Telepon
@@ -796,7 +792,7 @@ export default function DosenList({ authToken, currentUser }) {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Alamat
@@ -824,22 +820,17 @@ export default function DosenList({ authToken, currentUser }) {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className={BUTTON.secondary}
                 >
                   Batal
                 </button>
-                {(() => {
-                  const theme = getTheme(currentUser);
-                  return (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className={`px-4 py-2 text-sm font-medium text-white ${theme.primary.bg} rounded ${theme.primary.hover} transition-colors`}
-                    >
-                      {editData ? 'Perbarui Data' : 'Simpan Data'}
-                    </button>
-                  );
-                })()}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className={BUTTON.primary}
+                >
+                  {editData ? 'Perbarui Data' : 'Simpan Data'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

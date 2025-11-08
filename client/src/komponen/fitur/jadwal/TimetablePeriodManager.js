@@ -17,6 +17,7 @@ import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
 import Loading from "../../umum/Loading";
+import { TABLE, BUTTON, BADGE } from '../../../constants/colors';
 
 const TimetablePeriodManager = ({ authToken }) => {
   const [periods, setPeriods] = useState([]);
@@ -134,22 +135,22 @@ const TimetablePeriodManager = ({ authToken }) => {
     showConfirm(
       confirmMessage,
       async () => {
-        try {
-          const response = await axios.delete(
-            `http://localhost:5000/api/timetable/periods/${periodId}`,
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            },
-          );
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/timetable/periods/${periodId}`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+      );
 
-          if (response.data.success) {
+      if (response.data.success) {
             showSuccessAlert("Periode berhasil dihapus");
-            fetchPeriods();
-          }
-        } catch (error) {
-          console.error("Error deleting period:", error);
+        fetchPeriods();
+      }
+    } catch (error) {
+      console.error("Error deleting period:", error);
           showErrorAlert(error.response?.data?.message || "Gagal menghapus periode");
-        }
+    }
       },
       null,
       hasSchedules ? "Peringatan" : "Konfirmasi Hapus",
@@ -159,25 +160,25 @@ const TimetablePeriodManager = ({ authToken }) => {
 
   const handlePublishPeriod = async (periodId) => {
     showConfirm(
-      "Apakah Anda yakin ingin mempublish semua jadwal yang sudah diapprove?",
+        "Apakah Anda yakin ingin mempublish semua jadwal yang sudah diapprove?",
       async () => {
-        try {
-          const response = await axios.post(
-            `http://localhost:5000/api/timetable/periods/${periodId}/publish`,
-            {},
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            },
-          );
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/timetable/periods/${periodId}/publish`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+      );
 
-          if (response.data.success) {
+      if (response.data.success) {
             showSuccessAlert("Jadwal berhasil dipublish");
-            fetchPeriods();
-          }
-        } catch (error) {
-          console.error("Error publishing schedules:", error);
+        fetchPeriods();
+      }
+    } catch (error) {
+      console.error("Error publishing schedules:", error);
           showErrorAlert(error.response?.data?.message || "Gagal mempublish jadwal");
-        }
+    }
       },
       null,
       "Konfirmasi Publish",
@@ -187,31 +188,31 @@ const TimetablePeriodManager = ({ authToken }) => {
 
   const handleUnpublishSchedule = async (scheduleId) => {
     showConfirm(
-      "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
+        "Apakah Anda yakin ingin meng-unpublish jadwal ini? Jadwal akan dikembalikan ke status APPROVED dan bisa diubah kembali.",
       async () => {
-        try {
-          const response = await axios.post(
-            `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
-            {},
-            {
-              headers: { Authorization: `Bearer ${authToken}` },
-            },
-          );
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/sekjur-schedules/${scheduleId}/unpublish`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+      );
 
-          if (response.data.success) {
+      if (response.data.success) {
             showSuccessAlert("Jadwal berhasil di-unpublish!");
-            // Refresh period schedules
-            if (selectedPeriod) {
-              handleViewPeriod(selectedPeriod);
-            }
-            fetchPeriods();
-          }
-        } catch (error) {
-          console.error("Error unpublishing schedule:", error);
-          showErrorAlert(
-            error.response?.data?.message || "Gagal melakukan unpublish jadwal",
-          );
+        // Refresh period schedules
+        if (selectedPeriod) {
+          handleViewPeriod(selectedPeriod);
         }
+        fetchPeriods();
+      }
+    } catch (error) {
+      console.error("Error unpublishing schedule:", error);
+          showErrorAlert(
+        error.response?.data?.message || "Gagal melakukan unpublish jadwal",
+      );
+    }
       },
       null,
       "Konfirmasi Unpublish",
@@ -266,7 +267,7 @@ const TimetablePeriodManager = ({ authToken }) => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className={`${BUTTON.primary} inline-flex items-center`}
         >
           <Plus className="w-5 h-5 mr-2" />
           Buat Periode Baru
@@ -328,7 +329,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleViewPeriod(period)}
-                    className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                    className={`${BUTTON.secondary} flex-1 inline-flex justify-center items-center text-sm`}
                   >
                     <Eye className="w-4 h-4 mr-1" />
                     Lihat
@@ -337,7 +338,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                   {period.status === "DRAFT" && (
                     <button
                       onClick={() => handleUpdateStatus(period.id, "ACTIVE")}
-                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                      className={`${BUTTON.success} flex-1 inline-flex justify-center items-center text-sm`}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Aktifkan
@@ -348,7 +349,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                     period.stats?.completedSchedules > 0 && (
                       <button
                         onClick={() => handlePublishPeriod(period.id)}
-                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                        className={`${BUTTON.primary} flex-1 inline-flex justify-center items-center text-sm`}
                       >
                         Publish
                       </button>
@@ -357,7 +358,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                   {period.status === "ACTIVE" && (
                     <button
                       onClick={() => handleUpdateStatus(period.id, "CLOSED")}
-                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700"
+                      className={`${BUTTON.danger} flex-1 inline-flex justify-center items-center text-sm`}
                     >
                       <XCircle className="w-4 h-4 mr-1" />
                       Tutup
@@ -370,7 +371,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleDeletePeriod(period.id)}
-                      className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-red-300 bg-red-50 rounded-md text-sm text-red-700 hover:bg-red-100"
+                      className={`${BUTTON.danger} flex-1 inline-flex justify-center items-center text-sm`}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
                       Hapus Periode
@@ -394,7 +395,7 @@ const TimetablePeriodManager = ({ authToken }) => {
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className={`${BUTTON.primary} inline-flex items-center`}
           >
             <Plus className="w-5 h-5 mr-2" />
             Buat Periode Baru
@@ -429,27 +430,27 @@ const TimetablePeriodManager = ({ authToken }) => {
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <form onSubmit={handleCreatePeriod}>
+            <form onSubmit={handleCreatePeriod}>
                 {/* Header */}
-                <div className="p-5 bg-gradient-to-r from-gray-600 to-gray-700 border-b border-gray-800">
+                <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
                   <div className="flex justify-between items-center">
                     <div>
                       <h2 className="text-xl font-semibold text-white mb-1">Buat Periode Timetable Baru</h2>
                       <p className="text-sm text-gray-200">Tentukan semester dan tahun akademik</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        setFormData({ semester: "", tahunAkademik: "" });
-                      }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setFormData({ semester: "", tahunAkademik: "" });
+                  }}
                       className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
-                      aria-label="Close modal"
-                    >
+                  aria-label="Close modal"
+                >
                       <XCircle className="w-5 h-5" />
-                    </button>
+                </button>
                   </div>
-                </div>
+              </div>
 
                 {/* Content */}
                 <div className="p-6 bg-gray-50 space-y-4">
@@ -490,28 +491,28 @@ const TimetablePeriodManager = ({ authToken }) => {
                     required
                   />
                 </div>
-                </div>
+              </div>
 
                 {/* Footer */}
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setFormData({ semester: "", tahunAkademik: "" });
-                    }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setFormData({ semester: "", tahunAkademik: "" });
+                  }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Simpan
-                  </button>
-                </div>
-              </form>
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                    className={BUTTON.primary}
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
             </motion.div>
           </motion.div>
         </AnimatePresence>,
@@ -547,31 +548,31 @@ const TimetablePeriodManager = ({ authToken }) => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-5 bg-gradient-to-r from-gray-600 to-gray-700 border-b border-gray-800">
+              <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
                 <div className="flex justify-between items-center">
-                  <div>
+              <div>
                     <h2 className="text-xl font-semibold text-white mb-1">
                       Detail Periode: {selectedPeriod.semester} {selectedPeriod.tahunAkademik}
                     </h2>
                     <p className="text-sm text-gray-200">
-                      Status: <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedPeriod.status)}`}>
-                        {getStatusLabel(selectedPeriod.status)}
-                      </span>
+                      Status: <span className={`${BADGE.gray} ml-2`}>
+                  {getStatusLabel(selectedPeriod.status)}
+                </span>
                     </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedPeriod(null);
-                      setPeriodSchedules([]);
-                    }}
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedPeriod(null);
+                  setPeriodSchedules([]);
+                }}
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
                     aria-label="Close modal"
-                  >
+              >
                     <XCircle className="w-5 h-5" />
-                  </button>
+              </button>
                 </div>
-              </div>
+            </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -669,9 +670,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                             </div>
                           </div>
                           <div>
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getScheduleStatusColor(schedule.status)}`}
-                            >
+                            <span className={BADGE.gray}>
                               {getScheduleStatusLabel(schedule.status)}
                             </span>
                           </div>
@@ -690,7 +689,7 @@ const TimetablePeriodManager = ({ authToken }) => {
                           <div className="mt-3 flex justify-end">
                             <button
                               onClick={() => handleUnpublishSchedule(schedule.id)}
-                              className="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-md hover:bg-orange-700 inline-flex items-center gap-1"
+                              className={`${BUTTON.danger} inline-flex items-center gap-1 text-xs`}
                             >
                               <XCircle className="w-3 h-3" />
                               Unpublish
@@ -707,22 +706,22 @@ const TimetablePeriodManager = ({ authToken }) => {
                   </div>
                 )}
               </div>
-                </div>
               </div>
+            </div>
 
               {/* Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-                <button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedPeriod(null);
-                    setPeriodSchedules([]);
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                >
-                  Tutup
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedPeriod(null);
+                  setPeriodSchedules([]);
+                }}
+                className={BUTTON.secondary}
+              >
+                Tutup
+              </button>
+            </div>
             </motion.div>
           </motion.div>
         </AnimatePresence>,

@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
-  Users, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  Users,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -26,44 +26,39 @@ import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from 
 import { getProgramStudiName } from '../../../utilitas/helper/programStudiUtils';
 import Loading from '../../umum/Loading';
 import { getTheme } from '../../../utilitas/theme';
+import { TABLE, BUTTON, BADGE } from '../../../constants/colors';
 
 const API_BASE = 'http://localhost:5000/api';
 
-// Skeleton Loading Component
-  const TableSkeleton = ({ rows = 5, columns = 8 }) => {
-    return (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse table-fixed">
-          <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/6">Nama</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">NIM</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Program Studi</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Angkatan</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Semester</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
-              <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
-              <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
-            </tr>
-          </thead>
-        <tbody>
-            {Array.from({ length: rows }).map((_, index) => (
-              <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                {Array.from({ length: columns }).map((_, colIndex) => (
-                  <td key={colIndex} className="p-3">
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  </div>
-                </td>
-              ))}
-            </tr>
+// Skeleton Loading Component - Optimized
+const TableSkeleton = ({ rows = 5, columns = 8 }) => (
+  <table className="w-full">
+    <thead className={TABLE.header}>
+      <tr>
+        <th className={`${TABLE.headerText} text-left px-4 py-3 w-16`}>No</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3`}>Nama</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3`}>NIM</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3`}>Program Studi</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3 w-24`}>Angkatan</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3 w-24`}>Semester</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3`}>No. Telp</th>
+        <th className={`${TABLE.headerText} text-left px-4 py-3`}>Alamat</th>
+        <th className={`${TABLE.headerText} text-center px-4 py-3 w-24`}>Aksi</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-200">
+      {Array.from({ length: rows }).map((_, index) => (
+        <tr key={`skeleton-${index}`}>
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <td key={`col-${colIndex}`} className="px-4 py-3">
+              <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }}></div>
+            </td>
           ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+        </tr>
+      ))}
+    </tbody>
+  </table>
+);
 
 // Statistics Skeleton
 const StatsSkeleton = () => {
@@ -97,7 +92,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
   const [filterProdi, setFilterProdi] = useState('');
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -149,7 +144,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
       const response = await fetch(`${API_BASE}/prodi`, {
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         // ✅ FIXED: Handle 403 error dengan lebih baik
         if (response.status === 403) {
@@ -159,7 +154,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       // ✅ FIXED: Handle response format dari backend (success: true, data: [...])
       const prodiList = data.success && data.data ? data.data : (Array.isArray(data) ? data : []);
@@ -182,28 +177,28 @@ export default function MahasiswaList({ authToken, currentUser }) {
     if (!initialLoad) {
     setLoading(true);
     }
-    
+
     try {
       const response = await fetch(`${API_BASE}/mahasiswa`, {
         headers: getAuthHeaders()
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Pastikan data mahasiswa memiliki relasi prodi
       const mahasiswaWithRelations = data.map(mhs => {
         const selectedProdi = mhs.programStudi || prodiData.find(p => p.id === mhs.programStudiId);
-        
+
         return {
           ...mhs,
           programStudi: selectedProdi || null
         };
       });
-      
+
       setMahasiswa(mahasiswaWithRelations);
     } catch (error) {
       console.error('Error fetching mahasiswa:', error);
@@ -235,14 +230,14 @@ export default function MahasiswaList({ authToken, currentUser }) {
     }
 
     // Validate required fields
-    if (!formData.nama || !formData.nim || !formData.programStudiId || 
+    if (!formData.nama || !formData.nim || !formData.programStudiId ||
         !formData.angkatan || !formData.semester || !formData.noTelp || !formData.alamat) {
       showWarningAlert('Semua field yang bertanda * wajib diisi');
       return;
     }
 
     const action = editData ? 'memperbarui' : 'menambahkan';
-    const confirmMessage = editData 
+    const confirmMessage = editData
       ? `Apakah Anda yakin ingin memperbarui data mahasiswa "${formData.nama}" (NIM: ${formData.nim})?\n\nData yang sudah diperbarui tidak dapat dikembalikan.`
       : `Apakah Anda yakin ingin menambahkan mahasiswa baru dengan nama "${formData.nama}" (NIM: ${formData.nim})?`;
 
@@ -256,12 +251,12 @@ export default function MahasiswaList({ authToken, currentUser }) {
             semester: parseInt(formData.semester)
           };
 
-          const url = editData 
+          const url = editData
             ? `${API_BASE}/mahasiswa/${editData.nim}`
             : `${API_BASE}/mahasiswa`;
-          
+
           const method = editData ? 'PUT' : 'POST';
-          
+
           console.log('Submitting data:', {
             url,
             method,
@@ -378,11 +373,11 @@ export default function MahasiswaList({ authToken, currentUser }) {
     return mahasiswa.filter(mhs => {
       const matchesSearch = mhs.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            mhs.nim.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const prodiData = mhs.programStudi || programStudi.find(p => p.id === mhs.programStudiId);
       const prodiName = prodiData?.nama || getProgramStudiName(mhs.programStudiId);
       const matchesProdi = filterProdi === '' || prodiName === filterProdi;
-      
+
       return matchesSearch && matchesProdi;
     });
   }, [mahasiswa, searchTerm, filterProdi, programStudi]);
@@ -394,11 +389,11 @@ export default function MahasiswaList({ authToken, currentUser }) {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentMahasiswa = filteredMahasiswa.slice(startIndex, endIndex);
-    
+
     // Generate page numbers
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -406,10 +401,10 @@ export default function MahasiswaList({ authToken, currentUser }) {
     } else {
       const leftOffset = Math.floor(maxVisiblePages / 2);
       const rightOffset = maxVisiblePages - leftOffset - 1;
-      
+
       let start = Math.max(1, currentPage - leftOffset);
       let end = Math.min(totalPages, currentPage + rightOffset);
-      
+
       if (end - start + 1 < maxVisiblePages) {
         if (start === 1) {
           end = Math.min(totalPages, start + maxVisiblePages - 1);
@@ -417,12 +412,12 @@ export default function MahasiswaList({ authToken, currentUser }) {
           start = Math.max(1, end - maxVisiblePages + 1);
         }
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return { totalItems, totalPages, startIndex, endIndex, currentMahasiswa, pages };
   }, [filteredMahasiswa, currentPage, itemsPerPage]);
 
@@ -438,12 +433,12 @@ export default function MahasiswaList({ authToken, currentUser }) {
   }, []);
 
   // Get unique program studi for filter
-  const uniqueProdi = [...new Set(
+  const uniqueProdi = useMemo(() => [...new Set(
     mahasiswa.map(mhs => {
       const prodiData = mhs.programStudi || programStudi.find(p => p.id === mhs.programStudiId);
       return prodiData?.nama || getProgramStudiName(mhs.programStudiId);
-    }).filter(Boolean)
-  )];
+    })
+  )].filter(Boolean), [mahasiswa, programStudi]);
 
   // Show loading if no auth token
   if (!authToken) {
@@ -505,9 +500,9 @@ export default function MahasiswaList({ authToken, currentUser }) {
         {canAddEdit() && (
           <button
             onClick={() => openModal()}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-600 transition-colors"
+            className={`${BUTTON.primary} flex items-center justify-center whitespace-nowrap min-w-[200px]`}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-5 h-5 mr-2 flex-shrink-0" />
             Tambah Mahasiswa
           </button>
         )}
@@ -520,15 +515,15 @@ export default function MahasiswaList({ authToken, currentUser }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <Users className="w-4 h-4 text-blue-500 opacity-70" />
+            <Users className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Total Mahasiswa</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{mahasiswa.length}</p>
         </div>
-        
+
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <BookOpen className="w-4 h-4 text-green-500 opacity-70" />
+            <BookOpen className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Program Studi</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{programStudi.length}</p>
@@ -536,7 +531,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
 
         <div className="bg-white p-3 rounded border border-gray-200">
           <div className="flex items-center gap-2 mb-1.5">
-            <Filter className="w-4 h-4 text-purple-500 opacity-70" />
+            <Filter className="w-4 h-4 text-gray-500" />
             <p className="text-xs text-gray-500">Hasil Filter</p>
           </div>
           <p className="text-lg font-semibold text-gray-900">{totalItems}</p>
@@ -560,53 +555,51 @@ export default function MahasiswaList({ authToken, currentUser }) {
 
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="transition-opacity duration-300 ease-in-out">
-              <TableSkeleton />
-            </div>
+            <TableSkeleton />
           ) : (
-            <div className="transition-opacity duration-300 ease-in-out opacity-100">
-              <table className="w-full border-collapse table-fixed">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-16">No</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/6">Nama</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">NIM</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-1/5">Program Studi</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Angkatan</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-24">Semester</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700 w-28">No. Telp</th>
-                    <th className="text-left p-3 text-sm font-semibold text-gray-700">Alamat</th>
-                    {(canAddEdit() || canDelete()) && (
-                      <th className="text-center p-3 text-sm font-semibold text-gray-700 w-24">Aksi</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
+            <>
+              <table className="w-full">
+                  <thead className={TABLE.header}>
+                    <tr>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3 w-16`}>No</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Nama</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>NIM</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Program Studi</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3 w-24`}>Angkatan</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3 w-24`}>Semester</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>No. Telp</th>
+                      <th className={`${TABLE.headerText} text-left px-4 py-3`}>Alamat</th>
+                      {(canAddEdit() || canDelete()) && (
+                        <th className={`${TABLE.headerText} text-center px-4 py-3 w-24`}>Aksi</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                   {currentMahasiswa.map((mhs, index) => {
                     const prodiData = mhs.programStudi || programStudi.find(p => p.id === mhs.programStudiId);
                     const prodiName = prodiData?.nama || getProgramStudiName(mhs.programStudiId);
                     const globalIndex = startIndex + index;
-                    
+
                     return (
-                      <tr 
-                        key={mhs.nim} 
-                        className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                      <tr
+                        key={mhs.nim}
+                        className="hover:bg-blue-50 transition-colors"
                       >
-                        <td className="p-3 text-sm text-gray-900">{globalIndex + 1}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={mhs.nama}>{mhs.nama}</td>
-                        <td className="p-3 text-sm text-gray-900">{mhs.nim}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={prodiName}>{prodiName}</td>
-                        <td className="p-3 text-sm text-gray-900">{mhs.angkatan || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900">{mhs.semester || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900">{mhs.noTelp || '-'}</td>
-                        <td className="p-3 text-sm text-gray-900 truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{globalIndex + 1}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 truncate" title={mhs.nama}>{mhs.nama}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 font-mono">{mhs.nim}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 truncate" title={prodiName}>{prodiName}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{mhs.angkatan || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 text-center">{mhs.semester || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{mhs.noTelp || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700 truncate" title={mhs.alamat}>{mhs.alamat || '-'}</td>
                         {(canAddEdit() || canDelete()) && (
-                          <td className="p-3 text-center">
-                            <div className="flex justify-center space-x-2">
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex justify-center items-center gap-2">
                               {canAddEdit() && (
                                 <button
                                   onClick={() => openModal(mhs)}
-                                  className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
+                                  className={BUTTON.iconPrimary}
                                   title="Edit"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -615,7 +608,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                               {canDelete() && (
                                 <button
                                   onClick={() => handleDelete(mhs.nim)}
-                                  className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                                  className={BUTTON.iconDanger}
                                   title="Hapus"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -627,8 +620,8 @@ export default function MahasiswaList({ authToken, currentUser }) {
                       </tr>
                     );
                   })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
 
               {/* Pagination */}
               {totalPages > 1 && (
@@ -639,7 +632,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                       <span className="font-medium">{Math.min(endIndex, totalItems)}</span> dari{' '}
                       <span className="font-medium">{totalItems}</span> mahasiswa
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {/* First Page */}
                       <button
@@ -717,9 +710,9 @@ export default function MahasiswaList({ authToken, currentUser }) {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
-          
+
           {!loading && currentMahasiswa.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-2">
@@ -732,9 +725,9 @@ export default function MahasiswaList({ authToken, currentUser }) {
               {!searchTerm && !filterProdi && canAddEdit() && (
                 <button
                   onClick={() => openModal()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className={`${BUTTON.primary} inline-flex items-center justify-center whitespace-nowrap min-w-[200px]`}
                 >
-                  <Plus className="w-4 h-4 mr-2 inline" />
+                  <Plus className="w-5 h-5 mr-2 flex-shrink-0" />
                   Tambah Mahasiswa Pertama
                 </button>
               )}
@@ -747,7 +740,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
       {typeof window !== 'undefined' && createPortal(
         <AnimatePresence>
           {showModal && (
-            <motion.div 
+            <motion.div
               className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
               style={{ zIndex: 9999 }}
               initial={{ opacity: 0 }}
@@ -761,7 +754,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                 }
               }}
             >
-              <motion.div 
+              <motion.div
                 className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
                 style={{ zIndex: 10000 }}
               initial={{ opacity: 0 }}
@@ -771,33 +764,28 @@ export default function MahasiswaList({ authToken, currentUser }) {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              {(() => {
-                const theme = getTheme(currentUser);
-                return (
-                  <div className={`p-6 text-white ${theme.primary.bg} border-b ${theme.primary.border}`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h2 className="text-xl font-semibold mb-1">
-                          {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
-                        </h2>
-                        <p className={`text-sm ${theme.header.accent || 'text-white/80'}`}>
-                          {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setShowModal(false);
-                          resetForm();
-                        }}
-                        className={`p-2 ${theme.primary.hover} rounded transition-colors text-white`}
-                        aria-label="Close modal"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+              <div className={`p-6 ${TABLE.header} border-b border-gray-800`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-1">
+                      {editData ? 'Edit Data Mahasiswa' : 'Tambah Mahasiswa Baru'}
+                    </h2>
+                    <p className="text-sm text-gray-200">
+                      {editData ? 'Perbarui informasi mahasiswa' : 'Lengkapi informasi mahasiswa baru'}
+                    </p>
                   </div>
-                );
-              })()}
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
+                    aria-label="Close modal"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
@@ -820,7 +808,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           NIM <span className="text-red-500">*</span>
@@ -845,7 +833,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                         )}
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Program Studi <span className="text-red-500">*</span>
@@ -865,7 +853,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -883,7 +871,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Semester <span className="text-red-500">*</span>
@@ -902,7 +890,7 @@ export default function MahasiswaList({ authToken, currentUser }) {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         No. Telepon <span className="text-red-500">*</span>
@@ -948,22 +936,17 @@ export default function MahasiswaList({ authToken, currentUser }) {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className={BUTTON.secondary}
                 >
                   Batal
                 </button>
-                {(() => {
-                  const theme = getTheme(currentUser);
-                  return (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className={`px-4 py-2 text-sm font-medium text-white ${theme.primary.bg} rounded ${theme.primary.hover} transition-colors`}
-                    >
-                      {editData ? 'Perbarui Data' : 'Simpan Data'}
-                    </button>
-                  );
-                })()}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className={BUTTON.primary}
+                >
+                  {editData ? 'Perbarui Data' : 'Simpan Data'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

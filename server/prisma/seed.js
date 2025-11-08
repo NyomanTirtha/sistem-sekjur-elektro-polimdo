@@ -280,7 +280,8 @@ async function main() {
           prodiId: 1,
           noTelp: '081234567890',
           alamat: 'Jl. Sudirman No. 45, Manado',
-          isKaprodi: true
+          isKaprodi: true,
+          maxSKSPerSemester: 16
         },
         // Ketua Prodi D4 Teknik Listrik
         {
@@ -289,7 +290,8 @@ async function main() {
           prodiId: 2,
           noTelp: '081234567891',
           alamat: 'Jl. Sam Ratulangi No. 78, Manado',
-          isKaprodi: true
+          isKaprodi: true,
+          maxSKSPerSemester: 16
         },
         // Dosen biasa Teknik Elektro
         {
@@ -298,7 +300,8 @@ async function main() {
           prodiId: 1,
           noTelp: '081234567892',
           alamat: 'Jl. Piere Tendean No. 12, Manado',
-          isKaprodi: false
+          isKaprodi: false,
+          maxSKSPerSemester: 16
         },
         {
           nip: '196602071989032001',
@@ -306,7 +309,8 @@ async function main() {
           prodiId: 2,
           noTelp: '081234567893',
           alamat: 'Jl. Wolter Monginsidi No. 33, Manado',
-          isKaprodi: false
+          isKaprodi: false,
+          maxSKSPerSemester: 16
         },
         // Kaprodi Teknik Sipil
         {
@@ -315,7 +319,8 @@ async function main() {
           prodiId: 3,
           noTelp: '081234567896',
           alamat: 'Jl. Teknik Sipil No. 10, Manado',
-          isKaprodi: true
+          isKaprodi: true,
+          maxSKSPerSemester: 16
         },
         {
           nip: '197301011998031008',
@@ -323,7 +328,8 @@ async function main() {
           prodiId: 4,
           noTelp: '081234567897',
           alamat: 'Jl. Teknik Sipil No. 20, Manado',
-          isKaprodi: true
+          isKaprodi: true,
+          maxSKSPerSemester: 16
         },
         // Dosen Teknik Sipil
         {
@@ -332,7 +338,8 @@ async function main() {
           prodiId: 3,
           noTelp: '081234567894',
           alamat: 'Jl. Teknik Sipil No. 1, Manado',
-          isKaprodi: false
+          isKaprodi: false,
+          maxSKSPerSemester: 16
         },
         {
           nip: '197601011998031006',
@@ -340,7 +347,8 @@ async function main() {
           prodiId: 4,
           noTelp: '081234567895',
           alamat: 'Jl. Teknik Sipil No. 2, Manado',
-          isKaprodi: false
+          isKaprodi: false,
+          maxSKSPerSemester: 16
         },
         {
           nip: '197701011998031009',
@@ -348,6 +356,7 @@ async function main() {
           prodiId: 3,
           noTelp: '081234567898',
           alamat: 'Jl. Teknik Sipil No. 3, Manado',
+          maxSKSPerSemester: 16,
           isKaprodi: false
         },
         {
@@ -356,7 +365,8 @@ async function main() {
           prodiId: 4,
           noTelp: '081234567899',
           alamat: 'Jl. Teknik Sipil No. 4, Manado',
-          isKaprodi: false
+          isKaprodi: false,
+          maxSKSPerSemester: 16
         }
       ]
     });
