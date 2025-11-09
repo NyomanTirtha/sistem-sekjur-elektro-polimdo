@@ -79,9 +79,29 @@ model Dosen {
   scheduleItems      ScheduleItem[]
   dosenRequests      DosenScheduleRequest[]
   workloads          DosenWorkload[]
+  preferences        DosenPreference[]
 
   @@index([prodiId], map: "dosen_prodiId_fkey")
   @@map("dosen")
+}
+
+model DosenPreference {
+  id                  Int       @id @default(autoincrement())
+  dosenNip            String
+  preferredDays       String?   // Comma-separated days: "SENIN,RABU,JUMAT"
+  avoidedDays         String?   // Comma-separated days to avoid
+  preferredTimeSlot   String    @default("BOTH") // "PAGI", "SIANG", "BOTH"
+  maxDaysPerWeek      Int       @default(5)
+  unavailableSlots    String?   @db.Text // JSON string untuk slot tidak tersedia
+  priority            String    @default("NORMAL") // "HIGH", "NORMAL", "LOW"
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  dosen               Dosen     @relation(fields: [dosenNip], references: [nip], onDelete: Cascade)
+
+  @@index([dosenNip])
+  @@map("dosen_preferences")
 }
 
 model MataKuliah {

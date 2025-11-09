@@ -58,6 +58,10 @@ const { router: authRoutes, authenticateToken } = require("./routes/auth");
 const protectedRoutes = [
   { path: "/api/mahasiswa", router: require("./routes/mahasiswa") },
   { path: "/api/dosen", router: require("./routes/dosen") },
+  {
+    path: "/api/dosen-preferences",
+    router: require("./routes/dosenPreferences"),
+  },
   { path: "/api/pengajuan-sa", router: require("./routes/pengajuanSA") },
   { path: "/api/prodi", router: require("./routes/prodi") },
   { path: "/api/users", router: require("./routes/users") },
