@@ -1,822 +1,659 @@
 # 📚 Dokumentasi Sistem Informasi Semester Antara (SA)
 
-> **Comprehensive Documentation** - Panduan lengkap untuk memahami dan menggunakan Sistem Informasi Semester Antara
+> **Comprehensive Documentation** - Panduan lengkap untuk memahami dan menggunakan Sistem Informasi Semester Antara Politeknik Negeri Manado
 
 ---
 
 ## 📋 Daftar Isi
 
 1. [Overview](#-overview)
-2. [Quick Start](#-quick-start)
-3. [Tech Stack](#️-tech-stack)
-4. [Struktur Folder](#-struktur-folder)
-5. [Fitur Utama](#-fitur-utama)
-6. [User Roles](#-user-roles)
-7. [Workflow Sistem](#-workflow-sistem)
-8. [Panduan Penjadwalan](#-panduan-penjadwalan-otomatis)
-9. [Setup & Installation](#-setup--installation)
-10. [Database Schema](#-database-schema)
-11. [API Documentation](#-api-documentation)
-12. [Security](#-security)
-13. [Troubleshooting](#-troubleshooting)
+2. [Arsitektur Sistem](#-arsitektur-sistem)
+3. [Cara Kerja Sistem](#-cara-kerja-sistem)
+4. [Tech Stack](#️-tech-stack)
+5. [Struktur Folder](#-struktur-folder)
+6. [Fitur Utama](#-fitur-utama)
+7. [User Roles & Permissions](#-user-roles--permissions)
+8. [Workflow Sistem](#-workflow-sistem)
+9. [Database Schema](#-database-schema)
+10. [API Documentation](#-api-documentation)
+11. [Penjadwalan Otomatis](#-penjadwalan-otomatis)
+12. [Setup & Installation](#-setup--installation)
+13. [Security](#-security)
+14. [Troubleshooting](#-troubleshooting)
 
 ---
 
 ## 🎯 Overview
 
-**Sistem Informasi Semester Antara (SA)** adalah aplikasi web untuk mengelola proses pengajuan dan penjadwalan Semester Antara di lingkungan akademik Politeknik Negeri Manado.
+### Tentang Sistem
 
-### Tujuan Sistem:
-- ✅ Digitalisasi proses pengajuan SA (paperless)
-- ✅ Otomasi penjadwalan perkuliahan
-- ✅ Mempercepat approval workflow
-- ✅ Transparansi status pengajuan
-- ✅ Mengurangi konflik jadwal
+**Sistem Informasi Semester Antara (SA)** adalah aplikasi web full-stack yang dirancang untuk mendigitalisasi dan mengotomasi seluruh proses pengelolaan Semester Antara di Politeknik Negeri Manado.
 
-### Lingkup Sistem:
-1. **Pengajuan SA** - Mahasiswa mengajukan SA dengan upload bukti bayar
-2. **Verifikasi Pembayaran** - Sekjur verifikasi bukti pembayaran
-3. **Penugasan Dosen** - Kaprodi assign dosen pembimbing
-4. **Penjadwalan Otomatis** - Generate jadwal dengan algoritma pintar (1 klik, 10 detik!)
-5. **Manajemen Data** - Master data akademik (jurusan, prodi, dosen, mahasiswa, mata kuliah)
+### Masalah yang Diselesaikan
 
----
+**Sebelum Sistem:**
+- 📝 Pengajuan manual dengan kertas
+- ⏰ Verifikasi pembayaran lambat
+- 🔄 Koordinasi bolak-balik untuk jadwal
+- 📊 Sulit tracking status pengajuan
+- ⚠️ Banyak konflik jadwal (dosen bentrok, ruangan bentrok)
+- 🕐 Penjadwalan memakan waktu berhari-hari
 
-## ⚡ Quick Start
+**Sesudah Sistem:**
+- ✅ Pengajuan digital dengan upload bukti
+- ⚡ Verifikasi real-time
+- 🤖 Jadwal otomatis dalam 10 detik
+- 📱 Tracking status real-time
+- 🔧 Auto detect & resolve konflik
+- 🚀 Workflow approval terstruktur
 
-### 🚀 Setup Cepat (5 Menit)
+### Tujuan Sistem
 
-#### 1. Clone & Install
-```bash
-# Clone repository
-git clone <repo-url>
-cd "Sistem - SA"
+1. **Digitalisasi** - Paperless, semua proses online
+2. **Otomasi** - Generate jadwal otomatis dengan algoritma
+3. **Efisiensi** - Proses cepat, minimal koordinasi
+4. **Transparansi** - Status pengajuan real-time
+5. **Optimasi** - Jadwal optimal dengan scoring system
 
-# Install backend
-cd server
-npm install
+### Lingkup Sistem
 
-# Install frontend
-cd ../client
-npm install
 ```
-
-#### 2. Setup Database
-```bash
-# Start XAMPP → MySQL
-# Create database: sekjur
-
-# Di folder server/
-npx prisma migrate dev
-npm run seed
-```
-
-#### 3. Setup Environment Variables
-```bash
-# Di folder server/, buat file .env
-JWT_SECRET=your-super-secret-key-here
-DATABASE_URL="mysql://root@localhost:3306/sekjur"
-```
-
-#### 4. Jalankan Aplikasi
-```bash
-# Terminal 1 - Backend
-cd server
-npm run dev
-# → http://localhost:5000
-
-# Terminal 2 - Frontend
-cd client
-npm start
-# → http://localhost:3000
-```
-
-#### 5. Login Test Account
-```
-Sekjur:    sekjur_informatika / 123456
-Kaprodi:   197101011999031004 / 123456
-Dosen:     198502022010012001 / 123456
-Mahasiswa: 2141720001 / 123456
+┌─────────────────────────────────────────────────────────────┐
+│                    SISTEM SA - POLIMDO                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  📝 Modul Pengajuan SA                                       │
+│     • Submit pengajuan dengan upload bukti bayar            │
+│     • Multi-level approval (Sekjur → Kaprodi)               │
+│     • Real-time status tracking                             │
+│                                                              │
+│  📅 Modul Penjadwalan Otomatis                               │
+│     • Auto generate dengan 1 klik (10 detik)                │
+│     • Smart scoring system (5 kriteria)                      │
+│     • Auto conflict detection & resolution                   │
+│     • Dosen preference integration                           │
+│                                                              │
+│  👥 Modul Manajemen Data                                     │
+│     • CRUD Jurusan, Prodi, Dosen, Mahasiswa                 │
+│     • CRUD Mata Kuliah, Ruangan                             │
+│     • User management & authentication                       │
+│                                                              │
+│  🎓 Modul Penugasan Mengajar                                 │
+│     • Assign dosen ke mata kuliah                           │
+│     • Request & approval workflow                            │
+│     • Status management (PENDING → APPROVED → ACTIVE)        │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ Arsitektur Sistem
 
-### Frontend:
-- **React.js 18** - UI Framework
-- **Tailwind CSS** - Styling utility-first
-- **Lucide React** - Icon library
-- **Framer Motion** - Animation library
-- **Axios** - HTTP client
+### High-Level Architecture
 
-### Backend:
-- **Node.js 18+** - Runtime
-- **Express.js** - Web framework
-- **Prisma ORM** - Database ORM
-- **JWT** - Authentication
-- **Bcrypt** - Password hashing
-- **Multer** - File upload
-
-### Database:
-- **MySQL** - Relational database via XAMPP
-
-### DevOps:
-- **Git** - Version control
-- **npm** - Package manager
-- **Nodemon** - Hot reload development
-
----
-
-## 📂 Struktur Folder
-
-### Frontend Structure (setelah refactoring)
 ```
-client/src/
-├── components/              ✅ React components
-│   ├── common/             ✅ Reusable components (Loading, etc)
-│   ├── error/              ✅ Error handling components
-│   ├── features/           ✅ Feature-specific components
-│   │   ├── dosen/          → Dosen management
-│   │   ├── jadwal/         → Scheduling system
-│   │   ├── mahasiswa/      → Student management
-│   │   ├── pengajuan-sa/   → SA submission
-│   │   ├── pengguna/       → User management
-│   │   ├── penugasan-mengajar/ → Teaching assignment
-│   │   └── program-studi/  → Study program management
-│   └── layout/             ✅ Layout components (Header, Sidebar, etc)
-│
-├── pages/                  ✅ Page components
-│   └── masuk/              → Login page
-│
-├── hooks/                  ✅ Custom React hooks
-│   ├── usePasswordChange.js
-│   └── usePengajuanSA.js
-│
-├── utils/                  ✅ Utility functions
-│   ├── api/                → API configuration
-│   ├── helpers/            → Helper functions
-│   ├── network/            → Network utilities
-│   ├── notifications/      → Alert/notification utils
-│   ├── theme.js            → Theme configuration
-│   └── tokenStorage.js     → Token management
-│
-├── services/               ✅ API services
-│   └── pengajuanSAService.js
-│
-├── constants/              ✅ Constants and configs
-│   ├── colors.js           → Color constants
-│   └── pengajuanSAConstants.js
-│
-├── assets/                 ✅ Static assets
-│   └── gambar/             → Images
-│
-├── App.js                  ✅ Main app component
-├── index.js                ✅ Entry point
-└── index.css               ✅ Global styles
-```
+┌────────────────────────────────────────────────────────────────┐
+│                        CLIENT TIER                              │
+│                    (React.js Frontend)                          │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│  │  Mahasiswa   │  │    Dosen     │  │   Kaprodi    │        │
+│  │  Dashboard   │  │  Dashboard   │  │  Dashboard   │        │
+│  └──────────────┘  └──────────────┘  └──────────────┘        │
+│                                                                 │
+│  ┌──────────────┐                                              │
+│  │    Sekjur    │                                              │
+│  │  Dashboard   │                                              │
+│  └──────────────┘                                              │
+│                                                                 │
+│         │                                                       │
+│         │ HTTP Requests (axios)                                │
+│         │ Authorization: Bearer JWT                            │
+│         ↓                                                       │
+└────────────────────────────────────────────────────────────────┘
 
-### Backend Structure
-```
-server/
-├── prisma/
-│   ├── schema.prisma       → Database schema
-│   ├── seed.js             → Database seeding
-│   └── migrations/         → Database migrations
-│
-├── routes/                 → API routes
-│   ├── auth.js             → Authentication endpoints
-│   ├── dosen.js            → Dosen endpoints
-│   ├── dosenPreferences.js → Dosen preference endpoints
-│   ├── jadwal.js           → Schedule endpoints
-│   ├── mahasiswa.js        → Student endpoints
-│   ├── mataKuliah.js       → Course endpoints
-│   ├── pengajuanSA.js      → SA submission endpoints
-│   ├── penugasanMengajar.js → Teaching assignment endpoints
-│   ├── prodi.js            → Study program endpoints
-│   ├── prodiSchedules.js   → Schedule by prodi endpoints
-│   └── users.js            → User management endpoints
-│
-├── services/               → Business logic
-│   ├── enhancedScheduleGenerator.js  → 🤖 Schedule generation
-│   ├── conflictResolver.js           → 🔧 Conflict resolution
-│   └── scheduleScoring.js            → 📊 Schedule scoring
-│
-├── middleware/             → Express middleware
-│   ├── cache.js            → Caching middleware
-│   └── security.js         → Security middleware
-│
-├── utils/                  → Utility functions
-│
-├── uploads/                → Uploaded files storage
-│
-├── server.js               → Entry point
-└── package.json            → Dependencies
+┌────────────────────────────────────────────────────────────────┐
+│                     APPLICATION TIER                            │
+│                   (Node.js + Express)                           │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │           Authentication Middleware (JWT)                 │ │
+│  │  • Verify token                                          │ │
+│  │  • Extract user info                                     │ │
+│  │  • Role-based access control                            │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                          ↓                                      │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │                  API Routes                               │ │
+│  │                                                           │ │
+│  │  /api/auth              /api/pengajuan-sa                │ │
+│  │  /api/dosen             /api/penugasan-mengajar          │ │
+│  │  /api/mahasiswa         /api/prodi-schedules             │ │
+│  │  /api/prodi             /api/dosen-preferences           │ │
+│  │  /api/matakuliah        /api/jadwal                      │ │
+│  │  /api/users             /api/ruangan                     │ │
+│  │                                                           │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                          ↓                                      │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │              Business Logic Services                      │ │
+│  │                                                           │ │
+│  │  • enhancedScheduleGenerator.js   (Scheduling AI)       │ │
+│  │  • conflictResolver.js            (Conflict Detection)   │ │
+│  │  • scheduleScoring.js             (Scoring Algorithm)    │ │
+│  │  • validationService.js           (Data Validation)      │ │
+│  │                                                           │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                          ↓                                      │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │                  Prisma ORM                               │ │
+│  │  • Query builder                                         │ │
+│  │  • Type-safe database access                            │ │
+│  │  • Migration management                                 │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                          ↓                                      │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│                        DATA TIER                                │
+│                      (MySQL Database)                           │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │   Users     │  │   Jurusan   │  │  ProgramStudi│          │
+│  └─────────────┘  └─────────────┘  └─────────────┘           │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │   Dosen     │  │ Mahasiswa   │  │ MataKuliah  │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘           │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │PengajuanSA  │  │ProdiSchedule│  │ScheduleItem │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘           │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐                             │
+│  │Penugasan    │  │DosenPref    │                             │
+│  │Mengajar     │  │erence       │                             │
+│  └─────────────┘  └─────────────┘                             │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Documentation Structure
+### Request Flow
+
 ```
-Sistem - SA/
-├── DOKUMENTASI_SISTEM.md      ← 📚 YOU ARE HERE (Complete docs)
-├── REFACTORING.md             ← 🔄 Refactoring documentation
-├── README.md                  ← 📖 Project overview
-└── .gitignore                 ← Git ignore rules
-```
+┌─────────────┐
+│   Browser   │
+│ (User Login)│
+└──────┬──────┘
+       │ 1. POST /api/auth/login
+       │    { username, password, role }
+       ↓
+┌─────────────────────────┐
+│   Express Server        │
+│   routes/auth.js        │
+└──────┬──────────────────┘
+       │ 2. Verify credentials
+       │    bcrypt.compare(password, hash)
+       ↓
+┌─────────────────────────┐
+│   Prisma ORM            │
+│   Query User from DB    │
+└──────┬──────────────────┘
+       │ 3. User found
+       │    Generate JWT token
+       ↓
+┌─────────────────────────┐
+│   JWT Service           │
+│   jwt.sign({userId})    │
+└──────┬──────────────────┘
+       │ 4. Return token
+       │    { success: true, token, user }
+       ↓
+┌─────────────┐
+│   Browser   │
+│ Store token │
+│ in localStorage
+└─────────────┘
 
----
+┌─────────────────────────────────────────────────────┐
+│           Subsequent Authenticated Requests          │
+└─────────────────────────────────────────────────────┘
 
-## 🎯 Fitur Utama
-
-### 1. Pengajuan Semester Antara 📝
-
-**Untuk Mahasiswa:**
-- Submit pengajuan SA dengan pilih mata kuliah
-- Upload bukti pembayaran (JPG/PNG, max 5MB)
-- Track status pengajuan real-time
-- Lihat riwayat pengajuan
-
-**Untuk Kaprodi:**
-- Review pengajuan mahasiswa
-- Assign dosen pembimbing
-- Approve/reject pengajuan
-- Generate laporan pengajuan
-
-**Untuk Sekjur:**
-- Verifikasi bukti pembayaran
-- Approve/reject pengajuan final
-- Monitoring semua pengajuan
-- Generate statistik pengajuan
-
----
-
-### 2. Penjadwalan Otomatis 🤖
-
-**Fitur Unggulan:**
-- ⚡ **Auto Generate** - Klik 1 tombol, jadwal jadi dalam 10 detik
-- 🎯 **Smart Scoring** - Algoritma pilih jadwal terbaik dari 5 kandidat
-- ⭐ **Dosen Preference** - Dosen set preferensi waktu mengajar
-- 🔧 **Auto Conflict Resolution** - Deteksi konflik + kasih solusi otomatis
-- 📊 **Grid View** - Visual jadwal dalam bentuk tabel
-- 📈 **Schedule Analytics** - Statistik dan analisis jadwal
-
-**Cara Kerja:**
-```
-Dosen set preferensi (1x) → Kaprodi klik "Generate" → 
-Sistem generate 5 kandidat → Pilih terbaik → 
-Auto resolve konflik → Submit ke Sekjur → 
-Sekjur review & approve → DONE! ✅
-```
-
-**Scoring Criteria:**
-1. **Day Spread** (Penyebaran hari) - Jadwal tidak menumpuk
-2. **Gap Time** (Jarak waktu) - Hindari gap terlalu lama
-3. **Preference Match** (Sesuai preferensi) - Bonus jika cocok dengan dosen
-4. **Workload Balance** (Beban seimbang) - Distribusi adil
-5. **Room Distribution** (Penyebaran ruangan) - Variasi ruangan
-
----
-
-### 3. Preferensi Dosen ⭐
-
-**Komponen Preferensi:**
-- **Hari Favorit** - Pilih hari yang disukai (multi-select)
-- **Hari Dihindari** - Pilih hari yang dihindari (multi-select)
-- **Waktu Mengajar** - PAGI (08:00-14:00) / SORE (13:00-18:00) / BOTH
-- **Priority Level** - MANDATORY / HIGH / NORMAL / LOW
-
-**Priority Explanation:**
-- 🔴 **MANDATORY** - WAJIB dipenuhi (sistem error jika tidak bisa)
-- 🟠 **HIGH** - Sangat diutamakan, akan diprioritaskan
-- 🟢 **NORMAL** - Diusahakan, tapi tidak wajib
-- 🔵 **LOW** - Opsional, bonus jika bisa
-
-**Best Practice:**
-```javascript
-// ✅ GOOD - Fleksibel, jadwal optimal
-{
-  preferredDays: ['SENIN', 'RABU'],
-  avoidDays: ['JUMAT'],
-  preferredTime: 'BOTH',
-  priority: 'NORMAL'
-}
-
-// ❌ BAD - Terlalu strict, susah dijadwalkan
-{
-  preferredDays: ['SENIN'],
-  avoidDays: ['SELASA', 'RABU', 'KAMIS', 'JUMAT'],
-  preferredTime: 'PAGI',
-  priority: 'MANDATORY'
-}
+┌─────────────┐
+│   Browser   │
+│ API Request │
+└──────┬──────┘
+       │ 1. GET /api/pengajuan-sa
+       │    Authorization: Bearer <token>
+       ↓
+┌─────────────────────────┐
+│   Middleware            │
+│   authenticateToken()   │
+└──────┬──────────────────┘
+       │ 2. Verify JWT
+       │    jwt.verify(token)
+       ↓
+┌─────────────────────────┐
+│   Extract User Info     │
+│   req.user = decoded    │
+└──────┬──────────────────┘
+       │ 3. Role-based filter
+       │    Apply access control
+       ↓
+┌─────────────────────────┐
+│   Route Handler         │
+│   Execute business logic│
+└──────┬──────────────────┘
+       │ 4. Query database
+       │    via Prisma
+       ↓
+┌─────────────────────────┐
+│   Return Response       │
+│   { success, data }     │
+└──────┬──────────────────┘
+       │ 5. JSON response
+       ↓
+┌─────────────┐
+│   Browser   │
+│ Display data│
+└─────────────┘
 ```
 
 ---
 
-### 4. Penugasan Mengajar 👨‍🏫
+## 🔄 Cara Kerja Sistem
 
-**Flow:**
-1. Dosen ajukan mengajar (optional, bisa diassign langsung oleh Kaprodi)
-2. Kaprodi review pengajuan
-3. Kaprodi approve atau assign manual
-4. Status: PENDING → APPROVED → ACTIVE
-5. Hanya penugasan **ACTIVE** yang bisa dijadwalkan
-
-**Status Penugasan:**
-- 🟡 **PENDING** - Menunggu approval Kaprodi
-- 🟢 **APPROVED** - Disetujui, siap dijadwalkan
-- 🔵 **ACTIVE** - Sedang berjalan, sudah ada jadwal
-- 🔴 **REJECTED** - Ditolak
-- ⚫ **INACTIVE** - Tidak aktif
-
----
-
-### 5. Manajemen Data Master 📊
-
-**CRUD Operations untuk:**
-- Jurusan (Sekjur only)
-- Program Studi (Sekjur only)
-- Dosen (Sekjur only)
-- Mahasiswa (Sekjur only)
-- Mata Kuliah (Sekjur only)
-- Ruangan (Sekjur only)
-- Users (Sekjur only)
-
-**Access Control:**
-- Sekjur: Full CRUD access
-- Kaprodi: Read-only untuk data prodi sendiri
-- Dosen: Read-only untuk data terkait
-- Mahasiswa: Read-only untuk data sendiri
-
----
-
-## 👥 User Roles
-
-### 🛡️ Sekretaris Jurusan (SEKJUR)
-
-**Hak Akses:**
-- ✅ Full CRUD semua data master
-- ✅ Verifikasi bukti pembayaran SA
-- ✅ Approve/reject pengajuan SA
-- ✅ Review & approve jadwal dari semua prodi
-- ✅ Generate laporan dan statistik
-- ✅ Manage user accounts
-
-**Menu Utama:**
-```
-📊 Data Akademik
-   → Program Studi
-   → Mahasiswa
-   → Dosen
-
-📅 Manajemen Jadwal
-   → Periode Jadwal
-   → Review Jadwal Prodi
-
-🏫 Semester Antara
-   → Pengajuan SA
-
-⚙️ Sistem
-   → Daftar Akun
-```
-
----
-
-### 👑 Ketua Program Studi (KAPRODI)
-
-**Hak Akses:**
-- ✅ Manage pengajuan SA untuk prodi sendiri
-- ✅ Assign dosen pembimbing
-- ✅ Generate jadwal prodi (Auto!)
-- ✅ Review penugasan mengajar
-- ✅ Submit jadwal ke Sekjur
-- ✅ View data mahasiswa dan dosen prodi
-
-**Menu Utama:**
-```
-📊 Data Akademik
-   → Mahasiswa (read-only)
-
-📅 Manajemen Jadwal
-   → Kelola Jadwal Prodi
-   → Review Pengajuan Dosen
-
-🏫 Semester Antara
-   → Pengajuan SA
-```
-
-**Workflow Penjadwalan:**
-1. Pastikan ada penugasan mengajar ACTIVE
-2. Klik "Generate Jadwal"
-3. Isi form (periode, kelas, jenis PAGI/SORE)
-4. Review hasil generate (10 detik)
-5. Perbaiki konflik jika ada (gunakan Auto Suggestions)
-6. Submit ke Sekjur
-
----
-
-### 👨‍🏫 Dosen
-
-**Hak Akses:**
-- ✅ Set preferensi jadwal mengajar
-- ✅ Ajukan mengajar (optional)
-- ✅ View jadwal mengajar sendiri
-- ✅ View mahasiswa bimbingan SA
-- ✅ Input nilai SA (coming soon)
-
-**Menu Utama:**
-```
-📅 Manajemen Jadwal
-   → Preferensi Jadwal
-   → Jadwal Mengajar Saya
-   → Ajukan Mengajar
-
-🏫 Semester Antara
-   → Pengajuan SA (view bimbingan)
-```
-
-**Tips Preferensi:**
-- Set preferensi **SEKALI** di awal semester
-- Gunakan priority MANDATORY hanya untuk yang WAJIB
-- Semakin fleksibel = jadwal lebih optimal
-- Update preferensi jika ada perubahan
-
----
-
-### 👨‍🎓 Mahasiswa
-
-**Hak Akses:**
-- ✅ Submit pengajuan SA
-- ✅ Upload bukti pembayaran
-- ✅ Pilih mata kuliah (multi-select)
-- ✅ Track status pengajuan
-- ✅ View riwayat pengajuan
-
-**Menu Utama:**
-```
-🏫 Semester Antara
-   → Pengajuan SA
-```
-
-**Workflow Pengajuan:**
-1. Klik "Ajukan SA"
-2. Pilih mata kuliah (bisa pilih banyak)
-3. Upload bukti bayar (JPG/PNG, max 5MB)
-4. Submit
-5. Tunggu verifikasi (Sekjur → Kaprodi)
-6. Status APPROVED → bisa lihat jadwal
-
----
-
-## 🔄 Workflow Sistem
-
-### 1. Workflow Pengajuan SA
+### 1. Alur Pengajuan Semester Antara
 
 ```
-[MAHASISWA]
-   ↓ Submit pengajuan + upload bukti bayar
-   ↓
-[SEKJUR]
-   ↓ Verifikasi bukti pembayaran
-   ↓ Cek nominal = SKS × Rp 300.000
-   ↓ Approve/Reject
-   ↓
-[KAPRODI]
-   ↓ Review pengajuan mahasiswa prodi
-   ↓ Assign dosen pembimbing
-   ↓ Approve/Reject
-   ↓
-✅ STATUS: APPROVED
-   ↓
-[MAHASISWA]
-   ✅ Bisa lihat jadwal SA
+┌─────────────────────────────────────────────────────────────────┐
+│                    MAHASISWA (START)                             │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Login ke sistem
+                            │    username: NIM
+                            │    role: MAHASISWA
+                            ↓
+                    ┌───────────────────┐
+                    │ Dashboard Mhs     │
+                    │ Menu: Pengajuan SA│
+                    └────────┬──────────┘
+                            │
+                            │ 2. Klik "Ajukan SA"
+                            ↓
+                    ┌───────────────────────┐
+                    │ Form Pengajuan        │
+                    │ • Upload bukti bayar  │
+                    │ • Pilih mata kuliah   │
+                    │ • Auto calculate SKS  │
+                    └────────┬──────────────┘
+                            │
+                            │ 3. Submit pengajuan
+                            │    POST /api/pengajuan-sa
+                            ↓
+                    ┌───────────────────────┐
+                    │ Database              │
+                    │ INSERT PengajuanSA    │
+                    │ Status: PENDING       │
+                    └────────┬──────────────┘
+                            │
+                            │ 4. Notifikasi berhasil
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    SEKRETARIS JURUSAN                            │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Login sebagai Sekjur
+                            │    Lihat pengajuan PENDING
+                            ↓
+                    ┌───────────────────────┐
+                    │ Review Pengajuan      │
+                    │ • Cek bukti bayar     │
+                    │ • Verify nominal      │
+                    │   = SKS × 300.000     │
+                    └────────┬──────────────┘
+                            │
+                    ┌───────┴────────┐
+                    │                │
+        APPROVE ✅  │                │  REJECT ❌
+                    ↓                ↓
+         ┌──────────────┐   ┌──────────────┐
+         │ Status:      │   │ Status:      │
+         │ VERIFIED     │   │ REJECTED     │
+         └──────┬───────┘   └──────┬───────┘
+                │                  │
+                │                  │ → Beri alasan penolakan
+                ↓                  ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    KETUA PROGRAM STUDI                           │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Lihat pengajuan VERIFIED
+                            ↓
+                    ┌───────────────────────┐
+                    │ Review Pengajuan      │
+                    │ • Cek mata kuliah     │
+                    │ • Pilih dosen         │
+                    │   pembimbing          │
+                    └────────┬──────────────┘
+                            │
+                            │ 2. Assign dosen
+                            │    PUT /api/pengajuan-sa/:id/assign-dosen
+                            ↓
+                    ┌───────────────────────┐
+                    │ Status: APPROVED      │
+                    │ dosenPembimbingNip    │
+                    └────────┬──────────────┘
+                            │
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    PROSES SA BERJALAN                            │
+│  • Mahasiswa bisa akses materi                                  │
+│  • Dosen membimbing                                             │
+│  • Generate jadwal kuliah                                       │
+│  • Input nilai (future feature)                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Status Flow:**
-```
-PENDING → VERIFIED (Sekjur) → APPROVED (Kaprodi) → SELESAI
-         ↓
-      REJECTED (bisa di any stage)
-```
-
----
-
-### 2. Workflow Penjadwalan Otomatis
+### 2. Alur Penjadwalan Otomatis
 
 ```
-[SEMESTER BARU]
-   ↓
-[DOSEN] Set Preferensi (1x di awal)
-   ↓ Hari favorit, hindari, waktu, priority
-   ↓
-[KAPRODI] Assign Penugasan Mengajar
-   ↓ Dosen + Mata Kuliah (status: ACTIVE)
-   ↓
-[KAPRODI] Klik "Generate Jadwal" ⚡
-   ↓ Input: Periode, Kelas, Jenis (PAGI/SORE)
-   ↓ 
-[SISTEM] Generate Otomatis (10 detik)
-   ↓ Buat 5 kandidat jadwal
-   ↓ Score setiap kandidat
-   ↓ Pilih yang terbaik
-   ↓ Auto detect konflik
-   ↓
-[KAPRODI] Review Jadwal
-   ↓ Lihat grid view
-   ↓ Cek scoring
-   ↓ Perbaiki konflik (gunakan Auto Suggestions)
-   ↓ Status: DRAFT → IN_PROGRESS
-   ↓
-[KAPRODI] Submit ke Sekjur
-   ↓ Status: SUBMITTED
-   ↓
-[SEKJUR] Review & Approve
-   ↓ Cek jadwal semua prodi
-   ↓ Approve/Reject
-   ↓
-✅ STATUS: APPROVED (JADWAL FINAL)
+┌─────────────────────────────────────────────────────────────────┐
+│                   DOSEN (Di Awal Semester)                       │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Login sebagai Dosen
+                            │    Menu: Preferensi Jadwal
+                            ↓
+                    ┌───────────────────────┐
+                    │ Set Preferensi        │
+                    │ • Hari favorit        │
+                    │ • Hari dihindari      │
+                    │ • Waktu (PAGI/SORE)   │
+                    │ • Priority level      │
+                    └────────┬──────────────┘
+                            │
+                            │ 2. Simpan preferensi
+                            │    POST /api/dosen-preferences
+                            ↓
+                    ┌───────────────────────┐
+                    │ Database              │
+                    │ INSERT DosenPreference│
+                    └───────────────────────┘
+                            
+┌─────────────────────────────────────────────────────────────────┐
+│                   KAPRODI (Buat Jadwal)                          │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Login sebagai Kaprodi
+                            │    Menu: Kelola Jadwal Prodi
+                            ↓
+                    ┌───────────────────────┐
+                    │ Klik "Generate Jadwal"│
+                    └────────┬──────────────┘
+                            │
+                            │ 2. Input parameter
+                            │    • Periode: Ganjil 2024/2025
+                            │    • Kelas: 4TI1
+                            │    • Jenis: PAGI/SORE
+                            ↓
+                    ┌───────────────────────┐
+                    │ POST /api/prodi-      │
+                    │ schedules/generate    │
+                    └────────┬──────────────┘
+                            │
+                            │ 3. Server process (10 detik)
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              ENHANCED SCHEDULE GENERATOR                         │
+│              (Backend Service)                                   │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ Step 1: Collect Data
+                            ↓
+                    ┌───────────────────────┐
+                    │ Query Database        │
+                    │ • Penugasan mengajar  │
+                    │   (status: ACTIVE)    │
+                    │ • Dosen preferences   │
+                    │ • Ruangan available   │
+                    │ • Existing schedules  │
+                    └────────┬──────────────┘
+                            │
+                            │ Step 2: Generate Candidates
+                            ↓
+                    ┌───────────────────────┐
+                    │ Create 5 Candidates   │
+                    │ (Different combos)    │
+                    │                       │
+                    │ Candidate 1 ░░░░░     │
+                    │ Candidate 2 ░░░░░     │
+                    │ Candidate 3 ░░░░░     │
+                    │ Candidate 4 ░░░░░     │
+                    │ Candidate 5 ░░░░░     │
+                    └────────┬──────────────┘
+                            │
+                            │ Step 3: Score Each Candidate
+                            ↓
+                    ┌───────────────────────┐
+                    │ Scoring System        │
+                    │                       │
+                    │ 1. Day Spread (100pts)│
+                    │ 2. Gap Time (100pts)  │
+                    │ 3. Preference (100pts)│
+                    │ 4. Workload (100pts)  │
+                    │ 5. Room Dist (100pts) │
+                    │                       │
+                    │ Total: 0-500 points   │
+                    └────────┬──────────────┘
+                            │
+                            │ Step 4: Pick Best
+                            ↓
+                    ┌───────────────────────┐
+                    │ Select Highest Score  │
+                    │ Candidate 3: 425 pts ✅│
+                    └────────┬──────────────┘
+                            │
+                            │ Step 5: Conflict Detection
+                            ↓
+                    ┌───────────────────────────────┐
+                    │ Check Conflicts:              │
+                    │ • DOSEN_CONFLICT         ⚠️   │
+                    │ • RUANGAN_CONFLICT       ✅   │
+                    │ • DOSEN_OVERLOAD         ✅   │
+                    │ • INVALID_TIME_SLOT      ✅   │
+                    │ • KAPASITAS_EXCEEDED     ✅   │
+                    └────────┬──────────────────────┘
+                            │
+                            │ Step 6: Generate Suggestions
+                            ↓
+                    ┌───────────────────────────────┐
+                    │ For each conflict:            │
+                    │ • Generate 3 suggestions      │
+                    │ • Calculate feasibility (%)   │
+                    │ • Calculate impact (LOW/MED/HI)│
+                    └────────┬──────────────────────┘
+                            │
+                            │ Step 7: Save to Database
+                            ↓
+                    ┌───────────────────────┐
+                    │ INSERT ProdiSchedule  │
+                    │ INSERT ScheduleItem[] │
+                    │ Status: DRAFT (ada    │
+                    │         konflik)      │
+                    └────────┬──────────────┘
+                            │
+                            │ Step 8: Return Response
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   KAPRODI (Review Hasil)                         │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Lihat hasil generate
+                            ↓
+                    ┌───────────────────────┐
+                    │ Dashboard View        │
+                    │ • Grid jadwal         │
+                    │ • Score: 425/500      │
+                    │ • Conflicts: 1 ⚠️     │
+                    └────────┬──────────────┘
+                            │
+                            │ 2. Klik tab "Conflicts"
+                            ↓
+                    ┌─────────────────────────────┐
+                    │ Conflict Details            │
+                    │                             │
+                    │ ⚠️ Dr. Budi bentrok Senin   │
+                    │   08:00-10:00               │
+                    │   Mengajar 4TI1 dan 4TI2    │
+                    │                             │
+                    │ Suggestions:                │
+                    │ ✅ Pindah ke Selasa 08:00   │
+                    │    Feasibility: 95%         │
+                    │    [Apply]                  │
+                    └────────┬────────────────────┘
+                            │
+                            │ 3. Klik "Apply"
+                            │    POST /api/conflict-resolver/apply
+                            ↓
+                    ┌───────────────────────┐
+                    │ Update ScheduleItem   │
+                    │ hari: SELASA          │
+                    │ Re-check conflicts    │
+                    └────────┬──────────────┘
+                            │
+                            │ 4. Conflicts resolved! ✅
+                            │    Status: IN_PROGRESS
+                            ↓
+                    ┌───────────────────────┐
+                    │ Klik "Submit ke Sekjur"│
+                    │ Status: SUBMITTED     │
+                    └────────┬──────────────┘
+                            │
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   SEKJUR (Final Approval)                        │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            │ 1. Review jadwal
+                            │    dari semua prodi
+                            ↓
+                    ┌───────────────────────┐
+                    │ Review Checklist      │
+                    │ ☑ No conflicts        │
+                    │ ☑ Score > 350         │
+                    │ ☑ Distribution good   │
+                    │ ☑ Preferences met     │
+                    └────────┬──────────────┘
+                            │
+                    ┌───────┴────────┐
+                    │                │
+        APPROVE ✅  │                │  REJECT ❌
+                    ↓                ↓
+         ┌──────────────┐   ┌──────────────┐
+         │ Status:      │   │ Status:      │
+         │ APPROVED     │   │ DRAFT        │
+         │              │   │ (+ catatan)  │
+         └──────┬───────┘   └──────────────┘
+                │
+                ↓
+        ┌──────────────┐
+        │ JADWAL FINAL │
+        │   PUBLISHED  │
+        └──────────────┘
 ```
 
-**Status Jadwal:**
-- 🟡 **DRAFT** - Ada konflik, perlu diperbaiki
-- 🔵 **IN_PROGRESS** - Sedang dikerjakan Kaprodi
-- 🟣 **SUBMITTED** - Sudah disubmit, tunggu approval
-- 🟢 **APPROVED** - Disetujui, jadwal final
-- 🔴 **REJECTED** - Ditolak, perlu revisi
+### 3. Alur Autentikasi & Authorization
 
----
-
-## 📅 Panduan Penjadwalan Otomatis
-
-### 🎯 Konsep Dasar
-
-**Sistem Penjadwalan Otomatis** adalah sistem yang bisa **generate jadwal kuliah otomatis** dengan algoritma pintar dalam hitungan detik.
-
-**Perbandingan:**
-
-| Aspek | Manual (Lama) | Otomatis (Baru) |
-|-------|---------------|-----------------|
-| Input | Satu per satu | 1 klik |
-| Waktu | Berhari-hari | 10 detik |
-| Konflik | Cek manual | Auto detect + solusi |
-| Koordinasi | Bolak-balik | Minimal |
-| Optimasi | Trial error | Algorithm scoring |
-| Request Dosen | Submit manual | Set preferensi 1x |
-
----
-
-### 🚀 Fitur-Fitur Penjadwalan
-
-#### 1. Enhanced Schedule Generator 🤖
-
-**Cara Kerja:**
-1. Input: periode, kelas, jenis (PAGI/SORE)
-2. Sistem buat **5 kandidat jadwal** dengan berbagai kombinasi
-3. Setiap kandidat di-**score** berdasarkan 5 kriteria
-4. Pilih kandidat dengan **score tertinggi**
-5. Auto **detect konflik**
-6. Kasih **suggestions** untuk resolve
-
-**Scoring System:**
-```javascript
-Total Score = 500 points
-
-1. Day Spread (100 pts)      - Penyebaran hari baik
-2. Gap Time (100 pts)        - Jarak waktu optimal
-3. Preference Match (100 pts) - Sesuai preferensi dosen
-4. Workload Balance (100 pts) - Beban dosen seimbang
-5. Room Distribution (100 pts)- Ruangan bervariasi
-
-Jadwal Excellent: 450-500 pts
-Jadwal Good:      400-449 pts
-Jadwal Average:   350-399 pts
-Jadwal Poor:      < 350 pts
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                   LOGIN FLOW                                     │
+└─────────────────────────────────────────────────────────────────┘
 
----
+User Input                    Server Process               Database
+    │                              │                           │
+    │ 1. Enter credentials         │                           │
+    │    username: "dosen123"      │                           │
+    │    password: "123456"        │                           │
+    │    role: "DOSEN"             │                           │
+    ├──────────────────────────────▶                           │
+    │  POST /api/auth/login        │                           │
+    │                              │                           │
+    │                              │ 2. Query user             │
+    │                              ├───────────────────────────▶
+    │                              │   WHERE username = "..."  │
+    │                              │   AND role = "DOSEN"      │
+    │                              │                           │
+    │                              │ 3. Return user + password │
+    │                              ◀───────────────────────────┤
+    │                              │   hash                    │
+    │                              │                           │
+    │                              │ 4. bcrypt.compare()       │
+    │                              │    password vs hash       │
+    │                              │                           │
+    │                              │ 5. Password match? ✅     │
+    │                              │                           │
+    │                              │ 6. Generate JWT           │
+    │                              │    jwt.sign({             │
+    │                              │      userId: user.id,     │
+    │                              │      username,            │
+    │                              │      role                 │
+    │                              │    }, JWT_SECRET, {       │
+    │                              │      expiresIn: '24h'     │
+    │                              │    })                     │
+    │                              │                           │
+    │ 7. Return token & user data  │                           │
+    ◀──────────────────────────────┤                           │
+    │  {                           │                           │
+    │    success: true,            │                           │
+    │    token: "eyJhbGc...",      │                           │
+    │    user: {...}               │                           │
+    │  }                           │                           │
+    │                              │                           │
+    │ 8. Store in localStorage     │                           │
+    │    localStorage.setItem(     │                           │
+    │      'authToken', token      │                           │
+    │    )                         │                           │
+    │                              │                           │
 
-#### 2. Dosen Preference System ⭐
+┌─────────────────────────────────────────────────────────────────┐
+│                   AUTHENTICATED REQUEST FLOW                     │
+└─────────────────────────────────────────────────────────────────┘
 
-**Komponen:**
-- Hari yang disukai (multi-select)
-- Hari yang dihindari (multi-select)
-- Waktu mengajar (PAGI/SORE/BOTH)
-- Priority level (MANDATORY/HIGH/NORMAL/LOW)
-
-**Cara Sistem Gunakan Preferensi:**
-```javascript
-// Saat generate jadwal
-if (slot.day in dosen.preferredDays) {
-  score += 20; // Bonus!
-}
-
-if (slot.day in dosen.avoidDays && priority == 'MANDATORY') {
-  skip_slot(); // Tidak akan dipilih
-}
-
-if (slot.time matches dosen.preferredTime) {
-  score += 15; // Bonus lagi!
-}
-```
-
----
-
-#### 3. Auto Conflict Resolution 🔧
-
-**Jenis Konflik yang Dideteksi:**
-
-1. **DOSEN_CONFLICT**
-   - Dosen mengajar 2 kelas di waktu sama
-   - Auto suggestion: geser ke slot lain
-
-2. **RUANGAN_CONFLICT**
-   - Ruangan dipakai 2 kelas bersamaan
-   - Auto suggestion: ganti ruangan atau geser waktu
-
-3. **DOSEN_OVERLOAD**
-   - Dosen mengajar terlalu banyak dalam 1 hari
-   - Auto suggestion: distribusikan ke hari lain
-
-4. **INVALID_TIME_SLOT**
-   - Jadwal bentrok dengan jam istirahat
-   - Auto suggestion: pilih slot valid
-
-5. **KAPASITAS_EXCEEDED**
-   - Jumlah mahasiswa > kapasitas ruangan
-   - Auto suggestion: ganti ruangan lebih besar
-
-**Format Suggestions:**
-```
-⚠️ Konflik Terdeteksi:
-─────────────────────────────────────────
-Dr. Budi bentrok di Senin 08:00-10:00
-Mengajar 2 kelas: 4TI1 dan 4TI2
-
-✅ Saran 1: Pindah 4TI2 ke Selasa 08:00
-   Feasibility: 95%
-   Impact: Low
-   [Apply]
-
-⚠️ Saran 2: Pindah 4TI2 ke Senin 13:00
-   Feasibility: 80%
-   Impact: Medium (preferensi dosen PAGI)
-   [Apply]
-
-❌ Saran 3: Ganti dosen untuk 4TI2
-   Feasibility: 60%
-   Impact: High
-   [Apply]
-─────────────────────────────────────────
-Klik "Apply" untuk terapkan solusi!
-```
-
----
-
-### 📖 Panduan Lengkap per Role
-
-#### 🧑‍🏫 Untuk Dosen: Set Preferensi
-
-**Step-by-step:**
-
-1. Login sebagai Dosen
-2. Menu → "Preferensi Jadwal"
-3. Klik tombol "Atur Preferensi"
-4. Isi form:
-   ```
-   Hari yang Disukai: ☑️ Senin ☑️ Rabu ☐ Jumat
-   Hari yang Dihindari: ☑️ Jumat
-   Waktu Mengajar: ● PAGI ○ SORE ○ BOTH
-   Priority: ○ MANDATORY ● HIGH ○ NORMAL ○ LOW
-   ```
-5. Klik "Simpan"
-6. Selesai! ✅
-
-**Tips:**
-- Set preferensi **1x di awal semester**
-- Gunakan MANDATORY hanya untuk yang **WAJIB**
-- Semakin fleksibel = jadwal lebih optimal
-- Update jika ada perubahan
-
-**Contoh Preferensi:**
-```javascript
-// ✅ GOOD - Fleksibel
-{
-  preferredDays: ['SENIN', 'RABU'],
-  avoidDays: ['JUMAT'],
-  preferredTime: 'BOTH',
-  priority: 'NORMAL'
-}
-// Score: ⭐⭐⭐⭐⭐ (Optimal!)
-
-// ⚠️ STRICT - Kurang fleksibel
-{
-  preferredDays: ['SENIN', 'SELASA'],
-  avoidDays: ['RABU', 'KAMIS', 'JUMAT'],
-  preferredTime: 'PAGI',
-  priority: 'HIGH'
-}
-// Score: ⭐⭐⭐ (Masih OK)
-
-// ❌ BAD - Terlalu ketat
-{
-  preferredDays: ['SENIN'],
-  avoidDays: ['SELASA', 'RABU', 'KAMIS', 'JUMAT'],
-  preferredTime: 'PAGI',
-  priority: 'MANDATORY'
-}
-// Score: ⭐ (Susah dijadwalkan!)
-```
-
----
-
-#### 👑 Untuk Kaprodi: Generate Jadwal
-
-**Prerequisite:**
-1. ✅ Penugasan mengajar sudah di-assign (status ACTIVE)
-2. ✅ Dosen sudah set preferensi (optional, tapi recommended)
-3. ✅ Periode jadwal sudah dibuat (oleh Sekjur)
-
-**Step-by-step:**
-
-1. Login sebagai Kaprodi
-2. Menu → "Kelola Jadwal Prodi"
-3. Klik tombol **"Generate Jadwal"** ⚡
-4. Isi form generator:
-   ```
-   Periode: Ganjil 2024/2025
-   Kelas: 4TI1
-   Jenis Jadwal: ● PAGI ○ SORE
-   ```
-5. Klik "Generate" → Tunggu **10 detik** ⏱️
-6. Review hasil:
-   - Lihat **Grid View** (tabel jadwal)
-   - Cek **Score** (aim for 400+)
-   - Cek **Konflik** (harus 0!)
-7. Perbaiki konflik (jika ada):
-   - Klik tab "Konflik"
-   - Lihat suggestions
-   - Klik "Apply" pada solusi terbaik
-8. Ulangi step 7 sampai konflik = 0
-9. Klik **"Submit ke Sekjur"** 🚀
-10. Selesai! ✅
-
-**Tips Generate:**
-- Generate **PAGI** dan **SORE terpisah** (lebih cepat & optimal)
-- Pastikan ada **minimal 3-4 penugasan** per kelas
-- Cek preferensi dosen sebelum generate
-- Gunakan **Auto Suggestions** untuk fix konflik (1 klik!)
-
-**Interpretasi Score:**
-```
-Score 450-500: 🌟🌟🌟🌟🌟 EXCELLENT - Jadwal sempurna!
-Score 400-449: 🌟🌟🌟🌟   GOOD      - Jadwal bagus
-Score 350-399: 🌟🌟🌟     AVERAGE   - Jadwal standar
-Score < 350:   🌟🌟       POOR      - Perlu perbaikan
-```
-
----
-
-#### 🛡️ Untuk Sekjur: Review & Approve
-
-**Step-by-step:**
-
-1. Login sebagai Sekjur
-2. Menu → "Review Jadwal Prodi"
-3. Lihat list jadwal yang di-submit
-4. Klik detail jadwal
-5. Review:
-   - Grid view (tabel)
-   - Detail setiap schedule item
-   - Check konflik (harus 0!)
-   - Check score (aim 400+)
-6. Decision:
-   - ✅ **Approve** jika OK
-   - ❌ **Reject** jika ada masalah (kasih catatan)
-7. Selesai! ✅
-
-**Checklist Review:**
-- [ ] Tidak ada konflik
-- [ ] Score minimal 350
-- [ ] Distribusi hari merata
-- [ ] Tidak ada gap terlalu lama
-- [ ] Preferensi dosen terpenuhi (>70%)
-- [ ] Beban dosen seimbang
-
----
-
-### ❓ FAQ Penjadwalan
-
-#### Q1: Apakah dosen masih bisa request jadwal manual?
-**A:** Tidak perlu lagi! Dosen cukup **set preferensi 1x** di awal semester. Sistem otomatis terapkan preferensi saat generate jadwal.
-
-#### Q2: Bagaimana jika preferensi saya tidak bisa dipenuhi?
-**A:** Tergantung priority:
-- **MANDATORY** → Sistem akan error, harus dipenuhi
-- **HIGH** → Akan diprioritaskan, tapi tidak wajib
-- **NORMAL/LOW** → Bonus jika bisa, tidak masalah jika tidak
-
-**Tip:** Jangan set semua MANDATORY! Jadwal jadi susah di-generate.
-
-#### Q3: Berapa lama proses generate jadwal?
-**A:** 
-- 1 kelas (3-5 mata kuliah): **5-10 detik**
-- 1 kelas (6-10 mata kuliah): **10-20 detik**
--
+Browser                       Middleware                  Handler
+    │                              │                           │
+    │ 1. API request               │                           │
+    │    GET /api/pengajuan-sa     │                           │
+    │    Authorization:            │                           │
+    │    Bearer eyJhbGc...         │                           │
+    ├──────────────────────────────▶                           │
+    │                              │                           │
+    │                              │ 2. Extract token          │
+    │                              │    from header            │
+    │                              │                           │
+    │                              │ 3. jwt.verify(token,      │
+    │                              │       JWT_SECRET)         │
+    │                              │                           │
+    │                              │ 4. Token valid? ✅        │
+    │                              │    decoded = {            │
+    │                              │      userId,              │
+    │                              │      username,            │
+    │                              │      role                 │
+    │                              │    }                      │
+    │                              │                           │
+    │                              │ 5. Query user from DB     │
+    │                              │    to get fresh data      │
+    │                              │                           │
+    │                              │ 6. Set req.user           │
+    │                              │    req.user = user        │
+    │                              │    req.userContext = {    │
+    │                              │      role,                │
+    │                              │      jurusanId,           │
+    │                              │      ...                  │
+    │                              │    }                      │
+    │                              │                           │
+    │                              │ 7
