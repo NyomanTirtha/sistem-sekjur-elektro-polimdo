@@ -1,40 +1,39 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import ErrorBoundary from './komponen/error/ErrorBoundary';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import ErrorBoundary from "./components/error/ErrorBoundary";
+import reportWebVitals from "./reportWebVitals";
 
 // ✅ PERFORMANCE: Hide loading overlay lebih cepat
 const hideLoadingOverlay = () => {
-  const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingOverlay = document.getElementById("loading-overlay");
   if (loadingOverlay) {
-    loadingOverlay.style.opacity = '0';
-    loadingOverlay.style.transition = 'opacity 0.3s ease-out';
+    loadingOverlay.style.opacity = "0";
+    loadingOverlay.style.transition = "opacity 0.3s ease-out";
     setTimeout(() => {
-      loadingOverlay.style.display = 'none';
+      loadingOverlay.style.display = "none";
     }, 300);
   }
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
-
 
 // Use requestAnimationFrame untuk memastikan DOM sudah ter-render
 requestAnimationFrame(() => {
   setTimeout(() => {
     hideLoadingOverlay();
     // Also add root class to show content
-    const root = document.getElementById('root');
+    const root = document.getElementById("root");
     if (root) {
-      root.classList.add('loaded');
+      root.classList.add("loaded");
     }
   }, 300);
 });

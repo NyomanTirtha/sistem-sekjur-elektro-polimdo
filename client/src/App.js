@@ -21,54 +21,54 @@ import {
   ClipboardPlus,
   ClipboardCheck,
 } from "lucide-react";
-import MainLayout from "./komponen/layout/MainLayouts";
-import LoginPage from "./halaman/masuk/HalamanMasuk";
-import WelcomePopup from "./komponen/layout/WelcomePopup";
-import ErrorBoundary from "./komponen/error/ErrorBoundary";
-import NetworkError from "./komponen/error/NetworkError";
-import LoadingPage from "./komponen/error/LoadingPage";
-import NetworkStatus from "./komponen/error/NetworkStatus";
+import MainLayout from "./components/layout/MainLayouts";
+import LoginPage from "./pages/masuk/HalamanMasuk";
+import WelcomePopup from "./components/layout/WelcomePopup";
+import ErrorBoundary from "./components/error/ErrorBoundary";
+import NetworkError from "./components/error/NetworkError";
+import LoadingPage from "./components/error/LoadingPage";
+import NetworkStatus from "./components/error/NetworkStatus";
 import {
   setupOnlineListener,
   isOffline,
   isNetworkError,
-} from "./utilitas/network/networkUtils";
+} from "./utils/network/networkUtils";
 
 // Lazy load heavy components
 const MahasiswaList = lazy(
-  () => import("./komponen/fitur/mahasiswa/DaftarMahasiswa"),
+  () => import("./components/features/mahasiswa/DaftarMahasiswa"),
 );
-const DosenList = lazy(() => import("./komponen/fitur/dosen/DaftarDosen"));
+const DosenList = lazy(() => import("./components/features/dosen/DaftarDosen"));
 const PengajuanSAList = lazy(
-  () => import("./komponen/fitur/pengajuan-sa/DaftarPengajuanSA"),
+  () => import("./components/features/pengajuan-sa/DaftarPengajuanSA"),
 );
 const ProdiList = lazy(
-  () => import("./komponen/fitur/program-studi/DaftarProgramStudi"),
+  () => import("./components/features/program-studi/DaftarProgramStudi"),
 );
 const UsersList = lazy(
-  () => import("./komponen/fitur/pengguna/DaftarPengguna"),
+  () => import("./components/features/pengguna/DaftarPengguna"),
 );
 const TimetablePeriodManager = lazy(
-  () => import("./komponen/fitur/jadwal/TimetablePeriodManager"),
+  () => import("./components/features/jadwal/TimetablePeriodManager"),
 );
 const KaprodiScheduleManager = lazy(
-  () => import("./komponen/fitur/jadwal/KaprodiScheduleManager"),
+  () => import("./components/features/jadwal/KaprodiScheduleManager"),
 );
 
 const SekjurScheduleReview = lazy(
-  () => import("./komponen/fitur/jadwal/SekjurScheduleReview"),
+  () => import("./components/features/jadwal/SekjurScheduleReview"),
 );
 const DosenMySchedule = lazy(
-  () => import("./komponen/fitur/jadwal/DosenMySchedule"),
+  () => import("./components/features/jadwal/DosenMySchedule"),
 );
 const DosenPreferenceManager = lazy(
-  () => import("./komponen/fitur/jadwal/DosenPreferenceManager"),
+  () => import("./components/features/jadwal/DosenPreferenceManager"),
 );
 const AjukanPenugasan = lazy(
-  () => import("./komponen/fitur/penugasan-mengajar/AjukanPenugasan"),
+  () => import("./components/features/penugasan-mengajar/AjukanPenugasan"),
 );
 const ReviewPenugasan = lazy(
-  () => import("./komponen/fitur/penugasan-mengajar/ReviewPenugasan"),
+  () => import("./components/features/penugasan-mengajar/ReviewPenugasan"),
 );
 
 export default function App() {
