@@ -2,6 +2,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
 const prisma = new PrismaClient();
+const { generateSchedule } = require("../services/scheduleGenerator");
 
 // =====================================================
 // PRODI SCHEDULES MANAGEMENT ROUTES (KAPRODI)
@@ -245,6 +246,69 @@ router.post("/", async (req, res) => {
       success: false,
       message: "Gagal membuat jadwal prodi",
       error: error.message,
+    });
+  }
+});
+
+// POST /api/prodi-schedules/generate - Generate jadwal otomatis (KAPRODI only)
+router.post("/generate", async (req, res) => {
+  const { timetablePeriodId, kelas, scheduleType } = req.body;
+  const kaprodiUsername = req.user.username;
+
+  try {
+    // 1. Validate user role and get prodiId
+    if (req.user.role !== "KAPRODI") {
+      return res.status(403).json({
+        success: false,
+        message: "Hanya Kaprodi yang bisa men-generate jadwal.",
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { username: kaprodiUsername },
+      select: { programStudiId: true },
+    });
+    if (!user || !user.programStudiId) {
+      return res.status(400).json({
+        success: false,
+        message: "User tidak terkait dengan program studi.",
+      });
+    }
+
+    // 2. Basic validation
+    if (!timetablePeriodId || !kelas) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Periode dan Kelas harus diisi." });
+    }
+
+    // 3. Call the generator service
+    const result = await generateSchedule(
+      parseInt(timetablePeriodId),
+      kelas,
+      kaprodiUsername,
+      user.programStudiId,
+      scheduleType,
+    );
+
+    let message = `Jadwal untuk kelas ${kelas} berhasil di-generate.`;
+    if (result.unplacedCourses.length > 0) {
+      message += ` ${
+        result.unplacedCourses.length
+      } mata kuliah tidak dapat ditempatkan: ${result.unplacedCourses.join(
+        ", ",
+      )}.`;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: message,
+      data: result.schedule,
+    });
+  } catch (error) {
+    console.error("Error generating schedule:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Gagal men-generate jadwal otomatis.",
     });
   }
 });
@@ -849,9 +913,9 @@ router.post("/:id/items", async (req, res) => {
     if (internalConflicts.length > 0) {
       // Check if it's a duplicate mata kuliah
       const duplicateMataKuliah = internalConflicts.find(
-        (conflict) => conflict.mataKuliahId === parseInt(mataKuliahId)
+        (conflict) => conflict.mataKuliahId === parseInt(mataKuliahId),
       );
-      
+
       if (duplicateMataKuliah) {
         return res.status(400).json({
           success: false,
@@ -1291,7 +1355,7 @@ function isOverlappingWithBreakTime(jamMulai, jamSelesai) {
     jamMulai,
     jamSelesai,
     JAM_ISTIRAHAT.mulai,
-    JAM_ISTIRAHAT.selesai
+    JAM_ISTIRAHAT.selesai,
   );
 }
 

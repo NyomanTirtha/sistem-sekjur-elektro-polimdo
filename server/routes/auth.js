@@ -7,9 +7,22 @@ const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// JWT Secret (sebaiknya disimpan di environment variable)
-const JWT_SECRET =
-  process.env.JWT_SECRET || "your-secret-key-change-in-production";
+// JWT Secret (WAJIB disimpan di environment variable)
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Security check: JWT_SECRET harus diset di .env file
+if (!JWT_SECRET) {
+  console.error(
+    "❌ FATAL ERROR: JWT_SECRET tidak ditemukan di environment variable!",
+  );
+  console.error("👉 Silakan buat file .env di folder server/ dan tambahkan:");
+  console.error("   JWT_SECRET=your-secure-random-string-here");
+  console.error("\n💡 Generate secure secret dengan command:");
+  console.error(
+    "   node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
+  );
+  process.exit(1);
+}
 
 // ✅ ENHANCED Authentication middleware dengan context filtering
 const authenticateToken = async (req, res, next) => {

@@ -18,6 +18,8 @@ import {
   FolderOpen,
   Settings,
   UserCog,
+  ClipboardPlus,
+  ClipboardCheck,
 } from "lucide-react";
 import MainLayout from "./komponen/layout/MainLayouts";
 import LoginPage from "./halaman/masuk/HalamanMasuk";
@@ -26,7 +28,11 @@ import ErrorBoundary from "./komponen/error/ErrorBoundary";
 import NetworkError from "./komponen/error/NetworkError";
 import LoadingPage from "./komponen/error/LoadingPage";
 import NetworkStatus from "./komponen/error/NetworkStatus";
-import { setupOnlineListener, isOffline, isNetworkError } from "./utilitas/network/networkUtils";
+import {
+  setupOnlineListener,
+  isOffline,
+  isNetworkError,
+} from "./utilitas/network/networkUtils";
 
 // Lazy load heavy components
 const MahasiswaList = lazy(
@@ -48,14 +54,21 @@ const TimetablePeriodManager = lazy(
 const KaprodiScheduleManager = lazy(
   () => import("./komponen/fitur/jadwal/KaprodiScheduleManager"),
 );
-const DosenScheduleRequestManager = lazy(
-  () => import("./komponen/fitur/jadwal/DosenScheduleRequestManager"),
-);
+
 const SekjurScheduleReview = lazy(
   () => import("./komponen/fitur/jadwal/SekjurScheduleReview"),
 );
 const DosenMySchedule = lazy(
   () => import("./komponen/fitur/jadwal/DosenMySchedule"),
+);
+const DosenPreferenceManager = lazy(
+  () => import("./komponen/fitur/jadwal/DosenPreferenceManager"),
+);
+const AjukanPenugasan = lazy(
+  () => import("./komponen/fitur/penugasan-mengajar/AjukanPenugasan"),
+);
+const ReviewPenugasan = lazy(
+  () => import("./komponen/fitur/penugasan-mengajar/ReviewPenugasan"),
 );
 
 export default function App() {
@@ -157,44 +170,63 @@ export default function App() {
       icon: CalendarDays,
       allowedRoles: ["sekjur", "kaprodi", "dosen"],
       items: [
+        // --- For SEKJUR ---
         {
           id: "periode-jadwal",
           label: "Periode Jadwal",
           icon: Clock,
           component: TimetablePeriodManager,
-          description: "Kelola periode timetable",
+          description: "Kelola periode waktu penjadwalan",
           allowedRoles: ["sekjur"],
         },
         {
           id: "review-jadwal",
-          label: "Review Jadwal",
+          label: "Review Jadwal Prodi",
           icon: CheckSquare,
           component: SekjurScheduleReview,
           description: "Review dan setujui jadwal dari Kaprodi",
           allowedRoles: ["sekjur"],
         },
+        // --- For KAPRODI ---
         {
           id: "jadwal-prodi",
-          label: "Jadwal Prodi",
+          label: "Kelola Jadwal Prodi",
           icon: Calendar,
           component: KaprodiScheduleManager,
-          description: "Buat dan kelola jadwal kuliah prodi",
+          description: "Buat, generate, dan kelola jadwal kuliah",
           allowedRoles: ["kaprodi"],
+        },
+        {
+          id: "review-penugasan",
+          label: "Review Pengajuan Dosen",
+          icon: ClipboardCheck,
+          component: ReviewPenugasan,
+          description: "Setujui atau tolak pengajuan mengajar dari dosen",
+          allowedRoles: ["kaprodi"],
+        },
+        // --- For DOSEN ---
+        {
+          id: "preferensi-jadwal",
+          label: "Preferensi Jadwal",
+          icon: Settings,
+          component: DosenPreferenceManager,
+          description: "Atur preferensi jadwal mengajar Anda",
+          allowedRoles: ["dosen"],
         },
         {
           id: "jadwal-saya",
           label: "Jadwal Mengajar Saya",
           icon: Calendar,
           component: DosenMySchedule,
-          description: "Lihat jadwal mengajar Anda",
+          description: "Lihat jadwal mengajar Anda yang sudah final",
           allowedRoles: ["dosen"],
         },
         {
-          id: "request-jadwal",
-          label: "Request Jadwal",
-          icon: Send,
-          component: DosenScheduleRequestManager,
-          description: "Ajukan request mengajar mata kuliah",
+          id: "ajukan-mengajar",
+          label: "Ajukan Mengajar",
+          icon: ClipboardPlus,
+          component: AjukanPenugasan,
+          description: "Ajukan diri untuk mengajar mata kuliah",
           allowedRoles: ["dosen"],
         },
       ],
@@ -319,7 +351,7 @@ export default function App() {
               item.allowedRoles.includes(parsedUserType),
             );
             const isValidTab = availableMenuItems.some(
-              (item) => item.id === savedActiveTab
+              (item) => item.id === savedActiveTab,
             );
 
             if (isValidTab) {
@@ -382,7 +414,12 @@ export default function App() {
         } catch (error) {
           console.error("Auth check failed:", error);
           // Check if it's a network error
-          if (isNetworkError(error) || error.isNetworkError || error.message?.includes('fetch') || error.message?.includes('Network')) {
+          if (
+            isNetworkError(error) ||
+            error.isNetworkError ||
+            error.message?.includes("fetch") ||
+            error.message?.includes("Network")
+          ) {
             setNetworkError(error);
           } else {
             // Token invalid or backend not reachable, clear everything and show login
@@ -392,7 +429,11 @@ export default function App() {
       } catch (error) {
         console.error("Error during auth check:", error);
         // Check if it's a network error
-        if (error.isNetworkError || error.message?.includes('fetch') || error.message?.includes('Network')) {
+        if (
+          error.isNetworkError ||
+          error.message?.includes("fetch") ||
+          error.message?.includes("Network")
+        ) {
           setNetworkError(error);
         } else {
           // If anything goes wrong, clear auth and show login
@@ -534,7 +575,7 @@ export default function App() {
     // Jika ada saved tab dan valid untuk user type ini, gunakan itu
     if (savedActiveTab) {
       const isValidTab = availableMenuItems.some(
-        (item) => item.id === savedActiveTab
+        (item) => item.id === savedActiveTab,
       );
       if (isValidTab) {
         tabToUse = savedActiveTab;
@@ -547,8 +588,7 @@ export default function App() {
 
     // Jika tidak ada saved tab yang valid, gunakan default tab
     if (!tabToUse && availableMenuItems.length > 0) {
-      tabToUse =
-        defaultTabMapping[mappedUserType] || availableMenuItems[0].id;
+      tabToUse = defaultTabMapping[mappedUserType] || availableMenuItems[0].id;
       // Find category untuk default tab
       categoryToExpand = menuCategories.find((cat) =>
         cat.items.some((item) => item.id === tabToUse),
@@ -599,7 +639,10 @@ export default function App() {
   if (!isOnline && isAuthenticated && networkError) {
     return (
       <NetworkError
-        message={networkError.message || "Koneksi internet terputus. Pastikan perangkat Anda terhubung ke internet."}
+        message={
+          networkError.message ||
+          "Koneksi internet terputus. Pastikan perangkat Anda terhubung ke internet."
+        }
         onRetry={() => {
           setNetworkError(null);
           window.location.reload();
@@ -670,10 +713,7 @@ export default function App() {
     <>
       {/* Welcome Popup - muncul saat pertama kali login */}
       {isAuthenticated && userType && currentUser && (
-        <WelcomePopup
-          userType={userType}
-          currentUser={currentUser}
-        />
+        <WelcomePopup userType={userType} currentUser={currentUser} />
       )}
 
       <MainLayout
@@ -694,8 +734,8 @@ export default function App() {
             <div
               key={activeTab}
               style={{
-                animation: 'fadeIn 0.15s ease-in',
-                animationFillMode: 'both'
+                animation: "fadeIn 0.15s ease-in",
+                animationFillMode: "both",
               }}
             >
               <ActiveComponent

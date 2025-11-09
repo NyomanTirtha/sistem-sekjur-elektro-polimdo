@@ -66,6 +66,7 @@ const protectedRoutes = [
   { path: "/api/ruangan", router: require("./routes/ruangan") },
   { path: "/api/prodi-schedules", router: require("./routes/prodiSchedules") },
   { path: "/api/dosen-requests", router: require("./routes/dosenRequests") },
+  { path: "/api/penugasan", router: require("./routes/penugasanMengajar") },
   {
     path: "/api/sekjur-schedules",
     router: require("./routes/sekjurSchedules"),

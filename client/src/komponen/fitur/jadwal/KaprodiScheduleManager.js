@@ -14,15 +14,20 @@ import {
   XCircle,
   CheckCircle,
   AlertCircle,
-  MessageSquare,
+  Wand2,
 } from "lucide-react";
 import axios from "axios";
 import TimetableGridView from "./TimetableGridView";
 import { getButtonPrimaryClass } from "../../../utilitas/theme";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirm } from '../../../utilitas/notifikasi/alertUtils';
-import { TABLE, BUTTON, BADGE } from '../../../constants/colors';
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showConfirm,
+} from "../../../utilitas/notifikasi/alertUtils";
+import { TABLE, BUTTON, BADGE } from "../../../constants/colors";
 
 // Konstanta jam istirahat (dapat disesuaikan)
 const JAM_ISTIRAHAT = {
@@ -33,18 +38,18 @@ const JAM_ISTIRAHAT = {
 // Helper function untuk mendapatkan kode program studi
 const getProdiCode = (programStudiId) => {
   const prodiCodes = {
-    1: 'ti',  // D4 Teknik Informatika
-    2: 'tl',  // D4 Teknik Listrik
-    3: 'tkbg', // D4 Teknik Konstruksi Bangunan Gedung
-    4: 'tkjj', // D4 Teknik Konstruksi Jalan dan Jembatan
+    1: "ti", // D4 Teknik Informatika
+    2: "tl", // D4 Teknik Listrik
+    3: "tkbg", // D4 Teknik Konstruksi Bangunan Gedung
+    4: "tkjj", // D4 Teknik Konstruksi Jalan dan Jembatan
   };
-  return prodiCodes[programStudiId] || '';
+  return prodiCodes[programStudiId] || "";
 };
 
 // Helper function untuk generate format kelas (contoh: "1ti1" = semester 1, TI, kelas 1)
 const generateKelasFormat = (semester, programStudiId, kelasNumber = 1) => {
   const prodiCode = getProdiCode(programStudiId);
-  if (!prodiCode) return '';
+  if (!prodiCode) return "";
   return `${semester}${prodiCode}${kelasNumber}`;
 };
 
@@ -60,7 +65,12 @@ const isTimeOverlapping = (start1, end1, start2, end2) => {
     const e2 = new Date(`2024-01-01 ${end2}`);
 
     // Validasi date valid
-    if (isNaN(s1.getTime()) || isNaN(e1.getTime()) || isNaN(s2.getTime()) || isNaN(e2.getTime())) {
+    if (
+      isNaN(s1.getTime()) ||
+      isNaN(e1.getTime()) ||
+      isNaN(s2.getTime()) ||
+      isNaN(e2.getTime())
+    ) {
       return false;
     }
 
@@ -73,7 +83,12 @@ const isTimeOverlapping = (start1, end1, start2, end2) => {
 
 // Fungsi untuk memeriksa apakah waktu bertabrakan dengan jam istirahat
 const isOverlappingWithBreakTime = (jamMulai, jamSelesai) => {
-  return isTimeOverlapping(jamMulai, jamSelesai, JAM_ISTIRAHAT.mulai, JAM_ISTIRAHAT.selesai);
+  return isTimeOverlapping(
+    jamMulai,
+    jamSelesai,
+    JAM_ISTIRAHAT.mulai,
+    JAM_ISTIRAHAT.selesai,
+  );
 };
 
 // Helper function untuk format date dengan validasi
@@ -111,21 +126,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   const [availableDosen, setAvailableDosen] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [validationError, setValidationError] = useState("");
-
-  // State untuk request dari dosen
-  const [dosenRequests, setDosenRequests] = useState([]);
-  const [loadingRequests, setLoadingRequests] = useState(false);
-  const [requestFilterStatus, setRequestFilterStatus] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showRequestDetailModal, setShowRequestDetailModal] = useState(false);
-  const [requestActionNotes, setRequestActionNotes] = useState("");
-  const [requestSelectedPeriodId, setRequestSelectedPeriodId] = useState("");
+  const [scheduleType, setScheduleType] = useState("PAGI");
 
   const [createFormData, setCreateFormData] = useState({
     timetablePeriodId: "",
@@ -148,10 +156,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     fetchInitialData();
   }, []);
 
-  useEffect(() => {
-    fetchDosenRequests();
-  }, [requestFilterStatus]);
-
   // Removed debug useEffect untuk optimasi performa
 
   const fetchInitialData = async () => {
@@ -168,92 +172,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       console.error("Error fetching initial data:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Fetch request dari dosen
-  const fetchDosenRequests = async () => {
-    try {
-      setLoadingRequests(true);
-      const params = new URLSearchParams();
-      if (requestFilterStatus) {
-        params.append("status", requestFilterStatus);
-      }
-
-      const response = await axios.get(
-        `http://localhost:5000/api/dosen-requests/for-my-prodi?${params.toString()}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        setDosenRequests(response.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching dosen requests:", error);
-      showErrorAlert(error.response?.data?.message || "Gagal mengambil request dari dosen");
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
-
-  // Approve request
-  const handleApproveRequest = async (requestId) => {
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/dosen-requests/${requestId}/approve`,
-        {
-          notes: requestActionNotes || null,
-          timetablePeriodId: requestSelectedPeriodId || null,
-        },
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        showSuccessAlert("Request berhasil disetujui dan ditambahkan ke jadwal");
-        setShowRequestDetailModal(false);
-        setSelectedRequest(null);
-        setRequestActionNotes("");
-        setRequestSelectedPeriodId("");
-        fetchDosenRequests();
-        // Refresh jadwal prodi juga
-        fetchMySchedules();
-      }
-    } catch (error) {
-      console.error("Error approving request:", error);
-      showErrorAlert(error.response?.data?.message || "Gagal menyetujui request");
-    }
-  };
-
-  // Reject request
-  const handleRejectRequest = async (requestId) => {
-    if (!requestActionNotes || requestActionNotes.trim() === "") {
-      showWarningAlert("Alasan penolakan wajib diisi");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/dosen-requests/${requestId}/reject`,
-        { notes: requestActionNotes },
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
-      );
-
-      if (response.data.success) {
-        showSuccessAlert("Request berhasil ditolak");
-        setShowRequestDetailModal(false);
-        setSelectedRequest(null);
-        setRequestActionNotes("");
-        fetchDosenRequests();
-      }
-    } catch (error) {
-      console.error("Error rejecting request:", error);
-      showErrorAlert(error.response?.data?.message || "Gagal menolak request");
     }
   };
 
@@ -358,26 +276,35 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     }
   };
 
-  const handleCreateSchedule = async (e) => {
-    e.preventDefault();
+  const handleGenerateSchedule = async () => {
+    if (!createFormData.timetablePeriodId || !createFormData.kelas) {
+      showWarningAlert("Periode dan Kelas harus diisi untuk generate jadwal.");
+      return;
+    }
+    setIsGenerating(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/prodi-schedules",
-        createFormData,
+        "http://localhost:5000/api/prodi-schedules/generate",
+        { ...createFormData, scheduleType },
         {
           headers: { Authorization: `Bearer ${authToken}` },
         },
       );
-
       if (response.data.success) {
-        showSuccessAlert("Jadwal berhasil dibuat");
+        showSuccessAlert(
+          `Jadwal untuk kelas ${createFormData.kelas} berhasil di-generate! `,
+        );
         setShowCreateModal(false);
         setCreateFormData({ timetablePeriodId: "", kelas: "" });
         fetchMySchedules();
       }
     } catch (error) {
-      console.error("Error creating schedule:", error);
-      showErrorAlert(error.response?.data?.message || "Gagal membuat jadwal");
+      console.error("Error generating schedule:", error);
+      showErrorAlert(
+        error.response?.data?.message || "Gagal men-generate jadwal",
+      );
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -412,9 +339,11 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     }
 
     // Validasi tidak boleh bertabrakan dengan jam istirahat
-    if (isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai)) {
+    if (
+      isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai)
+    ) {
       setValidationError(
-        `Jadwal tidak boleh bertabrakan dengan jam istirahat (${JAM_ISTIRAHAT.mulai} - ${JAM_ISTIRAHAT.selesai})`
+        `Jadwal tidak boleh bertabrakan dengan jam istirahat (${JAM_ISTIRAHAT.mulai} - ${JAM_ISTIRAHAT.selesai})`,
       );
       return false;
     }
@@ -439,7 +368,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           item.jamMulai,
           item.jamSelesai,
           itemFormData.jamMulai,
-          itemFormData.jamSelesai
+          itemFormData.jamSelesai,
         );
 
         if (!hasTimeOverlap) return false;
@@ -461,7 +390,10 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         const conflicts = [];
         conflictingItems.forEach((item) => {
           if (!item) return;
-          const timeStr = item.jamMulai && item.jamSelesai ? `${item.jamMulai}-${item.jamSelesai}` : "waktu tidak valid";
+          const timeStr =
+            item.jamMulai && item.jamSelesai
+              ? `${item.jamMulai}-${item.jamSelesai}`
+              : "waktu tidak valid";
           if (item.dosenId === itemFormData.dosenId) {
             conflicts.push(`Dosen sudah mengajar pada ${timeStr}`);
           }
@@ -521,7 +453,8 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error saving schedule item:", error);
-      const errorMessage = error.response?.data?.message || "Gagal menyimpan item jadwal";
+      const errorMessage =
+        error.response?.data?.message || "Gagal menyimpan item jadwal";
       setValidationError(errorMessage);
       showErrorAlert(errorMessage);
     }
@@ -546,12 +479,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           }
         } catch (error) {
           console.error("Error deleting schedule item:", error);
-          showErrorAlert(error.response?.data?.message || "Gagal menghapus item jadwal");
+          showErrorAlert(
+            error.response?.data?.message || "Gagal menghapus item jadwal",
+          );
         }
       },
       null,
       "Konfirmasi Hapus",
-      "warning"
+      "warning",
     );
   };
 
@@ -577,16 +512,17 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           }
         } catch (error) {
           console.error("Error submitting schedule:", error);
-          showErrorAlert(error.response?.data?.message || "Gagal submit jadwal");
+          showErrorAlert(
+            error.response?.data?.message || "Gagal submit jadwal",
+          );
         }
       },
       null,
       "Konfirmasi Submit",
-      "info"
+      "info",
     );
     return;
   };
-
 
   const handleDeleteSchedule = async (scheduleId) => {
     const schedule = schedules.find((s) => s.id === scheduleId);
@@ -624,7 +560,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           if (response.data.success) {
             const message =
               schedule?.status === "SUBMITTED" ||
-                schedule?.status === "UNDER_REVIEW"
+              schedule?.status === "UNDER_REVIEW"
                 ? "Pengajuan jadwal berhasil dibatalkan"
                 : "Jadwal berhasil dihapus";
             showSuccessAlert(message);
@@ -636,7 +572,9 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           }
         } catch (error) {
           console.error("Error deleting schedule:", error);
-          showErrorAlert(error.response?.data?.message || "Gagal menghapus jadwal");
+          showErrorAlert(
+            error.response?.data?.message || "Gagal menghapus jadwal",
+          );
         }
       },
       null,
@@ -645,7 +583,7 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         : "Konfirmasi Hapus",
       schedule?.status === "APPROVED" || schedule?.status === "PUBLISHED"
         ? "danger"
-        : "warning"
+        : "warning",
     );
   };
 
@@ -680,7 +618,9 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
       }
     } catch (error) {
       console.error("Error updating schedule:", error);
-      showErrorAlert(error.response?.data?.message || "Gagal memperbarui jadwal");
+      showErrorAlert(
+        error.response?.data?.message || "Gagal memperbarui jadwal",
+      );
     }
   };
 
@@ -736,33 +676,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
     }
   };
 
-  // Helper functions untuk request status
-  const getRequestStatusColor = (status) => {
-    switch (status) {
-      case "PENDING":
-        return "text-yellow-600 bg-yellow-100";
-      case "APPROVED":
-        return "text-green-600 bg-green-100";
-      case "REJECTED":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
-  const getRequestStatusLabel = (status) => {
-    switch (status) {
-      case "PENDING":
-        return "Menunggu Persetujuan";
-      case "APPROVED":
-        return "Disetujui";
-      case "REJECTED":
-        return "Ditolak";
-      default:
-        return status;
-    }
-  };
-
   // Memoize groupItemsByDay untuk optimasi
   const groupItemsByDay = useCallback((items) => {
     if (!items || !Array.isArray(items)) {
@@ -787,8 +700,16 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
   }, []);
 
   // Component untuk list items - dipisah untuk optimasi
-  const ScheduleItemsList = ({ scheduleItems, groupItemsByDay, openEditItemModal, handleDeleteScheduleItem }) => {
-    const groupedItems = useMemo(() => groupItemsByDay(scheduleItems), [scheduleItems, groupItemsByDay]);
+  const ScheduleItemsList = ({
+    scheduleItems,
+    groupItemsByDay,
+    openEditItemModal,
+    handleDeleteScheduleItem,
+  }) => {
+    const groupedItems = useMemo(
+      () => groupItemsByDay(scheduleItems),
+      [scheduleItems, groupItemsByDay],
+    );
 
     return (
       <div className="mt-3 pt-3 border-t border-gray-200">
@@ -796,67 +717,75 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           Daftar Item
         </h4>
         <div className="space-y-2">
-          {Object.entries(groupedItems).map(
-            ([day, items]) => (
-              <div key={day} className="border border-gray-200 rounded overflow-hidden">
-                <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-200">
-                  <h5 className="text-xs font-medium text-gray-700">{day}</h5>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {items.map((item) => (
-                    <div key={item.id} className="p-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h6 className="text-sm font-medium text-gray-900 mb-1.5 truncate">
-                            {item.mataKuliah.nama}
-                          </h6>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
-                            <div className="flex items-center">
-                              <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">{item.jamMulai} - {item.jamSelesai}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">{item.ruangan.nama}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <User className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">{item.dosen.nama}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Book className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span>{item.mataKuliah.sks} SKS</span>
-                            </div>
+          {Object.entries(groupedItems).map(([day, items]) => (
+            <div
+              key={day}
+              className="border border-gray-200 rounded overflow-hidden"
+            >
+              <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-200">
+                <h5 className="text-xs font-medium text-gray-700">{day}</h5>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h6 className="text-sm font-medium text-gray-900 mb-1.5 truncate">
+                          {item.mataKuliah.nama}
+                        </h6>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                          <div className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">
+                              {item.jamMulai} - {item.jamSelesai}
+                            </span>
                           </div>
-                          {item.kelas && (
-                            <div className="mt-1 text-xs text-gray-500">
-                              Kelas: {(item.kelas || "").toUpperCase()}
-                            </div>
-                          )}
+                          <div className="flex items-center">
+                            <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">
+                              {item.ruangan.nama}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <User className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{item.dosen.nama}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Book className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span>{item.mataKuliah.sks} SKS</span>
+                          </div>
                         </div>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => openEditItemModal(item)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteScheduleItem(item.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        {item.kelas && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            Kelas: {(item.kelas || "").toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => openEditItemModal(item)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteScheduleItem(item.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            ),
-          )}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -885,123 +814,9 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
           onClick={() => setShowCreateModal(true)}
           className={`${BUTTON.primary} inline-flex items-center`}
         >
-          <Plus className="w-5 h-5 mr-2" />
-          Buat Jadwal Baru
+          <Wand2 className="w-5 h-5 mr-2" />
+          Generate Jadwal
         </button>
-      </div>
-
-      {/* Section Request dari Dosen */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Request Jadwal dari Dosen
-            </h2>
-            {dosenRequests.filter((r) => r.status === "PENDING").length > 0 && (
-              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                {dosenRequests.filter((r) => r.status === "PENDING").length}
-              </span>
-            )}
-          </div>
-          <select
-            value={requestFilterStatus}
-            onChange={(e) => setRequestFilterStatus(e.target.value)}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Semua Status</option>
-            <option value="PENDING">Menunggu</option>
-            <option value="APPROVED">Disetujui</option>
-            <option value="REJECTED">Ditolak</option>
-          </select>
-        </div>
-
-        {loadingRequests ? (
-          <div className="text-center py-6">
-            <Loading message="Memuat request..." size="sm" />
-          </div>
-        ) : dosenRequests.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <MessageSquare className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-            <p className="text-sm">Tidak ada request dari dosen</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {dosenRequests.map((request) => (
-              <div
-                key={request.id}
-                className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">
-                        {request.mataKuliah?.nama || "N/A"}
-                      </h3>
-                      <span
-                        className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${getRequestStatusColor(request.status)}`}
-                      >
-                        {getRequestStatusLabel(request.status)}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 mb-1.5">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span className="truncate">{request.dosen?.nama || "N/A"}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{request.preferredHari}, {request.preferredJamMulai}-{request.preferredJamSelesai}</span>
-                      </span>
-                      {request.preferredRuangan && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>{request.preferredRuangan.nama}</span>
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Book className="w-3 h-3" />
-                        <span>{request.mataKuliah?.sks || 0} SKS</span>
-                      </span>
-                    </div>
-                    {request.alasanRequest && (
-                      <div className="mb-1.5">
-                        <p className="text-xs text-gray-600 line-clamp-1">
-                          <span className="font-medium">Alasan:</span> {request.alasanRequest}
-                        </p>
-                      </div>
-                    )}
-                    {request.kaprodiNotes && (
-                      <div className="mb-1.5">
-                        <p className="text-xs text-blue-700 line-clamp-1">
-                          <span className="font-medium">Catatan:</span> {request.kaprodiNotes}
-                        </p>
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500">
-                      {formatDateSafe(request.submittedAt, { day: "numeric", month: "numeric", year: "numeric" })}, {formatTimeSafe(request.submittedAt, { hour: "2-digit", minute: "2-digit" })}
-                      {request.processedAt && (
-                        <> • {formatDateSafe(request.processedAt, { day: "numeric", month: "numeric", year: "numeric" })}, {formatTimeSafe(request.processedAt, { hour: "2-digit", minute: "2-digit" })}</>
-                      )}
-                    </div>
-                  </div>
-                  {request.status === "PENDING" && (
-                    <button
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setRequestActionNotes("");
-                        setRequestSelectedPeriodId("");
-                        setShowRequestDetailModal(true);
-                      }}
-                      className="px-2.5 py-1 text-xs border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 whitespace-nowrap flex-shrink-0"
-                    >
-                      Review
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Schedules List */}
@@ -1016,14 +831,15 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {schedule.timetablePeriod.semester} {schedule.timetablePeriod.tahunAkademik}
+                      {schedule.timetablePeriod.semester}{" "}
+                      {schedule.timetablePeriod.tahunAkademik}
                     </h3>
-                    <span className={BADGE.gray}>
-                      {schedule.kelas}
-                    </span>
+                    <span className={BADGE.gray}>{schedule.kelas}</span>
                   </div>
                   <span
-                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}
+                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      schedule.status,
+                    )}`}
                   >
                     {getStatusLabel(schedule.status)}
                   </span>
@@ -1079,7 +895,9 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                     schedule._count?.scheduleItems > 0 && (
                       <button
                         onClick={() => handleSubmitSchedule(schedule.id)}
-                        className={`flex-1 inline-flex justify-center items-center px-3 py-2 text-white rounded-md text-sm ${getButtonPrimaryClass(currentUser)}`}
+                        className={`flex-1 inline-flex justify-center items-center px-3 py-2 text-white rounded-md text-sm ${getButtonPrimaryClass(
+                          currentUser,
+                        )}`}
                       >
                         <Send className="w-4 h-4 mr-1" />
                         Submit
@@ -1088,14 +906,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
                   {(schedule.status === "SUBMITTED" ||
                     schedule.status === "UNDER_REVIEW") && (
-                      <button
-                        onClick={() => handleDeleteSchedule(schedule.id)}
-                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700 shadow-sm"
-                      >
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Batalkan Pengajuan
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDeleteSchedule(schedule.id)}
+                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700 shadow-sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Batalkan Pengajuan
+                    </button>
+                  )}
 
                   {schedule.status === "REJECTED" && (
                     <button
@@ -1109,14 +927,14 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
 
                   {(schedule.status === "APPROVED" ||
                     schedule.status === "PUBLISHED") && (
-                      <button
-                        onClick={() => handleDeleteSchedule(schedule.id)}
-                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 shadow-sm"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Hapus Jadwal
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDeleteSchedule(schedule.id)}
+                      className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 shadow-sm"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Hapus Jadwal
+                    </button>
+                  )}
                 </div>
 
                 {schedule.status === "DRAFT" && (
@@ -1143,34 +961,6 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
         ))}
       </div>
 
-      {/* Info Banner - Workflow reminder */}
-      {dosenRequests.filter((r) => r.status === "PENDING").length > 0 && (
-        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-blue-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm text-blue-800">
-                <strong>Peringatan:</strong> Ada {dosenRequests.filter((r) => r.status === "PENDING").length} request dari dosen yang menunggu persetujuan.
-                Setelah disetujui, jadwal akan <strong>otomatis ditambahkan</strong> ke jadwal prodi Anda.
-                Pastikan untuk mereview request sebelum membuat jadwal manual.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {schedules.length === 0 && (
         <div className="text-center py-12">
           <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -1184,304 +974,653 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
             onClick={() => setShowCreateModal(true)}
             className={`${BUTTON.primary} inline-flex items-center`}
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Buat Jadwal Baru
+            <Wand2 className="w-5 h-5 mr-2" />
+            Generate Jadwal
           </button>
         </div>
       )}
 
       {/* Schedule Detail Modal */}
-      {typeof window !== 'undefined' && selectedSchedule && ReactDOM.createPortal(
-        <AnimatePresence>
-          <motion.div
-            key="schedule-detail-modal"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-            style={{ zIndex: 9999 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setSelectedSchedule(null);
-                setScheduleItems([]);
-              }
-            }}
-          >
+      {typeof window !== "undefined" &&
+        selectedSchedule &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
             <motion.div
-              className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
-              style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
+              key="schedule-detail-modal"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setSelectedSchedule(null);
+                  setScheduleItems([]);
+                }
+              }}
             >
-              {/* Header */}
-              <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h2 className="text-xl font-semibold text-white">
-                          {selectedSchedule.timetablePeriod.semester} {selectedSchedule.timetablePeriod.tahunAkademik}
-                        </h2>
-                        <span className={BADGE.gray}>
-                          {selectedSchedule.kelas}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-200">
-                        Status: <span className={`${BADGE.gray} ml-2`}>
-                          {getStatusLabel(selectedSchedule.status)}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                      <button
-                        onClick={() => setShowAddItemModal(true)}
-                        className={`${BUTTON.secondary} inline-flex items-center text-sm`}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Tambah
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setSelectedSchedule(null);
-                        setScheduleItems([]);
-                      }}
-                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
-                      aria-label="Close modal"
-                    >
-                      <XCircle className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-6">
-                  {scheduleItems.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                      <p className="text-sm text-gray-500 mb-4">
-                        {["DRAFT", "REJECTED"].includes(selectedSchedule.status)
-                          ? "Belum ada jadwal. Klik 'Tambah' untuk menambahkan"
-                          : "Jadwal kosong"}
-                      </p>
-                      {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                        <button
-                          onClick={() => setShowAddItemModal(true)}
-                          className={`inline-flex items-center px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(currentUser)}`}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Tambah Mata Kuliah
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Grid View */}
-                      <TimetableGridView
-                        scheduleItems={scheduleItems}
-                        className="bg-white border border-gray-200 rounded p-3"
-                      />
-
-                      {/* List View untuk Edit/Delete - hanya DRAFT/REJECTED */}
-                      {["DRAFT", "REJECTED"].includes(selectedSchedule.status) && (
-                        <ScheduleItemsList
-                          scheduleItems={scheduleItems}
-                          groupItemsByDay={groupItemsByDay}
-                          openEditItemModal={openEditItemModal}
-                          handleDeleteScheduleItem={handleDeleteScheduleItem}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Create Schedule Modal */}
-      {typeof window !== 'undefined' && showCreateModal && ReactDOM.createPortal(
-        <AnimatePresence>
-          <motion.div
-            key="create-schedule-modal"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-            style={{ zIndex: 9999 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowCreateModal(false);
-                setCreateFormData({ timetablePeriodId: "", kelas: "" });
-              }
-            }}
-          >
-            <motion.div
-              className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
-              style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <form onSubmit={handleCreateSchedule}>
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+              >
                 {/* Header */}
                 <div className={`p-5 ${TABLE.header} border-b border-gray-800`}>
                   <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-xl font-semibold text-white mb-1">Buat Jadwal Baru</h2>
-                      <p className="text-sm text-gray-200">Pilih periode dan masukkan kelas untuk jadwal baru</p>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h2 className="text-xl font-semibold text-white">
+                            {selectedSchedule.timetablePeriod.semester}{" "}
+                            {selectedSchedule.timetablePeriod.tahunAkademik}
+                          </h2>
+                          <span className={BADGE.gray}>
+                            {selectedSchedule.kelas}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-200">
+                          Status:{" "}
+                          <span className={`${BADGE.gray} ml-2`}>
+                            {getStatusLabel(selectedSchedule.status)}
+                          </span>
+                        </p>
+                      </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      {["DRAFT", "REJECTED"].includes(
+                        selectedSchedule.status,
+                      ) && (
+                        <button
+                          onClick={() => setShowAddItemModal(true)}
+                          className={`${BUTTON.secondary} inline-flex items-center text-sm`}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Tambah
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setSelectedSchedule(null);
+                          setScheduleItems([]);
+                        }}
+                        className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
+                        aria-label="Close modal"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto bg-gray-50">
+                  <div className="p-6">
+                    {scheduleItems.length === 0 ? (
+                      <div className="text-center py-10">
+                        <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                        <p className="text-sm text-gray-500 mb-4">
+                          {["DRAFT", "REJECTED"].includes(
+                            selectedSchedule.status,
+                          )
+                            ? "Belum ada jadwal. Klik 'Tambah' untuk menambahkan"
+                            : "Jadwal kosong"}
+                        </p>
+                        {["DRAFT", "REJECTED"].includes(
+                          selectedSchedule.status,
+                        ) && (
+                          <button
+                            onClick={() => setShowAddItemModal(true)}
+                            className={`inline-flex items-center px-3 py-1.5 rounded text-sm ${getButtonPrimaryClass(
+                              currentUser,
+                            )}`}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Tambah Mata Kuliah
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Grid View */}
+                        <TimetableGridView
+                          scheduleItems={scheduleItems}
+                          className="bg-white border border-gray-200 rounded p-3"
+                        />
+
+                        {/* List View untuk Edit/Delete - hanya DRAFT/REJECTED */}
+                        {["DRAFT", "REJECTED"].includes(
+                          selectedSchedule.status,
+                        ) && (
+                          <ScheduleItemsList
+                            scheduleItems={scheduleItems}
+                            groupItemsByDay={groupItemsByDay}
+                            openEditItemModal={openEditItemModal}
+                            handleDeleteScheduleItem={handleDeleteScheduleItem}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body,
+        )}
+
+      {/* Create Schedule Modal */}
+      {typeof window !== "undefined" &&
+        showCreateModal &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
+            <motion.div
+              key="create-schedule-modal"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowCreateModal(false);
+                  setCreateFormData({ timetablePeriodId: "", kelas: "" });
+                }
+              }}
+            >
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div>
+                  {/* Header */}
+                  <div
+                    className={`p-5 ${TABLE.header} border-b border-gray-800`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h2 className="text-xl font-semibold text-white mb-1">
+                          Generate Jadwal Otomatis
+                        </h2>
+                        <p className="text-sm text-gray-200">
+                          Pilih periode dan kelas untuk generate jadwal dengan
+                          algoritma pintar
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateModal(false);
+                          setCreateFormData({
+                            timetablePeriodId: "",
+                            kelas: "",
+                          });
+                        }}
+                        className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
+                        aria-label="Close modal"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 bg-gray-50 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Periode Timetable *
+                      </label>
+                      <select
+                        value={createFormData.timetablePeriodId}
+                        onChange={(e) =>
+                          setCreateFormData({
+                            ...createFormData,
+                            timetablePeriodId: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        required
+                      >
+                        <option value="">Pilih Periode</option>
+                        {periods.map((period) => (
+                          <option key={period.id} value={period.id}>
+                            {period.semester} {period.tahunAkademik}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kelas *
+                      </label>
+                      <input
+                        type="text"
+                        value={createFormData.kelas}
+                        onChange={(e) => {
+                          const kelasValue = e.target.value
+                            .trim()
+                            .toUpperCase();
+                          setCreateFormData({
+                            ...createFormData,
+                            kelas: kelasValue,
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        placeholder="Contoh: 1TI1, 2TL2"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Format: [Semester][Kode Prodi][Nomor Kelas]. Contoh:
+                        1TI1 = Semester 1, Teknik Informatika, Kelas 1. Input
+                        akan otomatis menjadi huruf kapital.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipe Jadwal *
+                      </label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="PAGI"
+                            checked={scheduleType === "PAGI"}
+                            onChange={(e) => setScheduleType(e.target.value)}
+                            className="form-radio h-4 w-4 text-blue-600"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Pagi
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="SORE"
+                            checked={scheduleType === "SORE"}
+                            onChange={(e) => setScheduleType(e.target.value)}
+                            className="form-radio h-4 w-4 text-blue-600"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Sore
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         setShowCreateModal(false);
                         setCreateFormData({ timetablePeriodId: "", kelas: "" });
                       }}
-                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-white"
-                      aria-label="Close modal"
+                      className={BUTTON.secondary}
                     >
-                      <XCircle className="w-5 h-5" />
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateSchedule}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                      disabled={isGenerating}
+                    >
+                      <Wand2
+                        className={`w-5 h-5 ${isGenerating ? "animate-spin" : ""}`}
+                      />
+                      {isGenerating ? "Generating..." : "Generate Otomatis"}
                     </button>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="p-6 bg-gray-50 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Periode Timetable *
-                    </label>
-                    <select
-                      value={createFormData.timetablePeriodId}
-                      onChange={(e) =>
-                        setCreateFormData({
-                          ...createFormData,
-                          timetablePeriodId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      required
-                    >
-                      <option value="">Pilih Periode</option>
-                      {periods.map((period) => (
-                        <option key={period.id} value={period.id}>
-                          {period.semester} {period.tahunAkademik}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kelas *
-                    </label>
-                    <input
-                      type="text"
-                      value={createFormData.kelas}
-                      onChange={(e) => {
-                        const kelasValue = e.target.value.trim().toUpperCase();
-                        setCreateFormData({
-                          ...createFormData,
-                          kelas: kelasValue,
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      placeholder="Contoh: 1TI1, 2TL2"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Format: [Semester][Kode Prodi][Nomor Kelas]. Contoh: 1TI1 = Semester 1, Teknik Informatika, Kelas 1.
-                      Input akan otomatis menjadi huruf kapital.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setCreateFormData({ timetablePeriodId: "", kelas: "" });
-                    }}
-                    className={BUTTON.secondary}
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className={BUTTON.primary}
-                  >
-                    Buat
-                  </button>
-                </div>
-              </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
+          </AnimatePresence>,
+          document.body,
+        )}
 
       {/* Add/Edit Schedule Item Modal */}
-      {typeof window !== 'undefined' && showAddItemModal && ReactDOM.createPortal(
-        <AnimatePresence>
-          <motion.div
-            key="add-item-modal"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-            style={{ zIndex: 9999 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowAddItemModal(false);
-                setEditingItem(null);
-                setItemFormData({
-                  mataKuliahId: "",
-                  dosenId: "",
-                  hari: "",
-                  jamMulai: "",
-                  jamSelesai: "",
-                  ruanganId: "",
-                  kapasitasMahasiswa: "",
-                });
-              }
-            }}
-          >
+      {typeof window !== "undefined" &&
+        showAddItemModal &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
             <motion.div
-              className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
-              style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
+              key="add-item-modal"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowAddItemModal(false);
+                  setEditingItem(null);
+                  setItemFormData({
+                    mataKuliahId: "",
+                    dosenId: "",
+                    hari: "",
+                    jamMulai: "",
+                    jamSelesai: "",
+                    ruanganId: "",
+                    kapasitasMahasiswa: "",
+                  });
+                }
+              }}
             >
-              <form onSubmit={handleAddScheduleItem}>
-                {/* Header */}
-                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-xl font-semibold text-white mb-1">
-                        {editingItem ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
-                      </h2>
-                      <p className="text-sm text-blue-100">
-                        {editingItem ? "Ubah informasi mata kuliah dalam jadwal" : "Tambahkan mata kuliah ke jadwal"}
-                      </p>
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <form onSubmit={handleAddScheduleItem}>
+                  {/* Header */}
+                  <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h2 className="text-xl font-semibold text-white mb-1">
+                          {editingItem
+                            ? "Edit Mata Kuliah"
+                            : "Tambah Mata Kuliah"}
+                        </h2>
+                        <p className="text-sm text-blue-100">
+                          {editingItem
+                            ? "Ubah informasi mata kuliah dalam jadwal"
+                            : "Tambahkan mata kuliah ke jadwal"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddItemModal(false);
+                          setEditingItem(null);
+                          setValidationError("");
+                          setItemFormData({
+                            mataKuliahId: "",
+                            dosenId: "",
+                            hari: "",
+                            jamMulai: "",
+                            jamSelesai: "",
+                            ruanganId: "",
+                            kapasitasMahasiswa: "",
+                          });
+                        }}
+                        className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                        aria-label="Close modal"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
                     </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto bg-gray-50">
+                    <div className="p-6 grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Mata Kuliah *
+                        </label>
+                        <select
+                          value={itemFormData.mataKuliahId}
+                          onChange={(e) => {
+                            const selectedMataKuliahId = e.target.value;
+                            const selectedMataKuliah = availableCourses.find(
+                              (c) => c.id.toString() === selectedMataKuliahId,
+                            );
+
+                            setItemFormData({
+                              ...itemFormData,
+                              mataKuliahId: selectedMataKuliahId,
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Pilih Mata Kuliah</option>
+                          {availableCourses.map((course) => (
+                            <option key={course.id} value={course.id}>
+                              {course.nama} ({course.sks} SKS)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Dosen *
+                        </label>
+                        <select
+                          value={itemFormData.dosenId}
+                          onChange={(e) =>
+                            setItemFormData({
+                              ...itemFormData,
+                              dosenId: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Pilih Dosen</option>
+                          {availableDosen.map((dosen) => (
+                            <option key={dosen.nip} value={dosen.nip}>
+                              {dosen.nama}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Hari *
+                        </label>
+                        <select
+                          value={itemFormData.hari}
+                          onChange={(e) =>
+                            setItemFormData({
+                              ...itemFormData,
+                              hari: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Pilih Hari</option>
+                          {daysOrder.map((day) => (
+                            <option key={day} value={day}>
+                              {day}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ruangan *
+                        </label>
+                        <select
+                          value={itemFormData.ruanganId}
+                          onChange={(e) => {
+                            const selectedRoomId = e.target.value;
+                            const selectedRoom = availableRooms.find(
+                              (room) => room.id === parseInt(selectedRoomId),
+                            );
+
+                            setItemFormData({
+                              ...itemFormData,
+                              ruanganId: selectedRoomId,
+                              // Auto-fill kapasitas dari ruangan yang dipilih
+                              kapasitasMahasiswa: selectedRoom
+                                ? selectedRoom.kapasitas.toString()
+                                : "",
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Pilih Ruangan</option>
+                          {availableRooms.length === 0 ? (
+                            <option value="" disabled>
+                              {loading
+                                ? "Memuat ruangan..."
+                                : "Tidak ada ruangan tersedia"}
+                            </option>
+                          ) : (
+                            availableRooms.map((room) => (
+                              <option key={room.id} value={room.id}>
+                                {room.nama} (Kapasitas: {room.kapasitas})
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Ruangan dapat dipilih manual atau otomatis terisi saat
+                          menginput kelas yang cocok
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Jam Mulai *
+                        </label>
+                        <input
+                          type="time"
+                          value={itemFormData.jamMulai}
+                          onChange={(e) => {
+                            setItemFormData({
+                              ...itemFormData,
+                              jamMulai: e.target.value,
+                            });
+                            // Clear validation error saat user mengubah input
+                            if (validationError) setValidationError("");
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        {itemFormData.jamMulai &&
+                          itemFormData.jamSelesai &&
+                          isOverlappingWithBreakTime(
+                            itemFormData.jamMulai,
+                            itemFormData.jamSelesai,
+                          ) && (
+                            <p className="mt-1 text-xs text-orange-600">
+                              ⚠️ Waktu ini bertabrakan dengan jam istirahat ({" "}
+                              {JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
+                            </p>
+                          )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Jam Selesai *
+                        </label>
+                        <input
+                          type="time"
+                          value={itemFormData.jamSelesai}
+                          onChange={(e) => {
+                            setItemFormData({
+                              ...itemFormData,
+                              jamSelesai: e.target.value,
+                            });
+                            // Clear validation error saat user mengubah input
+                            if (validationError) setValidationError("");
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        {itemFormData.jamMulai &&
+                          itemFormData.jamSelesai &&
+                          isOverlappingWithBreakTime(
+                            itemFormData.jamMulai,
+                            itemFormData.jamSelesai,
+                          ) && (
+                            <p className="mt-1 text-xs text-orange-600">
+                              ⚠️ Waktu ini bertabrakan dengan jam istirahat ({" "}
+                              {JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
+                            </p>
+                          )}
+                      </div>
+
+                      {selectedSchedule && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kelas
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedSchedule.kelas || ""}
+                            disabled
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Kelas sudah ditentukan saat membuat jadwal:{" "}
+                            <strong>{selectedSchedule.kelas}</strong>
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Kapasitas Mahasiswa
+                        </label>
+                        <input
+                          type="number"
+                          value={itemFormData.kapasitasMahasiswa}
+                          onChange={(e) =>
+                            setItemFormData({
+                              ...itemFormData,
+                              kapasitasMahasiswa: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          min="1"
+                          placeholder="Otomatis terisi dari kelas atau ruangan"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Kapasitas otomatis terisi saat memilih kelas yang
+                          cocok dengan ruangan atau saat memilih ruangan. Dapat
+                          diubah manual jika diperlukan.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Validation Error Message */}
+                    {validationError && (
+                      <div className="col-span-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-red-800">
+                              Validasi Gagal
+                            </p>
+                            <p className="text-sm text-red-700 mt-1">
+                              {validationError}
+                            </p>
+                            <p className="text-xs text-red-600 mt-2">
+                              <strong>Catatan:</strong> Jam istirahat:{" "}
+                              {JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -1498,563 +1637,151 @@ const KaprodiScheduleManager = ({ authToken, currentUser }) => {
                           kapasitasMahasiswa: "",
                         });
                       }}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
-                      aria-label="Close modal"
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
-                      <XCircle className="w-5 h-5" />
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(
+                        currentUser,
+                      )}`}
+                    >
+                      {editingItem ? "Update" : "Tambah"}
                     </button>
                   </div>
-                </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body,
+        )}
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto bg-gray-50">
-                  <div className="p-6 grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Mata Kuliah *
-                      </label>
-                      <select
-                        value={itemFormData.mataKuliahId}
-                        onChange={(e) => {
-                          const selectedMataKuliahId = e.target.value;
-                          const selectedMataKuliah = availableCourses.find(
-                            (c) => c.id.toString() === selectedMataKuliahId
-                          );
-
-                          setItemFormData({
-                            ...itemFormData,
-                            mataKuliahId: selectedMataKuliahId,
-                          });
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Pilih Mata Kuliah</option>
-                        {availableCourses.map((course) => (
-                          <option key={course.id} value={course.id}>
-                            {course.nama} ({course.sks} SKS)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Dosen *
-                      </label>
-                      <select
-                        value={itemFormData.dosenId}
-                        onChange={(e) =>
-                          setItemFormData({
-                            ...itemFormData,
-                            dosenId: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Pilih Dosen</option>
-                        {availableDosen.map((dosen) => (
-                          <option key={dosen.nip} value={dosen.nip}>
-                            {dosen.nama}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Hari *
-                      </label>
-                      <select
-                        value={itemFormData.hari}
-                        onChange={(e) =>
-                          setItemFormData({ ...itemFormData, hari: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Pilih Hari</option>
-                        {daysOrder.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Ruangan *
-                      </label>
-                      <select
-                        value={itemFormData.ruanganId}
-                        onChange={(e) => {
-                          const selectedRoomId = e.target.value;
-                          const selectedRoom = availableRooms.find(
-                            (room) => room.id === parseInt(selectedRoomId)
-                          );
-
-                          setItemFormData({
-                            ...itemFormData,
-                            ruanganId: selectedRoomId,
-                            // Auto-fill kapasitas dari ruangan yang dipilih
-                            kapasitasMahasiswa: selectedRoom
-                              ? selectedRoom.kapasitas.toString()
-                              : "",
-                          });
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Pilih Ruangan</option>
-                        {availableRooms.length === 0 ? (
-                          <option value="" disabled>
-                            {loading
-                              ? "Memuat ruangan..."
-                              : "Tidak ada ruangan tersedia"}
-                          </option>
-                        ) : (
-                          availableRooms.map((room) => (
-                            <option key={room.id} value={room.id}>
-                              {room.nama} (Kapasitas: {room.kapasitas})
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Ruangan dapat dipilih manual atau otomatis terisi saat menginput kelas yang cocok
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Jam Mulai *
-                      </label>
-                      <input
-                        type="time"
-                        value={itemFormData.jamMulai}
-                        onChange={(e) => {
-                          setItemFormData({
-                            ...itemFormData,
-                            jamMulai: e.target.value,
-                          });
-                          // Clear validation error saat user mengubah input
-                          if (validationError) setValidationError("");
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                      {itemFormData.jamMulai && itemFormData.jamSelesai &&
-                        isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai) && (
-                          <p className="mt-1 text-xs text-orange-600">
-                            ⚠️ Waktu ini bertabrakan dengan jam istirahat ({JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
-                          </p>
-                        )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Jam Selesai *
-                      </label>
-                      <input
-                        type="time"
-                        value={itemFormData.jamSelesai}
-                        onChange={(e) => {
-                          setItemFormData({
-                            ...itemFormData,
-                            jamSelesai: e.target.value,
-                          });
-                          // Clear validation error saat user mengubah input
-                          if (validationError) setValidationError("");
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                      {itemFormData.jamMulai && itemFormData.jamSelesai &&
-                        isOverlappingWithBreakTime(itemFormData.jamMulai, itemFormData.jamSelesai) && (
-                          <p className="mt-1 text-xs text-orange-600">
-                            ⚠️ Waktu ini bertabrakan dengan jam istirahat ({JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai})
-                          </p>
-                        )}
-                    </div>
-
-                    {selectedSchedule && (
+      {/* Edit Schedule Modal */}
+      {typeof window !== "undefined" &&
+        showEditScheduleModal &&
+        editingSchedule &&
+        ReactDOM.createPortal(
+          <AnimatePresence>
+            <motion.div
+              key="edit-schedule-modal"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 9999 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowEditScheduleModal(false);
+                  setEditingSchedule(null);
+                  setCreateFormData({ timetablePeriodId: "", kelas: "" });
+                }
+              }}
+            >
+              <motion.div
+                className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
+                style={{ zIndex: 10000 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <form onSubmit={handleUpdateSchedule}>
+                  {/* Header */}
+                  <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                    <div className="flex justify-between items-center">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Kelas
-                        </label>
-                        <input
-                          type="text"
-                          value={selectedSchedule.kelas || ""}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
-                        />
-                        <p className="mt-1 text-xs text-gray-500">
-                          Kelas sudah ditentukan saat membuat jadwal: <strong>{selectedSchedule.kelas}</strong>
+                        <h2 className="text-xl font-semibold text-white mb-1">
+                          Edit Periode Jadwal
+                        </h2>
+                        <p className="text-sm text-blue-100">
+                          Ubah periode untuk jadwal ini
                         </p>
                       </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Kapasitas Mahasiswa
-                      </label>
-                      <input
-                        type="number"
-                        value={itemFormData.kapasitasMahasiswa}
-                        onChange={(e) =>
-                          setItemFormData({
-                            ...itemFormData,
-                            kapasitasMahasiswa: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        min="1"
-                        placeholder="Otomatis terisi dari kelas atau ruangan"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Kapasitas otomatis terisi saat memilih kelas yang cocok dengan ruangan atau saat memilih ruangan. Dapat diubah manual jika diperlukan.
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditScheduleModal(false);
+                          setEditingSchedule(null);
+                          setCreateFormData({
+                            timetablePeriodId: "",
+                            kelas: "",
+                          });
+                        }}
+                        className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
+                        aria-label="Close modal"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Validation Error Message */}
-                  {validationError && (
-                    <div className="col-span-2 mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-red-800">Validasi Gagal</p>
-                          <p className="text-sm text-red-700 mt-1">{validationError}</p>
-                          <p className="text-xs text-red-600 mt-2">
-                            <strong>Catatan:</strong> Jam istirahat: {JAM_ISTIRAHAT.mulai} - {JAM_ISTIRAHAT.selesai}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddItemModal(false);
-                      setEditingItem(null);
-                      setValidationError("");
-                      setItemFormData({
-                        mataKuliahId: "",
-                        dosenId: "",
-                        hari: "",
-                        jamMulai: "",
-                        jamSelesai: "",
-                        ruanganId: "",
-                        kapasitasMahasiswa: "",
-                      });
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
-                  >
-                    {editingItem ? "Update" : "Tambah"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Edit Schedule Modal */}
-      {typeof window !== 'undefined' && showEditScheduleModal && editingSchedule && ReactDOM.createPortal(
-        <AnimatePresence>
-          <motion.div
-            key="edit-schedule-modal"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-            style={{ zIndex: 9999 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowEditScheduleModal(false);
-                setEditingSchedule(null);
-                setCreateFormData({ timetablePeriodId: "", kelas: "" });
-              }
-            }}
-          >
-            <motion.div
-              className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden"
-              style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <form onSubmit={handleUpdateSchedule}>
-                {/* Header */}
-                <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
-                  <div className="flex justify-between items-center">
+                  {/* Content */}
+                  <div className="p-6 bg-gray-50">
                     <div>
-                      <h2 className="text-xl font-semibold text-white mb-1">Edit Periode Jadwal</h2>
-                      <p className="text-sm text-blue-100">Ubah periode untuk jadwal ini</p>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Periode Timetable *
+                      </label>
+                      <select
+                        value={createFormData.timetablePeriodId}
+                        onChange={(e) =>
+                          setCreateFormData({
+                            ...createFormData,
+                            timetablePeriodId: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        required
+                      >
+                        <option value="">Pilih Periode</option>
+                        {periods
+                          .filter(
+                            (p) =>
+                              p.status === "ACTIVE" ||
+                              p.id === editingSchedule.timetablePeriodId,
+                          )
+                          .map((period) => (
+                            <option key={period.id} value={period.id}>
+                              {period.semester} {period.tahunAkademik}
+                            </option>
+                          ))}
+                      </select>
                     </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setShowEditScheduleModal(false);
                         setEditingSchedule(null);
-                        setCreateFormData({ timetablePeriodId: "", kelas: "" });
+                        setCreateFormData({
+                          timetablePeriodId: "",
+                          kelas: "",
+                        });
                       }}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
-                      aria-label="Close modal"
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
-                      <XCircle className="w-5 h-5" />
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(
+                        currentUser,
+                      )}`}
+                    >
+                      Simpan
                     </button>
                   </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 bg-gray-50">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Periode Timetable *
-                    </label>
-                    <select
-                      value={createFormData.timetablePeriodId}
-                      onChange={(e) =>
-                        setCreateFormData({
-                          ...createFormData,
-                          timetablePeriodId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      required
-                    >
-                      <option value="">Pilih Periode</option>
-                      {periods
-                        .filter(
-                          (p) =>
-                            p.status === "ACTIVE" ||
-                            p.id === editingSchedule.timetablePeriodId,
-                        )
-                        .map((period) => (
-                          <option key={period.id} value={period.id}>
-                            {period.semester} {period.tahunAkademik}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowEditScheduleModal(false);
-                      setEditingSchedule(null);
-                      setCreateFormData({ timetablePeriodId: "", kelas: "" });
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2 rounded-md text-sm text-white ${getButtonPrimaryClass(currentUser)}`}
-                  >
-                    Simpan
-                  </button>
-                </div>
-              </form>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Request Detail Modal untuk Approve/Reject */}
-      {typeof window !== 'undefined' && showRequestDetailModal && selectedRequest && ReactDOM.createPortal(
-        <AnimatePresence>
-          <motion.div
-            key="request-detail-modal"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-            style={{ zIndex: 9999 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowRequestDetailModal(false);
-                setSelectedRequest(null);
-                setRequestActionNotes("");
-                setRequestSelectedPeriodId("");
-              }
-            }}
-          >
-            <motion.div
-              className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
-              style={{ zIndex: 10000 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-5 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white mb-1">Detail Request</h2>
-                    <p className="text-sm text-blue-100">{selectedRequest.mataKuliah?.nama || "N/A"}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowRequestDetailModal(false);
-                      setSelectedRequest(null);
-                      setRequestActionNotes("");
-                      setRequestSelectedPeriodId("");
-                    }}
-                    className="p-2 hover:bg-blue-800 rounded-lg transition-colors text-white"
-                    aria-label="Close modal"
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-6 space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Informasi Request
-                    </h4>
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 text-gray-600 mr-2" />
-                        <span className="text-sm text-gray-700">
-                          <strong>Dosen:</strong> {selectedRequest.dosen?.nama || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Book className="w-4 h-4 text-gray-600 mr-2" />
-                        <span className="text-sm text-gray-700">
-                          <strong>Mata Kuliah:</strong> {selectedRequest.mataKuliah?.nama || "N/A"} ({selectedRequest.mataKuliah?.sks || 0} SKS)
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 text-gray-600 mr-2" />
-                        <span className="text-sm text-gray-700">
-                          <strong>Waktu:</strong> {selectedRequest.preferredHari}, {selectedRequest.preferredJamMulai} - {selectedRequest.preferredJamSelesai}
-                        </span>
-                      </div>
-                      {selectedRequest.preferredRuangan && (
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 text-gray-600 mr-2" />
-                          <span className="text-sm text-gray-700">
-                            <strong>Ruangan:</strong> {selectedRequest.preferredRuangan.nama} (Kapasitas: {selectedRequest.preferredRuangan.kapasitas})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {selectedRequest.alasanRequest && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Alasan Request
-                      </h4>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          {selectedRequest.alasanRequest}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Periode Jadwal (Opsional, akan menggunakan periode aktif jika dikosongkan)
-                    </label>
-                    <select
-                      value={requestSelectedPeriodId}
-                      onChange={(e) => setRequestSelectedPeriodId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Gunakan Periode Aktif</option>
-                      {periods
-                        .filter((p) => p.status === "ACTIVE")
-                        .map((period) => (
-                          <option key={period.id} value={period.id}>
-                            {period.semester} {period.tahunAkademik}
-                          </option>
-                        ))}
-                    </select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Jadwal akan otomatis ditambahkan ke jadwal prodi setelah disetujui
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Catatan (Opsional untuk Approve, Wajib untuk Reject)
-                    </label>
-                    <textarea
-                      value={requestActionNotes}
-                      onChange={(e) => setRequestActionNotes(e.target.value)}
-                      placeholder="Tambahkan catatan jika diperlukan..."
-                      rows="3"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    setShowRequestDetailModal(false);
-                    setSelectedRequest(null);
-                    setRequestActionNotes("");
-                    setRequestSelectedPeriodId("");
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={() => handleRejectRequest(selectedRequest.id)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                  <XCircle className="w-4 h-4 inline mr-2" />
-                  Tolak
-                </button>
-                <button
-                  onClick={() => handleApproveRequest(selectedRequest.id)}
-                  className={`px-4 py-2 rounded-md text-white ${getButtonPrimaryClass(currentUser)}`}
-                >
-                  <CheckCircle className="w-4 h-4 inline mr-2" />
-                  Setujui
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>,
-        document.body
-      )}
+          </AnimatePresence>,
+          document.body,
+        )}
     </div>
   );
 };

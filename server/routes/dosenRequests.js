@@ -195,7 +195,9 @@ router.post("/", async (req, res) => {
     }
 
     // Normalize kelas to uppercase if provided
-    const kelasNormalized = preferredKelas ? preferredKelas.trim().toUpperCase() : null;
+    const kelasNormalized = preferredKelas
+      ? preferredKelas.trim().toUpperCase()
+      : null;
 
     const newRequest = await prisma.dosenScheduleRequest.create({
       data: {
@@ -536,7 +538,8 @@ router.post("/:id/approve", async (req, res) => {
       if (!activePeriod) {
         return res.status(400).json({
           success: false,
-          message: "Tidak ada periode aktif. Silakan pilih periode atau buat periode baru",
+          message:
+            "Tidak ada periode aktif. Silakan pilih periode atau buat periode baru",
         });
       }
       periodId = activePeriod.id;
@@ -567,7 +570,8 @@ router.post("/:id/approve", async (req, res) => {
     if (!request.preferredRuanganId) {
       return res.status(400).json({
         success: false,
-        message: "Request harus memiliki ruangan yang dipilih untuk dapat di-approve",
+        message:
+          "Request harus memiliki ruangan yang dipilih untuk dapat di-approve",
       });
     }
 
@@ -632,7 +636,7 @@ router.post("/:id/approve", async (req, res) => {
         conflictingItem.conflictType === "dosen"
           ? `Dosen ${conflictingItem.dosen.nama} sudah memiliki jadwal untuk mata kuliah ${conflictingItem.mataKuliah.nama} pada waktu yang sama`
           : `Ruangan ${conflictingItem.ruangan.nama} sudah digunakan untuk mata kuliah ${conflictingItem.mataKuliah.nama} pada waktu yang sama`;
-      
+
       return res.status(400).json({
         success: false,
         message: `Konflik jadwal terdeteksi. ${conflictMessage}`,

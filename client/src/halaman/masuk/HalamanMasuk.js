@@ -193,7 +193,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                       type="button"
                       onClick={() => handleRoleChange(roleOption.value)}
                       className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${formData.role === roleOption.value
-                        ? 'bg-blue-600 text-white border border-blue-600'
+                        ? 'bg-gray-800 text-white border border-gray-800'
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                         }`}
                     >
@@ -221,7 +221,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                     value={formData.username}
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
-                    className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     placeholder={
                       formData.role === 'MAHASISWA' ? 'Masukkan NIM' :
                         formData.role === 'DOSEN' || formData.role === 'KAPRODI' ? 'Masukkan NIP' :
@@ -251,7 +251,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                     value={formData.password}
                     onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
-                    className="block w-full pl-11 pr-14 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full pl-11 pr-14 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     placeholder="Masukkan password"
                     disabled={loading}
                   />
@@ -273,7 +273,7 @@ const LoginPage = ({ onLoginSuccess }) => {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg text-base font-medium text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center">
