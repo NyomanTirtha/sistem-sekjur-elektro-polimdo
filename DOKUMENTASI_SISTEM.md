@@ -49,7 +49,7 @@
 #### 1. Clone & Install
 ```bash
 # Clone repository
-git clone https://github.com/NyomanTirtha/sistem-sekjur-elektro-polimdo
+git clone https://github.com/NyomanTirtha/sistem-sekjur-elektro-polimdo.git
 cd "Sistem - SA"
 
 # Install backend
