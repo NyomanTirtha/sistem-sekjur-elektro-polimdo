@@ -49,7 +49,7 @@
 #### 1. Clone & Install
 ```bash
 # Clone repository
-git clone <repo-url>
+git clone https://github.com/NyomanTirtha/sistem-sekjur-elektro-polimdo
 cd "Sistem - SA"
 
 # Install backend
@@ -218,7 +218,6 @@ server/
 ```
 Sistem - SA/
 ├── DOKUMENTASI_SISTEM.md      ← 📚 YOU ARE HERE (Complete docs)
-├── REFACTORING.md             ← 🔄 Refactoring documentation
 ├── README.md                  ← 📖 Project overview
 └── .gitignore                 ← Git ignore rules
 ```
