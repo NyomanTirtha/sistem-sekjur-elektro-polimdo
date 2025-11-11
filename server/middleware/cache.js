@@ -1,37 +1,109 @@
+const etag = require("etag");
+
+/**
+ * @file Middleware caching dinamis untuk Express.
+ * Mengimplementasikan Cache-Control, validasi ETag, dan header Vary berdasarkan path request.
+ */
+
+// Header standar untuk menginstruksikan klien dan proxy agar tidak menyimpan respons ke cache.
 const noCacheHeaders = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-  'Pragma': 'no-cache',
-  'Expires': '0'
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+  Pragma: "no-cache", // Dukungan legacy untuk HTTP/1.0
+  Expires: "0",
 };
 
+// Mendefinisikan strategi caching untuk berbagai prefix path API.
 const cacheRules = {
-  longCache: ['/prodi', '/dosen', '/mata-kuliah'],
-  shortCache: ['/pengajuan-sa', '/mahasiswa'],
-  noCache: ['/auth']
+  longCache: ["/prodi", "/dosen", "/mata-kuliah"],
+  shortCache: ["/pengajuan-sa", "/mahasiswa"],
+  noCache: ["/auth"],
 };
 
+/**
+ * Fungsi bantuan untuk menerapkan header no-cache pada sebuah respons.
+ * @param {import('express').Response} res - Objek respons Express.
+ */
+function applyNoCache(res) {
+  for (const [k, v] of Object.entries(noCacheHeaders)) res.setHeader(k, v);
+}
+
+/**
+ * Middleware Express untuk mengatur header cache secara dinamis.
+ * Membungkus res.send/json untuk menyuntikkan ETag dan menangani respons 304 Not Modified.
+ */
 const setCacheHeaders = (req, res, next) => {
-  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
-    Object.entries(noCacheHeaders).forEach(([key, value]) => res.set(key, value));
+  // Pengaman untuk mencegah pembungkusan res.send/json lebih dari sekali per siklus request.
+  if (!res._etagWrapped) {
+    res._etagWrapped = true;
+
+    const originalSend = res.send.bind(res);
+    const originalJson = res.json.bind(res);
+
+    // Bungkus res.send untuk menyuntikkan logika ETag.
+    res.send = function (body) {
+      // Hanya proses ETag untuk permintaan GET yang berhasil (status 2xx).
+      if (
+        req.method === "GET" &&
+        res.statusCode >= 200 &&
+        res.statusCode < 300
+      ) {
+        // Buat ETag dari body respons.
+        const tag = etag(body);
+        res.setHeader("ETag", tag);
+
+        // Jika ETag dari klien cocok dengan ETag baru, kirim 304 Not Modified.
+        if (req.headers["if-none-match"] === tag) {
+          res.status(304).end();
+          return; // Akhiri respons.
+        }
+      }
+      return originalSend(body);
+    };
+
+    // Bungkus res.json untuk memastikan logika ETag juga diterapkan.
+    res.json = function (body) {
+      if (!res.getHeader("Content-Type"))
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+      // Delegasikan ke res.send yang sudah dibungkus.
+      return res.send(JSON.stringify(body));
+    };
+  }
+
+  // Lewati caching sepenuhnya untuk metode yang mengubah data (state-changing methods).
+  if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
+    applyNoCache(res);
     return next();
   }
 
-  const path = req.path;
-  const matchedRule = Object.entries(cacheRules).find(([_, paths]) => 
-    paths.some(p => path.includes(p))
+  // Tentukan strategi cache yang sesuai dari cacheRules.
+  const matchedRule = Object.entries(cacheRules).find(([_, paths]) =>
+    paths.some((p) => req.path.startsWith(p)),
   );
+  const rule = matchedRule?.[0];
 
-  if (matchedRule?.[0] === 'noCache') {
-    Object.entries(noCacheHeaders).forEach(([key, value]) => res.set(key, value));
-  } else if (matchedRule?.[0] === 'longCache') {
-    res.set('Cache-Control', 'public, max-age=300');
-    res.set('ETag', `"${Date.now()}"`);
-  } else if (matchedRule?.[0] === 'shortCache') {
-    res.set('Cache-Control', 'public, max-age=60');
-    res.set('ETag', `"${Date.now()}"`);
-  } else {
-    res.set('Cache-Control', 'public, max-age=30');
+  // Terapkan header Cache-Control berdasarkan aturan yang cocok.
+  switch (rule) {
+    case "noCache":
+      applyNoCache(res);
+      break;
+    case "longCache":
+      // SWR (Stale-While-Revalidate) meningkatkan UX dengan menyajikan konten usang sambil mengambil versi baru di latar belakang.
+      res.set(
+        "Cache-Control",
+        "public, max-age=300, stale-while-revalidate=60",
+      );
+      break;
+    case "shortCache":
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=30");
+      break;
+    default:
+      // Cache default untuk permintaan GET yang tidak cocok.
+      res.set("Cache-Control", "public, max-age=30");
   }
+
+  // Instruksikan cache untuk membedakan respons berdasarkan header ini.
+  // Penting untuk mencegah cache poisoning dan menyajikan konten yang benar (misal: terkompresi, per pengguna).
+  res.setHeader("Vary", "Accept-Encoding, Authorization");
 
   next();
 };
