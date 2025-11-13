@@ -115,30 +115,42 @@ const setCacheHeaders = (req, res, next) => {
   // Contoh: /api/prodi -> /prodi
   const normalizedPath = req.path.replace(/^\/api(\/|$)/, "/");
 
-  // Tentukan strategi cache yang sesuai dari cacheRules.
-  const matchedRule = Object.entries(cacheRules).find(([_, paths]) =>
-    paths.some((p) => normalizedPath.startsWith(p)),
-  );
-  const rule = matchedRule?.[0];
+  // KEAMANAN: Jangan izinkan caching publik untuk request yang terautentikasi
+  // atau untuk endpoint otentikasi (mis. /api/auth). Jika ada header
+  // Authorization atau rute target adalah auth, paksa no-cache.
+  if (req.headers["authorization"] || normalizedPath.startsWith("/auth")) {
+    // Untuk request terautentikasi atau auth-related endpoints, gunakan no-store
+    // agar tidak ada data user yang tersimpan di cache publik/proxy.
+    applyNoCache(res);
+  } else {
+    // Tentukan strategi cache yang sesuai dari cacheRules.
+    const matchedRule = Object.entries(cacheRules).find(([_, paths]) =>
+      paths.some((p) => normalizedPath.startsWith(p)),
+    );
+    const rule = matchedRule?.[0];
 
-  // Terapkan header Cache-Control berdasarkan aturan yang cocok.
-  switch (rule) {
-    case "noCache":
-      applyNoCache(res);
-      break;
-    case "longCache":
-      // SWR (Stale-While-Revalidate) meningkatkan UX dengan menyajikan konten usang sambil mengambil versi baru di latar belakang.
-      res.set(
-        "Cache-Control",
-        "public, max-age=300, stale-while-revalidate=60",
-      );
-      break;
-    case "shortCache":
-      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=30");
-      break;
-    default:
-      // Cache default untuk permintaan GET yang tidak cocok.
-      res.set("Cache-Control", "public, max-age=30");
+    // Terapkan header Cache-Control berdasarkan aturan yang cocok.
+    switch (rule) {
+      case "noCache":
+        applyNoCache(res);
+        break;
+      case "longCache":
+        // SWR (Stale-While-Revalidate) meningkatkan UX dengan menyajikan konten usang sambil mengambil versi baru di latar belakang.
+        res.set(
+          "Cache-Control",
+          "public, max-age=300, stale-while-revalidate=60",
+        );
+        break;
+      case "shortCache":
+        res.set(
+          "Cache-Control",
+          "public, max-age=60, stale-while-revalidate=30",
+        );
+        break;
+      default:
+        // Cache default untuk permintaan GET yang tidak cocok.
+        res.set("Cache-Control", "public, max-age=30");
+    }
   }
 
   // Instruksikan cache untuk membedakan respons berdasarkan header ini.

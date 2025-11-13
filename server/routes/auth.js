@@ -228,12 +228,8 @@ router.post("/login", async (req, res) => {
   try {
     const { username, password, role } = req.body;
 
-    console.log("🔑 Login attempt:", {
-      username,
-      role,
-      passwordLength: password?.length,
-      passwordFirstChars: password?.substring(0, 3) + "***",
-    });
+    // Log minimal: do NOT log password content or derived info.
+    console.log("🔑 Login attempt:", { username, role });
 
     // Validasi input
     if (!username || !password) {
@@ -253,6 +249,7 @@ router.post("/login", async (req, res) => {
       include: { jurusan: true },
     });
 
+    // Avoid logging sensitive password-derived properties.
     console.log(
       "👤 User found:",
       user
@@ -262,10 +259,6 @@ router.post("/login", async (req, res) => {
             role: user.role,
             jurusanId: user.jurusanId,
             jurusanNama: user.jurusan?.nama,
-            hasPassword: !!user.password,
-            passwordLength: user.password?.length,
-            passwordStartsWithHash: user.password?.startsWith("$2"),
-            passwordHash: user.password?.substring(0, 10) + "...",
           }
         : "Not found",
     );
@@ -519,6 +512,7 @@ router.get("/test-users", async (req, res) => {
     return res.status(404).json({ success: false, message: "Not found" });
   }
   try {
+    // Do NOT return password or password-derived values to clients.
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -527,7 +521,6 @@ router.get("/test-users", async (req, res) => {
         role: true,
         jurusanId: true,
         jurusan: { select: { id: true, nama: true } },
-        password: true, // Hanya untuk debugging - HAPUS di production
       },
     });
 
@@ -538,9 +531,6 @@ router.get("/test-users", async (req, res) => {
       role: user.role,
       jurusanId: user.jurusanId,
       jurusanNama: user.jurusan?.nama,
-      passwordHash: user.password.substring(0, 10) + "...",
-      isHashed:
-        user.password.startsWith("$2a$") || user.password.startsWith("$2b$"),
     }));
 
     res.json({
@@ -983,14 +973,17 @@ router.put("/change-password", authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword, userId, userType } = req.body;
 
+    // Minimal logging for password change requests. Never log password contents or derived fragments.
     console.log("🔍 Change Password Request:", {
       userId,
       userType,
       hasCurrentPassword: !!currentPassword,
       hasNewPassword: !!newPassword,
-      tokenUser: req.user,
-      currentPasswordLength: currentPassword?.length,
-      currentPasswordFirstChars: currentPassword?.substring(0, 3) + "***",
+      tokenUser: {
+        id: req.user?.id,
+        username: req.user?.username,
+        role: req.user?.role,
+      },
     });
 
     // Validate input
@@ -1017,6 +1010,7 @@ router.put("/change-password", authenticateToken, async (req, res) => {
       },
     });
 
+    // Don't include password-derived fields in logs.
     console.log(
       "👤 User found:",
       user
@@ -1026,9 +1020,6 @@ router.put("/change-password", authenticateToken, async (req, res) => {
             hasPassword: !!user.password,
             name: user.nama,
             role: user.role,
-            passwordStartsWithHash: user.password?.startsWith("$2"),
-            passwordLength: user.password?.length,
-            passwordHash: user.password?.substring(0, 10) + "...",
           }
         : "Not found",
     );
@@ -1082,12 +1073,10 @@ router.put("/change-password", authenticateToken, async (req, res) => {
     let isPasswordValid = false;
     try {
       console.log("🔒 Attempting password comparison");
-      console.log("🔒 Password details:", {
-        currentPasswordLength: currentPassword.length,
-        storedPasswordLength: user.password.length,
-        storedPasswordStartsWithHash: user.password.startsWith("$2"),
-        storedPasswordHash: user.password.substring(0, 10) + "...",
-        bcryptVersion: bcrypt.getRounds(user.password),
+      // Log minimal verification info; do NOT expose password hash fragments.
+      console.log("🔒 Password verification attempt for user:", {
+        username: user.username,
+        bcryptVersion: user.password ? bcrypt.getRounds(user.password) : null,
       });
 
       // If password is not hashed, hash it first
