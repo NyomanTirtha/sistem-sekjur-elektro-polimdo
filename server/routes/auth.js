@@ -90,9 +90,21 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Token verification error:", error);
+
+    // Tangani token yang kadaluarsa secara eksplisit agar klien mendapatkan
+    // informasi yang jelas dan status code yang sesuai.
+    if (error && error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token telah kadaluarsa. Silakan login kembali.",
+        expiredAt: error.expiredAt ? error.expiredAt.toISOString() : undefined,
+      });
+    }
+
+    // Untuk kesalahan verifikasi lain, kembalikan 403 (forbidden) dengan pesan generik.
     return res.status(403).json({
       success: false,
-      message: "Token tidak valid atau kadaluarsa",
+      message: "Token tidak valid",
     });
   }
 };
@@ -211,7 +223,6 @@ const createMataKuliahFilter = (userContext) => {
   }
   return null;
 };
-
 // Login endpoint - UPDATED untuk mendukung relasi jurusan
 router.post("/login", async (req, res) => {
   try {
@@ -226,10 +237,14 @@ router.post("/login", async (req, res) => {
 
     // Validasi input
     if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Username dan password harus diisi",
-      });
+      return res
+
+        .status(400)
+
+        .json({
+          success: false,
+          message: "Username dan password harus diisi",
+        });
     }
 
     // Cari user berdasarkan username dengan include jurusan
@@ -256,10 +271,14 @@ router.post("/login", async (req, res) => {
     );
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Username atau password salah",
-      });
+      return res
+
+        .status(401)
+
+        .json({
+          success: false,
+          message: "Username atau password salah",
+        });
     }
 
     // Verifikasi password
@@ -276,8 +295,10 @@ router.post("/login", async (req, res) => {
       if (isPasswordValid) {
         console.log("🔄 Hashing plain text password");
         const hashedPassword = await bcrypt.hash(password, 10);
+
         await prisma.user.update({
           where: { id: user.id },
+
           data: { password: hashedPassword },
         });
         console.log("✅ Password hashed and updated");
@@ -285,18 +306,26 @@ router.post("/login", async (req, res) => {
     }
 
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: "Username atau password salah",
-      });
+      return res
+
+        .status(401)
+
+        .json({
+          success: false,
+          message: "Username atau password salah",
+        });
     }
 
     // Verifikasi role jika diberikan
     if (role && user.role !== role.toUpperCase()) {
-      return res.status(401).json({
-        success: false,
-        message: "Role tidak sesuai",
-      });
+      return res
+
+        .status(401)
+
+        .json({
+          success: false,
+          message: "Role tidak sesuai",
+        });
     }
 
     // Generate JWT token
@@ -478,6 +507,7 @@ router.post("/login", async (req, res) => {
     console.error("❌ Login error:", error);
     res.status(500).json({
       success: false,
+
       message: "Terjadi kesalahan pada server: " + error.message,
     });
   }
@@ -1136,12 +1166,10 @@ router.get("/test", (req, res) => {
     ],
   });
 });
-
 // ✅ NEW: Endpoint untuk get statistik dashboard berdasarkan akses user
 router.get("/dashboard-stats", authenticateToken, async (req, res) => {
   try {
     const { userContext } = req;
-
     let stats = {};
 
     if (userContext.jurusanId) {
@@ -1174,7 +1202,6 @@ router.get("/dashboard-stats", authenticateToken, async (req, res) => {
             },
           }),
         ]);
-
       stats = {
         totalProgramStudi: programStudi,
         totalMahasiswa: mahasiswa,
@@ -1192,7 +1219,6 @@ router.get("/dashboard-stats", authenticateToken, async (req, res) => {
         totalPengajuanSA: 0,
       };
     }
-
     res.json({
       success: true,
       data: stats,

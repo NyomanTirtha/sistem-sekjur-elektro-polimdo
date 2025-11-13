@@ -24,7 +24,7 @@ const cacheRules = {
  * @param {import('express').Response} res - Objek respons Express.
  */
 function applyNoCache(res) {
-  for (const [k, v] of Object.entries(noCacheHeaders)) res.setHeader(k, v);
+  for (const [k, v] of Object.entries(noCacheHeaders)) res.set(k, v);
 }
 
 /**
@@ -47,25 +47,61 @@ const setCacheHeaders = (req, res, next) => {
         res.statusCode >= 200 &&
         res.statusCode < 300
       ) {
-        // Buat ETag dari body respons.
-        const tag = etag(body);
-        res.setHeader("ETag", tag);
+        // Siapkan body untuk perhitungan ETag agar deterministik.
+        let bodyForEtag = body;
+        if (bodyForEtag === undefined || bodyForEtag === null) {
+          bodyForEtag = "";
+        } else if (
+          typeof bodyForEtag !== "string" &&
+          !Buffer.isBuffer(bodyForEtag)
+        ) {
+          try {
+            bodyForEtag = JSON.stringify(bodyForEtag);
+          } catch (e) {
+            bodyForEtag = String(bodyForEtag);
+          }
+        }
 
-        // Jika ETag dari klien cocok dengan ETag baru, kirim 304 Not Modified.
-        if (req.headers["if-none-match"] === tag) {
-          res.status(304).end();
-          return; // Akhiri respons.
+        // Hanya set ETag jika belum ada header ETag (biarkan upstream override bila perlu).
+        if (!res.getHeader("ETag")) {
+          const tag = etag(bodyForEtag);
+          res.set("ETag", tag);
+
+          // Jika ETag dari klien cocok dengan ETag baru, kirim 304 Not Modified.
+          if (req.headers["if-none-match"] === tag) {
+            res.status(304).end();
+            return; // Akhiri respons.
+          }
         }
       }
-      return originalSend(body);
+
+      // Pastikan kita mengirim string/Buffer ke originalSend agar Express tidak melakukan
+      // behaviour internal yang bisa memicu pemanggilan ulang ke res.json/res.send.
+      let sendBody = body;
+      if (!Buffer.isBuffer(sendBody) && typeof sendBody !== "string") {
+        try {
+          sendBody = JSON.stringify(sendBody);
+          if (!res.getHeader("Content-Type")) {
+            res.set("Content-Type", "application/json; charset=utf-8");
+          }
+        } catch (e) {
+          sendBody = String(sendBody);
+        }
+      }
+
+      return originalSend(sendBody);
     };
 
     // Bungkus res.json untuk memastikan logika ETag juga diterapkan.
     res.json = function (body) {
-      if (!res.getHeader("Content-Type"))
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-      // Delegasikan ke res.send yang sudah dibungkus.
-      return res.send(JSON.stringify(body));
+      if (!res.getHeader("Content-Type")) {
+        res.set("Content-Type", "application/json; charset=utf-8");
+      }
+      // Delegasikan ke res.send (yang sudah dioverride di atas) sehingga body akan
+      // di-serialize dan ETag akan dihitung oleh wrapper res.send. Menggunakan
+      // res.send menghindari rekursi karena override res.send langsung memanggil
+      // originalSend dengan string/Buffer.
+      return res.send(body);
     };
   }
 
@@ -75,9 +111,13 @@ const setCacheHeaders = (req, res, next) => {
     return next();
   }
 
+  // Normalisasi path agar rule yang memakai prefix tanpa /api tetap bekerja.
+  // Contoh: /api/prodi -> /prodi
+  const normalizedPath = req.path.replace(/^\/api(\/|$)/, "/");
+
   // Tentukan strategi cache yang sesuai dari cacheRules.
   const matchedRule = Object.entries(cacheRules).find(([_, paths]) =>
-    paths.some((p) => req.path.startsWith(p)),
+    paths.some((p) => normalizedPath.startsWith(p)),
   );
   const rule = matchedRule?.[0];
 
@@ -103,9 +143,19 @@ const setCacheHeaders = (req, res, next) => {
 
   // Instruksikan cache untuk membedakan respons berdasarkan header ini.
   // Penting untuk mencegah cache poisoning dan menyajikan konten yang benar (misal: terkompresi, per pengguna).
-  res.setHeader("Vary", "Accept-Encoding, Authorization");
+  res.set("Vary", "Accept-Encoding, Authorization");
 
   next();
 };
 
-module.exports = { setCacheHeaders };
+/**
+ * Helper kecil untuk mendaftarkan middleware pada aplikasi Express.
+ * Berguna jika Anda ingin mendaftarkan cache secara terpusat di `server.js`.
+ * Contoh: const { registerCache } = require('./middleware/cache'); registerCache(app);
+ */
+function registerCache(app) {
+  if (!app || typeof app.use !== "function") return;
+  app.use(setCacheHeaders);
+}
+
+module.exports = { setCacheHeaders, registerCache };
