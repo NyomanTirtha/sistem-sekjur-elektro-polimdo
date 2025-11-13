@@ -520,14 +520,13 @@ router.get("/test-users", async (req, res) => {
   }
   try {
     const users = await prisma.user.findMany({
-      include: { jurusan: true },
       select: {
         id: true,
         username: true,
         nama: true,
         role: true,
         jurusanId: true,
-        jurusan: true,
+        jurusan: { select: { id: true, nama: true } },
         password: true, // Hanya untuk debugging - HAPUS di production
       },
     });
